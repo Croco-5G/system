@@ -1444,7 +1444,7 @@
         </div>
         <div class="table-container">
             <table>
-                <thead><tr><th>التاريخ</th><th>العميل</th><th>الجوال</th><th>الخدمة</th><th>المدة</th><th>الدفع</th><th>التكلفة</th><th>الربح</th></tr></thead>
+               <thead><tr><th>التاريخ</th><th>العميل</th><th>الجوال</th><th>الخدمة</th><th>المدة</th><th>الدفع</th><th id="thCost">التكلفة</th><th id="thProfit">الربح</th></tr></thead>
                 <tbody id="historyBody"></tbody>
             </table>
         </div>
@@ -4279,6 +4279,8 @@ function applyRBAC() {
         safeToggle("statCardMonthProfits", "add");
         safeToggle("budgetChartSection", "add");
         safeToggle("analyticsDateFilterBox", "add");
+        safeToggle("thCost", "add");
+        safeToggle("thProfit", "add");
     }
     else if (role === 'viewer_plus') {
         if(tfRes) tfRes.readOnly = true;
@@ -5742,7 +5744,7 @@ function refreshHistory(){
         let durStr = (parsedDur === 0) ? "بدون مدة" : (isNaN(parsedDur) ? "-" : parsedDur + " شهر");
         let durBadge = (parsedDur === 0) ? "badge-success" : "badge-warning";
         
-        rows+=`<tr><td>${item.date}</td><td style="${colorStyle}"><b>${esc(item.customer)}</b></td><td style="${colorStyle}">${phoneD}</td><td>${subD}</td><td><span class="badge ${durBadge}">${durStr}</span></td><td style="color:var(--success)">${paidD}</td><td style="color:var(--danger)">${costD}</td><td>${profitD}</td></tr>`;
+        rows+=`<tr><td>${item.date}</td><td style="${colorStyle}"><b>${esc(item.customer)}</b></td><td style="${colorStyle}">${phoneD}</td><td>${subD}</td><td><span class="badge ${durBadge}">${durStr}</span></td><td style="color:var(--success)">${paidD}</td>${isEmployeeRole ? '' : `<td style="color:var(--danger)">${costD}</td><td>${profitD}</td>`}</tr>`;
     });
     document.getElementById("historyBody").innerHTML = rows || `<tr><td colspan='8' style='text-align:center; padding:20px; color:var(--text-muted)'>لا توجد بيانات</td></tr>`;
 }
@@ -8186,7 +8188,7 @@ function refreshOrders() {
         let notes = o.notes ? `<span title="${esc(o.notes)}" style="cursor:help; color:var(--text-muted);"><i class="fas fa-sticky-note"></i></span>` : '—';
         
         let confirmBtn = '—';
-        if (isAdmin) {
+        if (isAdmin || (currentUser && currentUser.role === 'employee')) {
             if (isBookingBranch && o.status !== 'booked') {
                 confirmBtn = `<button class="btn btn-warning" style="padding:5px 10px; font-size:12px; color:#000; font-weight:bold;" onclick="openConfirmBookingModal('${o._docId}', '${targetService._docId}', '${o.serviceCode}')"><i class="fas fa-bookmark"></i> تأكيد حجز</button>`;
             } else if (o.status === 'booked') {
