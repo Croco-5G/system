@@ -5656,7 +5656,7 @@ function refreshWallets() {
     if(document.getElementById("statTodayProfits")) {
         let el = document.getElementById("statTodayProfits");
         if(_isEgypt) {
-            el.textContent = (isTodayPositive ? "+" : "-") + fix(Math.abs(tDeltaSHK) * _egpRate) + " ج.م";
+            el.textContent = (isTodayPositive ? "+" : "-") + fix(Math.abs(tDeltaSHK) * _egpRate) + " £";
         } else {
             el.textContent = (isTodayPositive ? "+" : "-") + fix(Math.abs(tDeltaSHK)) + " ₪";
         }
@@ -5665,7 +5665,7 @@ function refreshWallets() {
     if(document.getElementById("statMonthProfits")) {
         let profEl = document.getElementById("statMonthProfits");
         if(_isEgypt) {
-            profEl.textContent = (isMonthPositive ? "+" : "-") + fix(Math.abs(mDeltaSHK) * _egpRate) + " ج.م";
+            profEl.textContent = (isMonthPositive ? "+" : "-") + fix(Math.abs(mDeltaSHK) * _egpRate) + " £";
         } else {
             profEl.textContent = (isMonthPositive ? "+" : "-") + fix(Math.abs(mDeltaSHK)) + " ₪";
         }
@@ -9351,9 +9351,9 @@ window._userCountry = localStorage.getItem('_cachedCountry') || null;
 (async function detectCountry(){
     if(window._userCountry) return;
     try {
-        let r = await fetch('https://ip-api.com/json/?fields=countryCode');
+        let r = await fetch('https://ipapi.co/json/');
         let d = await r.json();
-        window._userCountry = d.countryCode || 'XX';
+        window._userCountry = d.country_code || 'XX';
         localStorage.setItem('_cachedCountry', window._userCountry);
     } catch(e) { window._userCountry = 'XX'; }
 })();
