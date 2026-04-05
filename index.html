@@ -1581,6 +1581,13 @@
                         <button class="btn btn-primary" onclick="saveProfitSettings()">حفظ</button>
                     </div>
                 </div>
+                <div class="input-group" style="margin-top:15px;">
+                    <label>سعر الشيكل بالجنيه المصري (1 ₪ = ؟ جنيه)</label>
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <input type="number" id="setEgpRate" placeholder="مثلاً 13" step="0.01">
+                        <button class="btn btn-primary" onclick="saveProfitSettings()">حفظ</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2950,7 +2957,7 @@ function getDefaultData() {
     return {
         wallets:  safeJSON(store.wallets,  {"جوال باي — سعاد":{bal:0,cur:"₪",active:true},"جوال باي — محمد":{bal:0,cur:"₪",active:true},"بال باي — أحمد":{bal:0,cur:"₪",active:true},"بايننس — احمد":{bal:0,cur:"$",active:true}}),
         invest:   safeJSON(store.invest,   {ahmad:{d:0,s:0},mohamed:{d:0,s:0},store:{d:0,s:0}}),
-        settings: safeJSON(store.settings, {ahmad:0,mohamed:0,store:100,deductCost:false,exchangeRate:0,logsVis:"all",discountEnabled:true,discountChance:25,discountMin:10,discountMax:20,validityMin:15,validityMax:45}),
+        settings: safeJSON(store.settings, {ahmad:0,mohamed:0,store:100,deductCost:false,exchangeRate:0,egpRate:13,logsVis:"all",discountEnabled:true,discountChance:25,discountMin:10,discountMax:20,validityMin:15,validityMax:45}),
         services: safeJSON(store.services, []),
         vipCustomers: safeJSON(store.vipCustomers, {})
     };
@@ -3765,7 +3772,7 @@ function init(){
     if(!store.invest) store.invest = JSON.stringify({ahmad:{d:0,s:0},mohamed:{d:0,s:0},store:{d:0,s:0}}); 
     if(!store.generalNotes) store.generalNotes = "[]"; 
     if(!store.todoList) store.todoList = "[]"; 
-    if(!store.settings) store.settings = JSON.stringify({ahmad: 0, mohamed: 0, store: 100, deductCost: false, exchangeRate: 0, logsVis: 'all', discountEnabled:true, discountChance:25, discountMin:10, discountMax:20, validityMin:15, validityMax:45}); 
+    if(!store.settings) store.settings = JSON.stringify({ahmad: 0, mohamed: 0, store: 100, deductCost: false, exchangeRate: 0, egpRate: 13, logsVis: 'all', discountEnabled:true, discountChance:25, discountMin:10, discountMax:20, validityMin:15, validityMax:45}); 
     if(!store.activityLog) store.activityLog = "[]"; 
     if(!store.stock) store.stock = "[]"; 
     if(!store.services) store.services = "[]";
@@ -4842,6 +4849,7 @@ function syncPurchaseDuration() {
 function loadProfitSettings(){
     let s = safeJSON(store.settings, {});
     document.getElementById("setExchangeRate").value = s.exchangeRate || 0;
+    let _egpEl = document.getElementById("setEgpRate"); if(_egpEl) _egpEl.value = s.egpRate || 13;
     
     document.getElementById("setDiscountEnabled").checked = s.discountEnabled !== false;
     document.getElementById("setVipEnabled").checked = s.vipEnabled !== false;
@@ -4857,6 +4865,7 @@ function saveProfitSettings(){
     if(currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
     let sObj = safeJSON(store.settings, {});
     sObj.exchangeRate = +document.getElementById("setExchangeRate").value;
+    let _egpSaveEl = document.getElementById("setEgpRate"); if(_egpSaveEl && _egpSaveEl.value) sObj.egpRate = +_egpSaveEl.value;
     store.settings = JSON.stringify(sObj); fbSave("settings", sObj);
     logAction("تعديل سعر الصرف", 'general');
     notify("تم الحفظ");
@@ -5642,14 +5651,24 @@ function refreshWallets() {
     // تحديث الواجهة
     if(document.getElementById("statSales")) document.getElementById("statSales").textContent = todayCount;
     if(document.getElementById("statMonthSales")) document.getElementById("statMonthSales").textContent = mSales;
+    let _egpRate = (settings.egpRate && settings.egpRate > 0) ? settings.egpRate : 13;
+    let _isEgypt = window._userCountry === 'EG';
     if(document.getElementById("statTodayProfits")) {
         let el = document.getElementById("statTodayProfits");
-        el.textContent = (isTodayPositive ? "+" : "-") + fix(Math.abs(tDeltaSHK)) + " ₪";
+        if(_isEgypt) {
+            el.textContent = (isTodayPositive ? "+" : "-") + fix(Math.abs(tDeltaSHK) * _egpRate) + " ج.م";
+        } else {
+            el.textContent = (isTodayPositive ? "+" : "-") + fix(Math.abs(tDeltaSHK)) + " ₪";
+        }
         el.style.color = isTodayPositive ? "var(--success)" : "var(--danger)";
     }
     if(document.getElementById("statMonthProfits")) {
         let profEl = document.getElementById("statMonthProfits");
-        profEl.textContent = (isMonthPositive ? "+" : "-") + fix(Math.abs(mDeltaSHK)) + " ₪";
+        if(_isEgypt) {
+            profEl.textContent = (isMonthPositive ? "+" : "-") + fix(Math.abs(mDeltaSHK) * _egpRate) + " ج.م";
+        } else {
+            profEl.textContent = (isMonthPositive ? "+" : "-") + fix(Math.abs(mDeltaSHK)) + " ₪";
+        }
         profEl.style.color = isMonthPositive ? "var(--success)" : "var(--danger)";
     }
 
@@ -9326,6 +9345,18 @@ function loadPledgesIntoSelect() {
         sel.innerHTML += `<option value="${p.id}">${esc(p.customer)} / ${esc(p.phone)} / ${esc(p.service)} (${used}/${total})</option>`;
     });
 }
+
+// ── كشف دولة المستخدم لعرض العملة المناسبة ──
+window._userCountry = localStorage.getItem('_cachedCountry') || null;
+(async function detectCountry(){
+    if(window._userCountry) return;
+    try {
+        let r = await fetch('https://ip-api.com/json/?fields=countryCode');
+        let d = await r.json();
+        window._userCountry = d.countryCode || 'XX';
+        localStorage.setItem('_cachedCountry', window._userCountry);
+    } catch(e) { window._userCountry = 'XX'; }
+})();
 
 window.onload = init;
 </script>
