@@ -9347,14 +9347,12 @@ function loadPledgesIntoSelect() {
 }
 
 // ── كشف دولة المستخدم لعرض العملة المناسبة ──
-window._userCountry = localStorage.getItem('_cachedCountry') || null;
+window._userCountry = null;
 (async function detectCountry(){
-    if(window._userCountry && window._userCountry !== 'XX') return;
     try {
         let r = await fetch('https://ipapi.co/json/');
         let d = await r.json();
         window._userCountry = d.country_code || null;
-        if(window._userCountry) localStorage.setItem('_cachedCountry', window._userCountry);
     } catch(e) { window._userCountry = null; }
 })();
 
