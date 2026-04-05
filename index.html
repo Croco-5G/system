@@ -9349,7 +9349,7 @@ function loadPledgesIntoSelect() {
 // ── كشف دولة المستخدم لعرض العملة المناسبة ──
 window._userCountry = localStorage.getItem('_cachedCountry') || null;
 (async function detectCountry(){
-    if(window._userCountry) return;
+    if(window._userCountry && window._userCountry !== 'XX') return;
     try {
         let r = await fetch('https://ipapi.co/json/');
         let d = await r.json();
