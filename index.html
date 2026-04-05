@@ -5175,8 +5175,9 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
         isComp: isComp,
         isPledge: !!selectedPledge,
         usedDiscountObj: usedDiscountObj,
-        canBeUndone: true
-    });
+        generatedCouponId: generatedCoupon ? generatedCoupon.id : null,
+            canBeUndone: true
+        });
 
     store.stock     = JSON.stringify(stockList);
     store.invest    = JSON.stringify(invest);
@@ -6750,7 +6751,12 @@ async function undoLastPurchase(){
             undoUpdates.stock = stockList;
         }
     }
-
+if (lastP.generatedCouponId) {
+        let dList = safeJSON(store.discounts, []);
+        dList = dList.filter(x => x.id !== lastP.generatedCouponId);
+        store.discounts = JSON.stringify(dList);
+        undoUpdates.discounts = dList;
+    }
     if (lastP.usedDiscountObj) {
         let dList = safeJSON(store.discounts, []);
         let existingIdx = dList.findIndex(x => x.id === lastP.usedDiscountObj.id);
