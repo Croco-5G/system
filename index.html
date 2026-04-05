@@ -1044,7 +1044,7 @@
         <div class="stat-icon icon-bg-warning"><i class="fas fa-shopping-bag"></i></div>
         <div><label>مبيعات اليوم</label><div id="statSales" style="font-size: 22px; font-weight: 800;">0</div></div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" id="statCardTodayProfits">
         <div class="stat-icon icon-bg-success"><i class="fas fa-chart-line"></i></div>
         <div><label>أرباح اليوم</label><div id="statTodayProfits" style="font-size: 22px; font-weight: 800; color:var(--success);">0 ₪</div></div>
     </div>
@@ -1052,7 +1052,7 @@
         <div class="stat-icon" style="background:rgba(168,85,247,0.15); color:#a855f7;"><i class="fas fa-calendar-alt"></i></div>
         <div><label>مبيعات هذا الشهر</label><div id="statMonthSales" style="font-size: 22px; font-weight: 800;">0</div></div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" id="statCardMonthProfits">
         <div class="stat-icon icon-bg-success"><i class="fas fa-hand-holding-usd"></i></div>
         <div><label>أرباح هذا الشهر</label><div id="statMonthProfits" style="font-size: 22px; font-weight: 800; color:var(--success);">0 ₪</div></div>
     </div>
@@ -4264,16 +4264,21 @@ function applyRBAC() {
         }
         
         safeToggle("sec-manual-wallet", "remove");
-        safeToggle("todoSection", "remove");
-        safeToggle("todoInputArea", "remove");
+        safeToggle("todoSection", "add");
+        safeToggle("todoInputArea", "add");
         safeToggle("sec-manage-services", "remove"); 
         safeToggle("btnOrders", "remove");
         
         safeToggle("btnStock", "remove");
         safeToggle("btnUndo", "remove");
         safeToggle("btnExportCSV", "remove"); // <--- إظهار للموظف
-        safeToggle("btnHideExpired", "remove");
+        safeToggle("btnHideExpired", "add");
         safeToggle("btnClearHistory", "add");
+        safeToggle("btnServicesMgmt", "add");
+        safeToggle("statCardTodayProfits", "add");
+        safeToggle("statCardMonthProfits", "add");
+        safeToggle("budgetChartSection", "add");
+        safeToggle("analyticsDateFilterBox", "add");
     }
     else if (role === 'viewer_plus') {
         if(tfRes) tfRes.readOnly = true;
@@ -5705,14 +5710,15 @@ function refreshHistory(){
     let rows = "";
     paginated.forEach(item => {
         let isViewerRole = currentUser && (currentUser.role === 'viewer' || currentUser.role === 'viewer_plus');
+        let isEmployeeRole = currentUser && currentUser.role === 'employee';
         let phoneD = isViewerRole ? maskPhone(item.phone) : esc(item.phone);
         let subD = isRestricted ? '----' : `<span class="badge badge-info">${esc(item.sub)}</span>`;
         let paidD = isRestricted ? '----' : esc(item.paid);
-        let costD = isRestricted ? '----' : esc(item.cost);
+        let costD = (isRestricted || isEmployeeRole) ? '----' : esc(item.cost);
         
         // حساب الربح = المدفوع - التكلفة (مع مراعاة العملة)
         let profitD = '----';
-        if (!isRestricted) {
+        if (!isRestricted && !isEmployeeRole) {
             let settings_h = safeJSON(store.settings, {});
             let rate_h = settings_h.exchangeRate && settings_h.exchangeRate > 0 ? settings_h.exchangeRate : 3.5;
             let paidNum = parseFloat((item.paid || '0').replace(/[^0-9.\-]/g, '')) || 0;
@@ -7562,9 +7568,9 @@ function viewSoldDetails(id) {
     body.innerHTML += row("الخدمة", esc(item.displayName || item.service));
     body.innerHTML += `<div class="detail-row"><span style="color:var(--text-muted)">الإيميل</span><span style="display:flex;align-items:center;gap:8px;direction:ltr;"><span id="_dEmail">${esc(item.email)}</span><button class="btn btn-primary" style="padding:3px 8px;font-size:11px;" onclick="navigator.clipboard.writeText(document.getElementById('_dEmail').textContent).then(()=>notify('تم نسخ الإيميل'))"><i class='fas fa-copy'></i></button></span></div>`;
     body.innerHTML += `<div class="detail-row"><span style="color:var(--text-muted)">كلمة المرور</span><span style="display:flex;align-items:center;gap:8px;direction:ltr;"><span id="_dPass">${esc(item.pass)}</span><button class="btn btn-primary" style="padding:3px 8px;font-size:11px;" onclick="navigator.clipboard.writeText(document.getElementById('_dPass').textContent).then(()=>notify('تم نسخ كلمة المرور'))"><i class='fas fa-copy'></i></button></span></div>`;
-    body.innerHTML += row("البائع", esc(item.vendor) || "-");
+    if(!currentUser || currentUser.role !== 'employee') body.innerHTML += row("البائع", esc(item.vendor) || "-");
     body.innerHTML += row("البروفايلات", `${item.soldProfiles || 0} / ${item.totalProfiles || 1}`);
-    body.innerHTML += row("تكلفة الشراء", (item.cost || 0) + " " + (item.costCurrency || ''));
+    if(!currentUser || currentUser.role !== 'employee') body.innerHTML += row("تكلفة الشراء", (item.cost || 0) + " " + (item.costCurrency || ''));
     body.innerHTML += `<hr style="margin:10px 0; border:0; border-top:1px dashed var(--border-color)">`;
     body.innerHTML += row("تاريخ البيع", item.soldDate);
     
@@ -9296,7 +9302,7 @@ function refreshPledges() {
                 </div>
             </td>
             <td>${esc(p.duration)} ${p.duration !== '-' ? 'شهر' : ''}</td>
-            <td><button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="deletePledge('${p.id}')"><i class="fas fa-trash"></i></button></td>
+            <td>${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="deletePledge('${p.id}')"><i class="fas fa-trash"></i></button>` : '-'}</td>
         </tr>`;
     });
     tbody.innerHTML = rows;
