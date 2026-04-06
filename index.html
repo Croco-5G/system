@@ -5100,7 +5100,7 @@ function addPurchase(){
         }
     }
     
-    let cleanName = stItem.service + (totalProfiles > 1 ? " Shared" : "");
+    let cleanName = (stItem.displayName || stItem.service) + (totalProfiles > 1 ? " Shared" : "");
     let customerVal = document.getElementById("customer").value;
     let walletVal = ""; // المحافظ محذوفة — لا حاجة للاختيار
 
