@@ -9528,11 +9528,17 @@ function adjustEmployeeBonus() {
 function openNotifModal(userId) {
     let users = safeJSON(store.users, []);
     let sel = document.getElementById('notifTargetUser');
+    let selGroup = sel.closest('.input-group');
     sel.innerHTML = '';
     users.filter(u => u.username !== currentUser.username).forEach(u => {
         sel.innerHTML += `<option value="${u.id}">${esc(u.username)} (${getRoleName(u.role)})</option>`;
     });
-    if (userId) sel.value = userId;
+    if (userId) {
+        sel.value = userId;
+        if (selGroup) selGroup.style.display = 'none';
+    } else {
+        if (selGroup) selGroup.style.display = 'block';
+    }
     onNotifUserChange();
     document.getElementById('adminNotifModal').style.display = 'flex';
 }
