@@ -2258,9 +2258,9 @@ async function deleteAllVips() {
 // ARRAY:  يُخزَّن كـ Subcollection — كل عنصر وثيقة Firestore مستقلة
 // services: مصفوفة strings بسيطة ← تُخزَّن كحقل في المستند الرئيسي (Scalar)
 // لا تحتوي على IDs فلا تصلح كـ Subcollection
-const SCALAR_KEYS = ["wallets", "settings", "invest", "services", "vipCustomers"];
+const SCALAR_KEYS = ["wallets", "settings", "invest", "services", "vipCustomers", "employeeBonus"];
 const ARRAY_KEYS  = ["purchases", "stock", "users", "activityLog",
-                     "todoList", "generalNotes", "discounts", "budgetHistory", "pledges", "employeeBonus"];
+                     "todoList", "generalNotes", "discounts", "budgetHistory", "pledges"];
 const STORE_KEYS  = [...SCALAR_KEYS, ...ARRAY_KEYS];
 
 // --- UPDATED DIALOG SYSTEM ---
