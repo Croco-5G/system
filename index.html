@@ -1056,6 +1056,10 @@
         <div class="stat-icon icon-bg-success"><i class="fas fa-hand-holding-usd"></i></div>
         <div><label>أرباح هذا الشهر</label><div id="statMonthProfits" style="font-size: 22px; font-weight: 800; color:var(--success);">0 ₪</div></div>
     </div>
+<div class="stat-card hidden" id="statCardEmployeeBonus">
+        <div class="stat-icon" style="background:rgba(234,179,8,0.15); color:#eab308;"><i class="fas fa-coins"></i></div>
+        <div><label>زيادة الراتب (هذا الشهر)</label><div id="statEmployeeBonus" style="font-size: 22px; font-weight: 800; color:#eab308;">0 ₪</div></div>
+    </div>
 </div>
 
     <div id="notification"></div>
@@ -1453,6 +1457,27 @@
 
     <div id="investment" class="card hidden">
         <h3><i class="fas fa-money-bill-wave" style="color:var(--primary)"></i> سحب أموال</h3>
+
+        <!-- زيادة راتب الموظف - للأدمن فقط -->
+        <div id="empBonusAdminBox" class="inner-box" style="max-width:500px; margin:0 auto 24px auto; border:2px solid rgba(234,179,8,0.4);">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                <div style="width:38px; height:38px; border-radius:12px; background:rgba(234,179,8,0.15); display:flex; align-items:center; justify-content:center; color:#eab308; font-size:17px;"><i class="fas fa-coins"></i></div>
+                <div>
+                    <div style="font-size:13px; color:var(--text-muted); font-weight:700;">زيادة راتب الموظف — هذا الشهر</div>
+                    <div id="empBonusAdminValue" style="font-size:22px; font-weight:900; color:#eab308;">0 ₪</div>
+                </div>
+            </div>
+            <div style="border-top:1px dashed var(--border-color); padding-top:14px;">
+                <label style="font-size:13px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:8px;">تعديل الزيادة (زيادة أو خصم)</label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="number" id="empBonusAdjust" placeholder="مثال: 10 أو -5" step="0.01" style="flex:1;">
+                    <span style="font-weight:800; color:var(--text-muted);">₪</span>
+                    <button class="btn btn-warning" style="white-space:nowrap;" onclick="adjustEmployeeBonus()"><i class="fas fa-edit"></i> تطبيق</button>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">أدخل رقم موجب للزيادة أو سالب للخصم</div>
+            </div>
+        </div>
+
         <div class="inner-box" style="max-width:500px; margin:0 auto;">
             <div class="input-group">
                 <label>المبلغ</label>
@@ -2235,7 +2260,7 @@ async function deleteAllVips() {
 // لا تحتوي على IDs فلا تصلح كـ Subcollection
 const SCALAR_KEYS = ["wallets", "settings", "invest", "services", "vipCustomers"];
 const ARRAY_KEYS  = ["purchases", "stock", "users", "activityLog",
-                     "todoList", "generalNotes", "discounts", "budgetHistory", "pledges"];
+                     "todoList", "generalNotes", "discounts", "budgetHistory", "pledges", "employeeBonus"];
 const STORE_KEYS  = [...SCALAR_KEYS, ...ARRAY_KEYS];
 
 // --- UPDATED DIALOG SYSTEM ---
@@ -4286,6 +4311,9 @@ function applyRBAC() {
         safeToggle("thDiscountsDelete", "add");
         safeToggle("thPledgesDelete", "add");
         safeToggle("thVipAction", "add");
+        safeToggle("statCardEmployeeBonus", "remove");
+        safeToggle("empBonusAdminBox", "add");
+        refreshEmployeeBonus();
     }
     else if (role === 'viewer_plus') {
         if(tfRes) tfRes.readOnly = true;
@@ -5242,6 +5270,13 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
         type: 'purchase', customer: customerVal||"عميل", sub: cleanName, paid: paid+paidCur, costVal: originalCostDisplay, isFirstProfile: !isComp, appliedDiscountPct: appliedDiscountPct, isComp: isComp
     });
 
+    // ── زيادة راتب الموظف ──────────────────────────────────────────
+    if (currentUser && currentUser.role === 'employee' && !isComp && !selectedPledge && distributableProfit > 0) {
+        let _bonusRate = rate && rate > 0 ? rate : 3.5;
+        let _profitInShekels = paidCur === '₪' ? distributableProfit : distributableProfit * _bonusRate;
+        calculateEmployeeBonusForSale(_profitInShekels, purchases);
+    }
+
     if (usedDiscountObj) {
         let dList = safeJSON(store.discounts, []);
         let dIdx = dList.findIndex(x => x.id === usedDiscountObj.id);
@@ -5758,6 +5793,7 @@ function filterHistory() { refreshHistory(); }
 
 function refreshInvestment(){
     if (!document.getElementById("investBox")) return;
+    refreshEmployeeBonus();
     let settings = safeJSON(store.settings, {});
     let rate = settings.exchangeRate && settings.exchangeRate > 0 ? settings.exchangeRate : 3.5;
     let wallets = safeJSON(store.wallets, {});
@@ -9376,6 +9412,73 @@ window._userCountry = null;
         window._userCountry = d.country_code || null;
     } catch(e) { window._userCountry = null; }
 })();
+
+// ─────────────────────────────────────────
+// زيادة راتب الموظف
+// ─────────────────────────────────────────
+function _getEmpBonusStore() {
+    let raw = safeJSON(store.employeeBonus, null);
+    let curMonth = new Date().toISOString().slice(0,7); // "YYYY-MM"
+    if (!raw || raw.month !== curMonth) {
+        return { month: curMonth, totalShekels: 0 };
+    }
+    return raw;
+}
+
+function _saveEmpBonus(obj) {
+    store.employeeBonus = JSON.stringify(obj);
+    fbSave('employeeBonus', obj);
+}
+
+function refreshEmployeeBonus() {
+    let bonus = _getEmpBonusStore();
+    let settings = safeJSON(store.settings, {});
+    let egpRate = (settings.egpRate && settings.egpRate > 0) ? settings.egpRate : 13;
+    let isEgypt = window._userCountry === 'EG';
+    let displayVal = isEgypt
+        ? '+' + fix(bonus.totalShekels * egpRate) + ' £'
+        : '+' + fix(bonus.totalShekels) + ' ₪';
+    if (bonus.totalShekels < 0) displayVal = displayVal.replace('+', '');
+
+    let empEl = document.getElementById('statEmployeeBonus');
+    if (empEl) empEl.textContent = displayVal;
+
+    let adminEl = document.getElementById('empBonusAdminValue');
+    if (adminEl) adminEl.textContent = displayVal;
+}
+
+function calculateEmployeeBonusForSale(profitShekels, purchases) {
+    // عدد مبيعات اليوم الحقيقية (بدون تعويض وبدون رهن)
+    let today = new Date().toISOString().slice(0,10);
+    let todaySales = purchases.filter(p =>
+        p.date === today && !p.isComp && !p.isPledge && !p.pledgeId
+    );
+    let saleIndex = todaySales.length; // الرقم التسلسلي للبيعة الحالية
+
+    let bonusPct = 0;
+    if (saleIndex >= 11) bonusPct = 0.20;
+    else if (saleIndex >= 7) bonusPct = 0.15;
+
+    if (bonusPct === 0 || profitShekels <= 0) return;
+
+    let bonusAmount = +(profitShekels * bonusPct).toFixed(4);
+    let obj = _getEmpBonusStore();
+    obj.totalShekels = +((obj.totalShekels || 0) + bonusAmount).toFixed(4);
+    _saveEmpBonus(obj);
+    refreshEmployeeBonus();
+}
+
+function adjustEmployeeBonus() {
+    if (!currentUser || currentUser.role !== 'admin') return notify('للأدمن فقط', 'error');
+    let val = parseFloat(document.getElementById('empBonusAdjust').value);
+    if (isNaN(val) || val === 0) return notify('أدخل قيمة صحيحة', 'error');
+    let obj = _getEmpBonusStore();
+    obj.totalShekels = +((obj.totalShekels || 0) + val).toFixed(4);
+    _saveEmpBonus(obj);
+    document.getElementById('empBonusAdjust').value = '';
+    refreshEmployeeBonus();
+    notify(val > 0 ? `تمت إضافة ${val} ₪ لزيادة الراتب` : `تم خصم ${Math.abs(val)} ₪ من زيادة الراتب`);
+}
 
 window.onload = init;
 </script>
