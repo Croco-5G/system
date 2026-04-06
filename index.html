@@ -5270,6 +5270,7 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
         isComp: isComp,
         isPledge: !!selectedPledge,
         usedDiscountObj: usedDiscountObj,
+        let generatedCoupon = null;
         generatedCouponId: generatedCoupon ? generatedCoupon.id : null,
             canBeUndone: true
         });
@@ -5342,7 +5343,6 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
         }
     }
 
-    let generatedCoupon = null;
 
     let dEnabled = settings.discountEnabled !== false;
     let baseChance = settings.discountChance !== undefined ? settings.discountChance : 25;
