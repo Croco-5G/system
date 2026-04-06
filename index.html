@@ -9453,7 +9453,7 @@ function calculateEmployeeBonusForSale(profitShekels, purchases) {
     let todaySales = purchases.filter(p =>
         p.date === today && !p.isComp && !p.isPledge && !p.pledgeId
     );
-    let saleIndex = todaySales.length; // الرقم التسلسلي للبيعة الحالية
+    let saleIndex = todaySales.length - 1; // الرقم التسلسلي للبيعة الحالية
 
     let bonusPct = 0;
     if (saleIndex >= 11) bonusPct = 0.20;
