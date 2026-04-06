@@ -2784,6 +2784,7 @@ function initFirebase() {
                         if (store[k] !== newStr) {
                             store[k] = newStr;
                             if (!fromCache) lastServerState[k] = JSON.parse(JSON.stringify(data[k]));
+                            if (k === 'employeeBonus' && !fromCache && currentUser) refreshEmployeeBonus();
                         }
                     }
                 });
