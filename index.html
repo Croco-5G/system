@@ -3560,6 +3560,7 @@ function renderBudgetChart() {
                     },
                     callbacks: {
                         title: (items) => {
+                            if (!items || !items[0]) return '';
                             let idx = items[0].dataIndex;
                             let pt = chartPoints[idx];
                             if(pt?.event) return pt.event.label;
