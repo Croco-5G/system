@@ -5342,12 +5342,12 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
         }
     }
 
+    let generatedCoupon = null;
+
     let dEnabled = settings.discountEnabled !== false;
     let baseChance = settings.discountChance !== undefined ? settings.discountChance : 25;
     let vipChancePerk = vipNewRank ? vipNewRank.chance : 0;
     let finalChance = baseChance + vipChancePerk;
-    
-    let generatedCoupon = null;
 
     if (dEnabled && !isComp && !selectedPledge && paid > 0 && appliedDiscountPct === 0) {
         let rand = Math.random() * 100;
