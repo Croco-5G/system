@@ -1117,7 +1117,7 @@
         </div>
         <div class="table-container">
             <table>
-                <thead><tr><th style="text-align:center;">كود الخصم</th><th style="text-align:center;">العميل</th><th style="text-align:center;">نسبة الخصم</th><th style="text-align:center;">الاستعمالات</th><th style="text-align:center;">المتبقي</th><th style="text-align:center;">حذف</th></tr></thead>
+                <thead><tr><th style="text-align:center;">كود الخصم</th><th style="text-align:center;">العميل</th><th style="text-align:center;">نسبة الخصم</th><th style="text-align:center;">الاستعمالات</th><th style="text-align:center;">المتبقي</th><th id="thDiscountsDelete" style="text-align:center;">حذف</th></tr></thead>
                 <tbody id="discountsBody"></tbody>
             </table>
         </div>
@@ -1146,7 +1146,7 @@
                     <th style="text-align:center;">نوع الخدمة</th>
                     <th style="text-align:center;">الحسابات المرهونة</th>
                     <th style="text-align:center;">مدة كل حساب</th>
-                    <th style="text-align:center;">حذف</th>
+                    <th id="thPledgesDelete" style="text-align:center;">حذف</th>
                 </tr></thead>
                 <tbody id="pledgesBody"></tbody>
             </table>
@@ -1170,7 +1170,7 @@
         </div>
         <div class="table-container">
             <table>
-                <thead><tr><th style="text-align:center;">العميل</th><th style="text-align:center;">رقم الجوال</th><th style="text-align:center;">الرتبة</th><th style="text-align:center;">عمليات الشراء</th><th style="text-align:center;">التراجع بعد</th><th style="text-align:center;">إجراء</th></tr></thead>
+                <thead><tr><th style="text-align:center;">العميل</th><th style="text-align:center;">رقم الجوال</th><th style="text-align:center;">الرتبة</th><th style="text-align:center;">عمليات الشراء</th><th style="text-align:center;">التراجع بعد</th><th id="thVipAction" style="text-align:center;">إجراء</th></tr></thead>
                 <tbody id="vipBody"></tbody>
             </table>
         </div>
@@ -1297,7 +1297,7 @@
                     <th>السعر</th>
                     <th>ملاحظات</th>
                     <th>تأكيد التسليم</th>
-                    <th>حذف</th>
+                    <th id="thOrdersDelete">حذف</th>
                 </tr></thead>
                 <tbody id="ordersBody"></tbody>
             </table>
@@ -2057,13 +2057,14 @@ function refreshVip() {
         
         let delBtn = isAdmin ? `<button class="btn btn-danger" style="padding:4px 10px; font-size:12px" onclick="deleteVip('${c.phone}')"><i class="fas fa-trash"></i></button>` : '-';
 
+        let isEmpVip = currentUser && currentUser.role === 'employee';
         rows += `<tr>
             <td style="text-align:center; font-weight:bold">${esc(c.name)}</td>
             <td style="text-align:center;" dir="ltr">${displayPhone}</td>
             <td style="text-align:center; font-weight:bold; color:${rank.color}">${rank.name}</td>
             <td style="text-align:center; font-weight:bold;" class="eng-num">${countDisplay}</td>
             <td style="text-align:center;">${timeText}</td>
-            <td style="text-align:center;">${delBtn}</td>
+            ${isEmpVip ? '' : `<td style="text-align:center;">${delBtn}</td>`}
         </tr>`;
     });
     tbody.innerHTML = rows || `<tr><td colspan='6' style='text-align:center; padding:20px; color:var(--text-muted)'>لا يوجد عملاء بعد</td></tr>`;
@@ -4282,6 +4283,10 @@ function applyRBAC() {
         safeToggle("thCost", "add");
         safeToggle("thProfit", "add");
         safeToggle("statCardMonthSales", "add");
+        safeToggle("thOrdersDelete", "add");
+        safeToggle("thDiscountsDelete", "add");
+        safeToggle("thPledgesDelete", "add");
+        safeToggle("thVipAction", "add");
     }
     else if (role === 'viewer_plus') {
         if(tfRes) tfRes.readOnly = true;
@@ -5491,13 +5496,14 @@ function refreshDiscounts() {
         
         let usageStr = `${item.usedCount || 0}/${item.maxUses || 1}`;
         
+        let isEmp = currentUser && currentUser.role === 'employee';
         rows += `<tr>
             <td style="font-weight:bold; color:var(--primary); letter-spacing:1px; text-align:center;">${displayCode}</td>
             <td style="text-align:center;">${esc(item.customer)}</td>
             <td style="text-align:center; font-weight:bold;">${item.percentage}%</td>
             <td class="eng-num" style="font-weight:bold; text-align:center;">${usageStr}</td>
             <td style="text-align:center;">${timeBadge}</td>
-            <td style="text-align:center;">${delBtn}</td>
+            ${isEmp ? '' : `<td style="text-align:center;">${delBtn}</td>`}
         </tr>`;
     });
     tbody.innerHTML = rows || `<tr><td colspan='6' style='text-align:center; padding:20px; color:var(--text-muted)'>لا توجد أكواد خصم</td></tr>`;
@@ -8199,6 +8205,7 @@ function refreshOrders() {
             }
         }
 
+        let isEmployee = currentUser && currentUser.role === 'employee';
         let delBtn = isAdmin ? `<button class="btn btn-danger" style="padding:5px 10px; font-size:12px;" onclick="deleteOrder('${o._docId}')"><i class="fas fa-trash"></i></button>` : '—';
         
         rows += `<tr>
@@ -8208,7 +8215,7 @@ function refreshOrders() {
             <td style="color:var(--accent); font-weight:800;">${price}</td>
             <td>${notes}</td>
             <td>${confirmBtn}</td>
-            <td>${delBtn}</td>
+            ${isEmployee ? '' : `<td>${delBtn}</td>`}
         </tr>`;
     });
     
@@ -9305,7 +9312,7 @@ function refreshPledges() {
                 </div>
             </td>
             <td>${esc(p.duration)} ${p.duration !== '-' ? 'شهر' : ''}</td>
-            <td>${(currentUser && currentUser.role === 'admin') ? `<button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="deletePledge('${p.id}')"><i class="fas fa-trash"></i></button>` : '-'}</td>
+            ${(currentUser && currentUser.role === 'admin') ? `<td><button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="deletePledge('${p.id}')"><i class="fas fa-trash"></i></button></td>` : ''}
         </tr>`;
     });
     tbody.innerHTML = rows;
