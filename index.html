@@ -1792,6 +1792,43 @@
 
 </div>
 
+<div id="adminNotifModal" class="dialog-modal" style="display:none; z-index:6000;">
+    <div class="dialog-box" style="text-align:right; max-width:480px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px;">
+            <i class="fas fa-bell" style="color:var(--primary)"></i> إرسال إشعار لمستخدم
+        </h3>
+        <div class="input-group">
+            <label>اختر المستخدم</label>
+            <select id="notifTargetUser" onchange="onNotifUserChange()"></select>
+        </div>
+        <div id="notifPendingBox" style="display:none; background:var(--yellow-bg); border:1px solid var(--yellow-border); border-radius:10px; padding:14px; margin-bottom:15px;">
+            <div style="font-size:12px; color:var(--yellow-text); font-weight:800; margin-bottom:8px;"><i class="fas fa-clock"></i> إشعار معلق لم يُشاهَد بعد:</div>
+            <div id="notifPendingText" style="font-size:14px; color:var(--yellow-item-text); font-weight:600; white-space:pre-wrap;"></div>
+            <button class="btn btn-danger" style="margin-top:10px; padding:6px 14px; font-size:13px;" onclick="deleteAdminNotification()">
+                <i class="fas fa-trash"></i> حذف الإشعار
+            </button>
+        </div>
+        <div id="notifSendBox">
+            <div class="input-group">
+                <label>نص الإشعار</label>
+                <textarea id="notifMessage" style="height:100px; resize:vertical;" placeholder="اكتب الإشعار هنا..."></textarea>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn btn-primary" onclick="sendAdminNotification()"><i class="fas fa-paper-plane"></i> إرسال</button>
+                <button class="btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);" onclick="document.getElementById('adminNotifModal').style.display='none'">إلغاء</button>
+            </div>
+        </div>
+        <div id="notifSendDisabled" style="display:none;">
+            <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:13px;">
+                <i class="fas fa-lock"></i> لا يمكن إرسال إشعار جديد قبل أن يشاهد المستخدم الإشعار الحالي
+            </div>
+            <div class="dialog-actions" style="margin-top:10px;">
+                <button class="btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);" onclick="document.getElementById('adminNotifModal').style.display='none'">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="editUserModal" class="modal-overlay hidden" onclick="closeEditUserModal(event)">
     <div class="modal-content">
         <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px;"><i class="fas fa-user-edit"></i> تعديل بيانات المستخدم</h3>
@@ -2258,7 +2295,7 @@ async function deleteAllVips() {
 // ARRAY:  يُخزَّن كـ Subcollection — كل عنصر وثيقة Firestore مستقلة
 // services: مصفوفة strings بسيطة ← تُخزَّن كحقل في المستند الرئيسي (Scalar)
 // لا تحتوي على IDs فلا تصلح كـ Subcollection
-const SCALAR_KEYS = ["wallets", "settings", "invest", "services", "vipCustomers", "employeeBonus"];
+const SCALAR_KEYS = ["wallets", "settings", "invest", "services", "vipCustomers", "employeeBonus", "adminNotifications"];
 const ARRAY_KEYS  = ["purchases", "stock", "users", "activityLog",
                      "todoList", "generalNotes", "discounts", "budgetHistory", "pledges"];
 const STORE_KEYS  = [...SCALAR_KEYS, ...ARRAY_KEYS];
@@ -3780,7 +3817,8 @@ function tryAutoLogin() {
       resetSessionTimer();
       checkExpiringOnLogin();
       checkExpiredCouponsOnLogin();
-      startExpiryPeriodicCheck();
+        checkAdminNotificationOnLogin();
+        startExpiryPeriodicCheck();
     });
 }
 
@@ -4025,6 +4063,7 @@ async function attemptLogin() {
         resetSessionTimer();
         checkExpiringOnLogin();
         checkExpiredCouponsOnLogin();
+        checkAdminNotificationOnLogin();
         startExpiryPeriodicCheck();
         btn.classList.remove('loading');
         return;
@@ -4067,7 +4106,8 @@ async function attemptLogin() {
           resetSessionTimer();
           checkExpiringOnLogin();
           checkExpiredCouponsOnLogin();
-          startExpiryPeriodicCheck();
+        checkAdminNotificationOnLogin();
+        startExpiryPeriodicCheck();
         });
     } else {
         errEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> اسم المستخدم أو كلمة المرور غير صحيحة.';
@@ -4417,7 +4457,11 @@ function renderUsersTable() {
         let actions = "";
         if(u.username !== currentUser.username) {
             let banBtn = u.status === 'active' ? `<button class="btn btn-danger" style="padding:5px 10px; font-size:12px" onclick="toggleBan('${u.id}')">حظر</button>` : `<button class="btn btn-success" style="padding:5px 10px; font-size:12px; background:var(--success); color:white" onclick="toggleBan('${u.id}')">فك حظر</button>`;
-            actions = `<div style="display:flex; gap:5px; justify-content:center; flex-wrap:wrap"><button class="btn btn-primary" style="padding:5px 10px; font-size:12px" onclick="openEditUserModal('${u.id}')"><i class="fas fa-edit"></i></button>${banBtn}<button class="btn btn-danger" style="padding:5px 10px; font-size:12px" onclick="deleteUser('${u.id}')"><i class="fas fa-trash-alt"></i></button></div>`;
+            let notifs = safeJSON(store.adminNotifications, {});
+            let hasPending = !!notifs[u.id];
+            let bellStyle = hasPending ? 'background:rgba(245,158,11,0.15); color:#d97706; border:1px solid #d97706;' : 'background:rgba(99,102,241,0.1); color:var(--primary); border:1px solid var(--primary);';
+            let bellBtn = `<button class="btn" style="padding:5px 10px; font-size:12px; ${bellStyle}" onclick="openNotifModal('${u.id}')" title="${hasPending ? 'إشعار معلق' : 'إرسال إشعار'}"><i class="fas fa-bell"></i></button>`;
+            actions = `<div style="display:flex; gap:5px; justify-content:center; flex-wrap:wrap"><button class="btn btn-primary" style="padding:5px 10px; font-size:12px" onclick="openEditUserModal('${u.id}')"><i class="fas fa-edit"></i></button>${bellBtn}${banBtn}<button class="btn btn-danger" style="padding:5px 10px; font-size:12px" onclick="deleteUser('${u.id}')"><i class="fas fa-trash-alt"></i></button></div>`;
         } else { actions = "<small>الحساب الحالي</small>"; }
         let statusClass = u.status === 'active' ? 'security-status-active' : 'security-status-banned';
         let statusText = u.status === 'active' ? 'نشط' : 'محظور';
@@ -9479,6 +9523,96 @@ function adjustEmployeeBonus() {
     document.getElementById('empBonusAdjust').value = '';
     refreshEmployeeBonus();
     notify(val > 0 ? `تمت إضافة ${val} ₪ لزيادة الراتب` : `تم خصم ${Math.abs(val)} ₪ من زيادة الراتب`);
+}
+
+function openNotifModal(userId) {
+    let users = safeJSON(store.users, []);
+    let sel = document.getElementById('notifTargetUser');
+    sel.innerHTML = '';
+    users.filter(u => u.username !== currentUser.username).forEach(u => {
+        sel.innerHTML += `<option value="${u.id}">${esc(u.username)} (${getRoleName(u.role)})</option>`;
+    });
+    if (userId) sel.value = userId;
+    onNotifUserChange();
+    document.getElementById('adminNotifModal').style.display = 'flex';
+}
+
+function onNotifUserChange() {
+    let userId = document.getElementById('notifTargetUser').value;
+    let notifs = safeJSON(store.adminNotifications, {});
+    let pending = notifs[userId];
+    document.getElementById('notifMessage').value = '';
+    if (pending) {
+        document.getElementById('notifPendingText').textContent = pending.message;
+        document.getElementById('notifPendingBox').style.display = 'block';
+        document.getElementById('notifSendBox').style.display = 'none';
+        document.getElementById('notifSendDisabled').style.display = 'block';
+    } else {
+        document.getElementById('notifPendingBox').style.display = 'none';
+        document.getElementById('notifSendBox').style.display = 'block';
+        document.getElementById('notifSendDisabled').style.display = 'none';
+    }
+}
+
+function sendAdminNotification() {
+    let userId = document.getElementById('notifTargetUser').value;
+    let message = document.getElementById('notifMessage').value.trim();
+    if (!userId) return notify('اختر مستخدماً', 'error');
+    if (!message) return notify('اكتب نص الإشعار', 'error');
+    let notifs = safeJSON(store.adminNotifications, {});
+    if (notifs[userId]) return notify('يوجد إشعار معلق لهذا المستخدم لم يُشاهَد بعد', 'error');
+    let users = safeJSON(store.users, []);
+    let targetUser = users.find(u => u.id === userId);
+    notifs[userId] = { message, sentAt: Date.now(), targetUsername: targetUser ? targetUser.username : '' };
+    store.adminNotifications = JSON.stringify(notifs);
+    fbSave('adminNotifications', notifs);
+    logAction(`إرسال إشعار للمستخدم: ${targetUser?.username}`, 'general');
+    document.getElementById('adminNotifModal').style.display = 'none';
+    renderUsersTable();
+    notify('تم إرسال الإشعار بنجاح');
+}
+
+function deleteAdminNotification() {
+    let userId = document.getElementById('notifTargetUser').value;
+    if (!userId) return;
+    let notifs = safeJSON(store.adminNotifications, {});
+    delete notifs[userId];
+    store.adminNotifications = JSON.stringify(notifs);
+    fbSave('adminNotifications', notifs);
+    logAction('حذف إشعار معلق', 'general');
+    onNotifUserChange();
+    renderUsersTable();
+    notify('تم حذف الإشعار');
+}
+
+function checkAdminNotificationOnLogin() {
+    if (!currentUser) return;
+    let notifs = safeJSON(store.adminNotifications, {});
+    let myNotif = notifs[currentUser.id];
+    if (!myNotif) return;
+    let overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
+    overlay.innerHTML = `
+        <div style="background:var(--bg-card);border-radius:var(--radius-xl);padding:35px;max-width:460px;width:100%;border:1px solid var(--border-color);box-shadow:0 25px 50px rgba(0,0,0,0.3);text-align:center;animation:slideUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards;">
+            <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--primary),#a855f7);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;color:white;">
+                <i class="fas fa-bell"></i>
+            </div>
+            <h3 style="margin:0 0 8px;font-size:20px;color:var(--text-main);">إشعار من الإدارة</h3>
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px;">بتاريخ ${new Date(myNotif.sentAt).toLocaleDateString('ar-EG')}</p>
+            <div style="background:var(--bg-input);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:20px;margin-bottom:25px;text-align:right;font-size:15px;line-height:1.8;color:var(--text-main);white-space:pre-wrap;">${esc(myNotif.message)}</div>
+            <button onclick="dismissAdminNotification('${currentUser.id}', this.closest('[style*=position]'))" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;justify-content:center;">
+                <i class="fas fa-check"></i> فهمت، إغلاق
+            </button>
+        </div>`;
+    document.body.appendChild(overlay);
+}
+
+function dismissAdminNotification(userId, overlay) {
+    let notifs = safeJSON(store.adminNotifications, {});
+    delete notifs[userId];
+    store.adminNotifications = JSON.stringify(notifs);
+    fbSave('adminNotifications', notifs);
+    if (overlay) overlay.remove();
 }
 
 window.onload = init;
