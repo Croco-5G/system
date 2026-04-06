@@ -2822,6 +2822,16 @@ function initFirebase() {
                             store[k] = newStr;
                             if (!fromCache) lastServerState[k] = JSON.parse(JSON.stringify(data[k]));
                             if (k === 'employeeBonus' && !fromCache && currentUser) refreshEmployeeBonus();
+                            if (k === 'adminNotifications' && !fromCache && currentUser) {
+                                if (currentUser.role === 'admin') renderUsersTable();
+                                else {
+                                    let notifs = safeJSON(store.adminNotifications, {});
+                                    let myNotif = notifs[currentUser.id];
+                                    if (myNotif && !document.querySelector('[data-notif-overlay]')) {
+                                        checkAdminNotificationOnLogin();
+                                    }
+                                }
+                            }
                         }
                     }
                 });
@@ -9598,6 +9608,11 @@ function checkAdminNotificationOnLogin() {
     if (!myNotif) return;
     let overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);';
+    overlay.setAttribute('data-notif-overlay', '1');
+    overlay.addEventListener('click', function(e) { e.stopPropagation(); });
+    document.addEventListener('keydown', function blockEsc(e) {
+        if (e.key === 'Escape') e.stopPropagation();
+    }, true);
     overlay.innerHTML = `
         <div style="background:var(--bg-card);border-radius:var(--radius-xl);padding:35px;max-width:460px;width:100%;border:1px solid var(--border-color);box-shadow:0 25px 50px rgba(0,0,0,0.3);text-align:center;animation:slideUp 0.3s cubic-bezier(0.16,1,0.3,1) forwards;">
             <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--primary),#a855f7);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;color:white;">
