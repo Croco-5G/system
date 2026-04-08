@@ -1415,6 +1415,10 @@
     <div id="history" class="card hidden">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; flex-wrap:wrap; gap:10px">
             <h3 style="margin:0"><i class="fas fa-list-ul" style="color:var(--primary)"></i> الأرشيف المالي</h3>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px;">
+                <span id="badgeTotalSales" style="background:var(--primary); color:#fff; border-radius:20px; padding:4px 14px; font-size:13px; font-weight:700;"></span>
+                <span id="badgeTotalComps" style="background:var(--danger); color:#fff; border-radius:20px; padding:4px 14px; font-size:13px; font-weight:700;"></span>
+            </div>
         <div class="history-actions-row" style="display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 10px;">
             <button id="btnUndo" class="btn btn-primary" onclick="undoLastPurchase()"><i class="fas fa-undo"></i> تراجع</button>
             <button id="btnExportCSV" class="btn btn-success" onclick="exportHistoryCSV()" style="font-size:13px; padding:10px 16px;"><i class="fas fa-file-csv"></i> تصدير CSV</button>
@@ -5783,6 +5787,12 @@ function refreshWallets() {
 }
 function refreshHistory(){
     let p = safeJSON(store.purchases, []);
+    let totalSales = p.filter(x => !x.isComp).length;
+    let totalComps = p.filter(x => x.isComp).length;
+    let bSales = document.getElementById("badgeTotalSales");
+    let bComps = document.getElementById("badgeTotalComps");
+    if (bSales) bSales.textContent = "إجمالي المبيعات: " + totalSales;
+    if (bComps) bComps.textContent = "إجمالي التعويضات: " + totalComps;
     let isRestricted = currentUser ? (currentUser.role === 'viewer') : true;
     let v = document.getElementById("historySearch").value.toLowerCase();
     let fromDate = document.getElementById("historyFromDate") ? document.getElementById("historyFromDate").value : "";
