@@ -5140,7 +5140,7 @@ function addPurchase(){
         }
     }
     
-    let cleanName = (stItem.displayName || stItem.service);
+    let cleanName = (stItem.displayName || stItem.service).replace(/\s*\d+$/, '').trim();
     let customerVal = document.getElementById("customer").value;
     let walletVal = ""; // المحافظ محذوفة — لا حاجة للاختيار
 
