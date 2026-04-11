@@ -2149,7 +2149,8 @@ async function deleteVip(phone) {
     delete vips[phone];
     store.vipCustomers = JSON.stringify(vips);
     fbSave("vipCustomers", vips);
-    logAction(`قام الأدمن بحذف رتبة العميل صاحب الرقم ${phone}`, 'danger');
+    let _deletedVip = safeJSON(store.vipCustomers, {})[phone];
+    logAction(`قام الأدمن بحذف رتبة العميل صاحب الرقم ${phone}`, 'danger', { type: 'delete_vip', phone, name: _deletedVip?.name || '', rank: VIP_RANKS[_deletedVip?.rankIndex || 0]?.name || '', purchaseCount: _deletedVip?.count || 0 });
     refreshVip();
     notify("تم حذف العميل بنجاح");
 }
@@ -2281,7 +2282,7 @@ function saveManualVip() {
     store.vipCustomers = JSON.stringify(vips);
     fbSave("vipCustomers", vips);
     
-    logAction(`إضافة رتبة يدوية للعميل ${name} (${phone}) بعدد ${count}`, 'danger');
+    logAction(`إضافة رتبة يدوية للعميل ${name} (${phone}) بعدد ${count}`, 'danger', { type: 'add_vip', name, phone, count, assignedRank: VIP_RANKS[assignedRank]?.name || assignedRank, target });
     document.getElementById("addVipModal").style.display = "none";
     refreshVip();
     notify("تمت إضافة العميل والرتبة بنجاح");
@@ -3856,7 +3857,7 @@ function tryAutoLogin() {
     userObj.lastLogin = new Date().toLocaleString("ar-EG");
     userObj.deviceInfo = getOS();
     store.users = JSON.stringify(users); fbSave("users", users);
-    logAction("دخول تلقائي للنظام", 'general');
+    logAction("دخول تلقائي للنظام", 'general', { type: 'auto_login', username: userObj.username, role: getRoleName(userObj.role), device: userObj.deviceInfo || getOS(), loginCount: count + 1 });
 
     loginLayer.style.display = "none";
     document.body.classList.remove("locked");
@@ -4145,7 +4146,7 @@ async function attemptLogin() {
         // حفظ بيانات الدخول التلقائي وإعادة العداد لصفر
         localStorage.setItem("_autoLogin", JSON.stringify({ username: userObj.username, password: userObj.password, count: 0 }));
         
-        logAction("تسجيل دخول للنظام", 'general');
+        logAction("تسجيل دخول للنظام", 'general', { type: 'login', username: userObj.username, role: getRoleName(userObj.role), device: userObj.deviceInfo || getOS() });
 
         document.getElementById("loginLayer").style.display = "none";
         document.body.classList.remove("locked");
@@ -4788,7 +4789,7 @@ function addNewUser() {
     if(users.some(x => x.username.toLowerCase() === u.toLowerCase())) return notify("اسم المستخدم موجود", "error");
     users.push({ id: 'id_' + Date.now() + Math.random().toString(36).substr(2,5), username: u, password: p, role: r, status: "active", lastLogin: "-", deviceInfo: "-" });
     store.users = JSON.stringify(users); fbSave("users", users);
-    logAction(`إضافة مستخدم جديد: ${u} بصلاحية ${r}`, 'danger');
+    logAction(`إضافة مستخدم جديد: ${u} بصلاحية ${r}`, 'danger', { type: 'add_user', username: u, role: getRoleName(r) });
     document.getElementById("newUserName").value = ""; document.getElementById("newUserPass").value = "";
     renderUsersTable();  notify("تم إضافة المستخدم");
 }
@@ -4800,7 +4801,7 @@ function toggleBan(id) {
         let newState = users[index].status === 'active' ? 'banned' : 'active';
         users[index].status = newState;
         store.users = JSON.stringify(users); fbSave("users", users);
-        logAction(`تغيير حالة المستخدم ${users[index].username} إلى ${newState}`, 'danger');
+        logAction(`تغيير حالة المستخدم ${users[index].username} إلى ${newState}`, 'danger', { type: 'toggle_ban', username: users[index].username, oldStatus: newState === 'banned' ? 'مفعّل' : 'محظور', newStatus: newState === 'banned' ? 'محظور' : 'مفعّل', role: getRoleName(users[index].role) });
         renderUsersTable(); 
     }
 }
@@ -4811,7 +4812,7 @@ async function deleteUser(id) {
     let users = safeJSON(store.users, []);
     let index = users.findIndex(x => x.id === id);
     if(index !== -1) {
-        logAction(`حذف المستخدم: ${users[index].username}`, 'danger');
+        logAction(`حذف المستخدم: ${users[index].username}`, 'danger', { type: 'delete_user', username: users[index].username, role: getRoleName(users[index].role), lastLogin: users[index].lastLogin || '—' });
         users.splice(index, 1);
         store.users = JSON.stringify(users); fbSave("users", users);
         renderUsersTable(); 
@@ -4828,7 +4829,7 @@ function changeMyPassword() {
         currentUser.password = newP; 
         store.users = JSON.stringify(users); fbSave("users", users);
         document.getElementById("changePassInput").value = "";
-        logAction("قام بتغيير كلمة المرور الخاصة به", 'danger');
+        logAction("قام بتغيير كلمة المرور الخاصة به", 'danger', { type: 'password_change', username: currentUser.username });
          notify("تم التغيير بنجاح");
     }
 }
@@ -5002,7 +5003,7 @@ function saveProfitSettings(){
     sObj.exchangeRate = +document.getElementById("setExchangeRate").value;
     let _egpSaveEl = document.getElementById("setEgpRate"); if(_egpSaveEl && _egpSaveEl.value) sObj.egpRate = +_egpSaveEl.value;
     store.settings = JSON.stringify(sObj); fbSave("settings", sObj);
-    logAction("تعديل سعر الصرف", 'general');
+    logAction("تعديل سعر الصرف", 'general', { type: 'exchange_rate', newRate: sObj.exchangeRate });
     notify("تم الحفظ");
 }
 
@@ -5017,7 +5018,7 @@ function saveDiscountSettings(){
     sObj.validityMax = +document.getElementById("setValidityMax").value || 0;
     
     store.settings = JSON.stringify(sObj); fbSave("settings", sObj);
-    logAction("تعديل إعدادات أكواد الخصم", 'general');
+    logAction("تعديل إعدادات أكواد الخصم", 'general', { type: 'discount_settings', enabled: sObj.discountEnabled, chance: sObj.discountChance + '%', minDiscount: sObj.discountMin + '%', maxDiscount: sObj.discountMax + '%', minValidity: sObj.validityMin + ' يوم', maxValidity: sObj.validityMax + ' يوم' });
     notify("تم حفظ إعدادات الخصم");
 }
 
@@ -5028,7 +5029,7 @@ function saveVipSettings(){
     store.settings = JSON.stringify(sObj); fbSave("settings", sObj);
     let btnVipEl = document.getElementById("btnVip");
     if(btnVipEl) btnVipEl.style.display = sObj.vipEnabled ? '' : 'none';
-    logAction("تعديل إعدادات نظام الرتب", 'general');
+    logAction("تعديل إعدادات نظام الرتب", 'general', { type: 'vip_settings', enabled: sObj.vipEnabled });
     notify(sObj.vipEnabled ? "تم تفعيل نظام الرتب" : "تم إيقاف نظام الرتب");
 }
 
@@ -5043,7 +5044,8 @@ async function resetAllVips(){
     if(!ok) return;
     store.vipCustomers = "{}";
     fbSave("vipCustomers", {});
-    logAction("إعادة تعيين جميع العملاء المميزين", 'danger');
+    let _vipCount = Object.keys(safeJSON(store.vipCustomers, {})).length;
+    logAction("إعادة تعيين جميع العملاء المميزين", 'danger', { type: 'reset_all_vip', count: _vipCount });
     notify("تم مسح جميع العملاء المميزين");
     if(document.getElementById("vip") && !document.getElementById("vip").classList.contains("hidden")) refreshVip();
 }
@@ -5543,7 +5545,7 @@ function saveManualCoupon() {
     let dList = safeJSON(store.discounts, []);
     dList.unshift(tempMC);
     store.discounts = JSON.stringify(dList); fbSave("discounts", dList);
-    logAction(`إنشاء كود خصم يدوي بنسبة ${tempMC.percentage}% للعميل ${tempMC.customer}`, 'financial');
+    logAction(`إنشاء كود خصم يدوي بنسبة ${tempMC.percentage}% للعميل ${tempMC.customer}`, 'financial', { type: 'manual_coupon', code: tempMC.code, customer: tempMC.customer, percentage: tempMC.percentage + '%', validDays: tempMC.days + ' يوم', maxUses: tempMC.maxUses });
     document.getElementById("manualCouponModal").style.display = "none";
     refreshDiscounts();
     notify("تم حفظ الكود بنجاح");
@@ -5643,11 +5645,12 @@ async function deleteSingleDiscount(id) {
     if(!ok) return;
     
     let dList = safeJSON(store.discounts, []);
+    let deletedCoupon = dList.find(x => x.id === id);
     dList = dList.filter(x => x.id !== id);
     store.discounts = JSON.stringify(dList);
     fbSave("discounts", dList);
     
-    logAction(`قام الأدمن بحذف كود خصم يدوياً`, 'danger');
+    logAction(`قام الأدمن بحذف كود خصم يدوياً`, 'danger', { type: 'delete_coupon', code: deletedCoupon?.code || '', customer: deletedCoupon?.customer || '', percentage: (deletedCoupon?.percentage || 0) + '%', usedCount: deletedCoupon?.usedCount || 0, maxUses: deletedCoupon?.maxUses || 1 });
     refreshDiscounts();
     notify("تم حذف الكود");
 }
@@ -5740,7 +5743,7 @@ async function deleteExpired() {
     });
     store.purchases = JSON.stringify(p); 
     fbSave("purchases", p); 
-    logAction(`إخفاء ${expiredCount} اشتراك منتهي من قائمة التنبيهات`, 'danger'); 
+    logAction(`إخفاء ${expiredCount} اشتراك منتهي من قائمة التنبيهات`, 'danger', { type: 'hide_expired', count: expiredCount }); 
     currentPage.expiring = 1; 
     refreshAll();
     notify(`تم إخفاء ${expiredCount} اشتراك منتهي من التنبيهات`);
@@ -6278,7 +6281,7 @@ function addGeneralNote(){
     n.push({id: 'id_'+Date.now(), text:gnTextVal, date:new Date().toLocaleString("ar-EG")}); 
     store.generalNotes = JSON.stringify(n); fbSave("generalNotes", n); 
     document.getElementById("gnText").value=""; 
-    logAction("إضافة ملاحظة جديدة", 'general'); refreshGeneralNotes();  
+    logAction("إضافة ملاحظة جديدة", 'general', { type: 'add_note', text: gnTextVal }); refreshGeneralNotes();  
 }
 function refreshGeneralNotes(){ 
     let n = safeJSON(store.generalNotes, []); 
@@ -6310,7 +6313,7 @@ function addTodo(){
     l.push({id:'id_'+Date.now(), text:todoInputVal, date:new Date().toLocaleString("ar-EG")}); 
     store.todoList = JSON.stringify(l); fbSave("todoList", l); 
     document.getElementById("todoInput").value=""; 
-    logAction("إضافة مهمة جديدة", 'general'); refreshTodoList();  
+    logAction("إضافة مهمة جديدة", 'general', { type: 'add_task', text: todoInputVal }); refreshTodoList();  
 }
 function refreshTodoList(){ 
     let l=safeJSON(store.todoList, []).slice().sort((a,b)=>(b.id||'').localeCompare(a.id||'')); 
@@ -6414,7 +6417,7 @@ function addNewWallet(){
     store.wallets = JSON.stringify(w); fbSave("wallets", w); 
     loadWallets(); refreshWallets(); 
     document.getElementById("newWalletName").value=""; 
-    logAction(`إنشاء محفظة جديدة: ${n}`, 'financial');  notify("تمت"); 
+    logAction(`إنشاء محفظة جديدة: ${n}`, 'financial', { type: 'create_wallet', name: n, currency: c });  notify("تمت"); 
 }
 
 function fillWalletEditData() {
@@ -6451,7 +6454,7 @@ function updateWalletData(){
         p.forEach(x => { if(x.wallet === oldName) x.wallet = newName; }); 
         store.purchases = JSON.stringify(p); fbSave("purchases", p);
         
-        logAction(`تعديل محفظة: تم تغيير الاسم من ${oldName} إلى ${newName}`, 'financial');
+        logAction(`تعديل محفظة: تم تغيير الاسم من ${oldName} إلى ${newName}`, 'financial', { type: 'rename_wallet', oldName, newName, oldCurrency: w[newName]?.cur || '', newCurrency: newCur, newStatus: newStatus ? 'نشطة' : 'معطلة' });
     }
 
     w[newName].cur = newCur;
@@ -6774,12 +6777,12 @@ async function deleteWallet(){
         localStorage.setItem('demo_wallets', JSON.stringify(w));
     }
 
-    logAction(`حذف محفظة ${targetWallet}`, 'danger'); 
+    logAction(`حذف محفظة ${targetWallet}`, 'danger', { type: 'delete_wallet', wallet: targetWallet, lastBalance: fix(w[targetWallet]?.bal || 0), currency: w[targetWallet]?.cur || '' }); 
     loadWallets(); refreshWallets(); refreshInvestment(); notify("تم الحذف"); 
     document.getElementById("renameWalletInput").value = "";
 }
 
-function exportData(){ if(currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') return; let exportObj = {}; ["users","wallets","purchases","invest","settings","generalNotes","todoList","activityLog","stock","services","discounts","vipCustomers","budgetHistory"].forEach(k=>{ if(store[k]) exportObj[k]=store[k]; }); let a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(exportObj)],{type:"application/json"})); a.download=`MegaBackup_${new Date().toLocaleDateString()}.json`; a.click(); logAction("تصدير نسخة احتياطية", 'general'); }
+function exportData(){ if(currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') return; let exportObj = {}; ["users","wallets","purchases","invest","settings","generalNotes","todoList","activityLog","stock","services","discounts","vipCustomers","budgetHistory"].forEach(k=>{ if(store[k]) exportObj[k]=store[k]; }); let a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(exportObj)],{type:"application/json"})); a.download=`MegaBackup_${new Date().toLocaleDateString()}.json`; a.click(); logAction("تصدير نسخة احتياطية", 'general', { type: 'export_backup', exportedAt: new Date().toLocaleString('ar-EG'), records: Object.keys(exportObj).join(', ') }); }
 function importData(){ 
     if(currentUser.role !== 'admin') return notify("للأدمن فقط","error");
     let f=document.getElementById("importFile").files[0];
@@ -6852,7 +6855,7 @@ function importData(){
             }
             
             notify("تم الاستعادة بنجاح"); 
-            logAction("استيراد بيانات من نسخة احتياطية", 'danger'); 
+            logAction("استيراد بيانات من نسخة احتياطية", 'danger', { type: 'import_backup', fileName: f?.name || 'unknown', importedAt: new Date().toLocaleString('ar-EG') }); 
             setTimeout(() => location.reload(), 1500);
         }catch(err){ 
             console.error("importData error:", err);
@@ -7200,7 +7203,7 @@ async function saveCategoryModal() {
             notify("تمت إضافة القسم");
         }
         document.getElementById("categoryModal").style.display = "none";
-        logAction(`${id ? 'تعديل' : 'إضافة'} قسم: ${name}`, 'general');
+        logAction(`${id ? 'تعديل' : 'إضافة'} قسم: ${name}`, 'general', { type: id ? 'edit_category' : 'add_category', name, isEdit: !!id });
     } catch(e) { notify("خطأ: " + e.message, "error"); }
 }
 
@@ -7295,7 +7298,7 @@ async function removeBuyerFromStock(stockId, buyerIdx) {
 
     store.stock = JSON.stringify(stock);
     fbSave("stock", stock);
-    logAction(`حذف عميل من بروفايل: ${stock[idx].displayName || stock[idx].service}`, 'danger');
+    logAction(`حذف عميل من بروفايل: ${stock[idx].displayName || stock[idx].service}`, 'danger', { type: 'remove_buyer', stockName: stock[idx].displayName || stock[idx].service, removedBuyer: stock[idx].buyers[buyerIdx] || '', remainingProfiles: stock[idx].soldProfiles, totalProfiles: stock[idx].totalProfiles });
     notify("تم حذف العميل وإرجاع المقعد");
 
     let hasB = stock[idx].buyers && stock[idx].buyers.length > 0;
@@ -7450,7 +7453,7 @@ function updateStockNote() {
     stock[index].purpose = document.getElementById("stPurpose").value || 'sale';
     
     store.stock = JSON.stringify(stock); fbSave("stock", stock);
-    logAction(`تحديث ملاحظات/غرض المخزون: ${stock[index].displayName || stock[index].service}`, 'general');
+    logAction(`تحديث ملاحظات/غرض المخزون: ${stock[index].displayName || stock[index].service}`, 'general', { type: 'update_stock_note', stockName: stock[index].displayName || stock[index].service, notes: stock[index].notes || '', purpose: stock[index].purpose === 'test' ? 'تجريبي' : 'للبيع' });
     
     document.getElementById("stockModal").classList.add("hidden");
     refreshStock();
@@ -7498,9 +7501,10 @@ async function deleteActiveStock(id) {
     if(!ok) return;
     
     let stock = safeJSON(store.stock, []);
+    let deletedActiveItem = stock.find(x => x.id === id);
     stock = stock.filter(x => x.id !== id);
     store.stock = JSON.stringify(stock); fbSave("stock", stock);
-    logAction("حذف اشتراك منتهي من المخزون المتاح", 'danger');
+    logAction("حذف اشتراك منتهي من المخزون المتاح", 'danger', { type: 'delete_expired_stock', stockName: deletedActiveItem?.displayName || deletedActiveItem?.service || '', vendor: deletedActiveItem?.vendor || '', addedDate: deletedActiveItem?.date || '' });
     refreshStock(); loadPurchaseStock(); notify("تم الحذف بنجاح");
 }
 async function moveTestToArchive(id) {
@@ -7515,7 +7519,7 @@ async function moveTestToArchive(id) {
         let ndd = nd.getDate().toString().padStart(2,'0');
         stock[idx].soldDate = `${nd.getFullYear()}-${nmm}-${ndd}`;
         store.stock = JSON.stringify(stock); fbSave("stock", stock);
-        logAction(`نقل اشتراك تجريبي إلى الأرشيف: ${stock[idx].displayName || stock[idx].service}`, 'danger');
+        logAction(`نقل اشتراك تجريبي إلى الأرشيف: ${stock[idx].displayName || stock[idx].service}`, 'danger', { type: 'archive_test_stock', stockName: stock[idx].displayName || stock[idx].service, vendor: stock[idx].vendor || '', addedDate: stock[idx].date || '' });
         refreshStock(); loadPurchaseStock(); notify("تم نقل الاشتراك للأرشيف بنجاح");
     }
 }
@@ -7532,7 +7536,7 @@ async function moveToSold(id) {
         let ndd = nd.getDate().toString().padStart(2,'0');
         stock[idx].soldDate = `${nd.getFullYear()}-${nmm}-${ndd}`;
         store.stock = JSON.stringify(stock); fbSave("stock", stock);
-        logAction("نقل اشتراك منتهي جزئياً إلى الأرشيف", 'danger');
+        logAction("نقل اشتراك منتهي جزئياً إلى الأرشيف", 'danger', { type: 'archive_partial_stock', stockName: stock[idx].displayName || stock[idx].service, soldProfiles: stock[idx].soldProfiles, totalProfiles: stock[idx].totalProfiles, vendor: stock[idx].vendor || '' });
         refreshStock(); loadPurchaseStock(); notify("تم النقل بنجاح");
     }
 }
@@ -7741,9 +7745,10 @@ async function deleteSoldStock(id) {
     if(!ok) return;
     
     let stock = safeJSON(store.stock, []);
+    let deletedSoldItem = stock.find(x => x.id === id);
     stock = stock.filter(x => x.id !== id);
     store.stock = JSON.stringify(stock); fbSave("stock", stock);
-    logAction("حذف سجل مباع من المخزون", 'danger');
+    logAction("حذف سجل مباع من المخزون", 'danger', { type: 'delete_sold_stock', stockName: deletedSoldItem?.displayName || deletedSoldItem?.service || '', soldDate: deletedSoldItem?.soldDate || '', buyers: deletedSoldItem?.buyers?.join(' | ') || '' });
     refreshStock();  notify("تم الحذف");
 }
 
@@ -7771,7 +7776,7 @@ async function sellStock(id) {
     stock[index] = item;
     store.stock = JSON.stringify(stock); fbSave("stock", stock);
     
-    logAction(`تم بيع اشتراك من المخزون يدوياً: ${item.displayName || item.service}`, 'financial');
+    logAction(`تم بيع اشتراك من المخزون يدوياً: ${item.displayName || item.service}`, 'financial', { type: 'manual_sell', stockName: item.displayName || item.service, buyer: buyerInfo, soldDate: item.soldDate, vendor: item.vendor || '', totalProfiles: item.totalProfiles });
     refreshStock(); loadPurchaseStock();  notify("تم نقل الاشتراك إلى المباع");
 }
 
@@ -8014,7 +8019,7 @@ async function saveServiceModal() {
                 fbSave("services", list);
             }
             await dbOrder.collection("services").doc(editDocId).update(svcObj);
-            logAction(`تعديل خدمة: ${name}`, 'general');
+            logAction(`تعديل خدمة: ${name}`, 'general', { type: 'edit_service', name, branches: svcObj.hasBranches ? svcObj.branches?.map(b => `${b.name}: ${b.price}`).join(' | ') : `${svcObj.price}` });
             notify("تم تحديث الخدمة بنجاح");
         } catch(e) { console.error(e); notify("خطأ أثناء الحفظ: " + e.message, "error"); }
     } else {
@@ -8237,7 +8242,7 @@ async function saveNewService() {
             store.services = JSON.stringify(list);
             fbSave("services", list);
         }
-        logAction(`إضافة خدمة جديدة: ${name}`, 'general');
+        logAction(`إضافة خدمة جديدة: ${name}`, 'general', { type: 'add_service', name, branches: svcObj.hasBranches ? svcObj.branches?.map(b => `${b.name}: ${b.price}`).join(' | ') : `${svcObj.price}` });
         notify("تمت إضافة الخدمة بنجاح");
     } catch(e) {
         console.error(e);
@@ -8810,7 +8815,8 @@ async function deleteOrder(docId) {
         }
 
         await dbOrder.collection("orders").doc(docId).delete();
-        logAction("حذف طلب وارد", 'danger');
+        let _delOrder = ordersCache.find(o => o._docId === docId);
+        logAction("حذف طلب وارد", 'danger', { type: 'delete_order', customerName: _delOrder?.customerName || '', phone: _delOrder?.phone || '', serviceName: _delOrder?.serviceName || '', status: _delOrder?.status || '' });
         notify("تم حذف الطلب");
     } catch(e) {
         notify("خطأ: " + e.message, "error");
@@ -9342,7 +9348,7 @@ async function resetBudgetMonth() {
     });
     store.budgetHistory = JSON.stringify(history);
     fbSave('budgetHistory', history);
-    logAction('إعادة تعيين مسار الميزانية للشهر الحالي', 'danger');
+    logAction('إعادة تعيين مسار الميزانية للشهر الحالي', 'danger', { type: 'reset_budget', balanceUSD: fix(currentUSD), resetDate: today });
     notify("تم إعادة تعيين مسار الشهر بنجاح");
     renderBudgetChart();
 }
@@ -9628,7 +9634,7 @@ function sendAdminNotification() {
     notifs[userId] = { message, sentAt: Date.now(), targetUsername: targetUser ? targetUser.username : '' };
     store.adminNotifications = JSON.stringify(notifs);
     fbSave('adminNotifications', notifs);
-    logAction(`إرسال إشعار للمستخدم: ${targetUser?.username}`, 'general');
+    logAction(`إرسال إشعار للمستخدم: ${targetUser?.username}`, 'general', { type: 'send_notification', targetUsername: targetUser?.username || userId, message: message, sentAt: new Date().toLocaleString('ar-EG') });
     document.getElementById('adminNotifModal').style.display = 'none';
     renderUsersTable();
     notify('تم إرسال الإشعار بنجاح');
@@ -9638,10 +9644,13 @@ function deleteAdminNotification() {
     let userId = document.getElementById('notifTargetUser').value;
     if (!userId) return;
     let notifs = safeJSON(store.adminNotifications, {});
+    let deletedNotif = notifs[userId];
+    let users = safeJSON(store.users, []);
+    let targetUser = users.find(u => u.id === userId);
     delete notifs[userId];
     store.adminNotifications = JSON.stringify(notifs);
     fbSave('adminNotifications', notifs);
-    logAction('حذف إشعار معلق', 'general');
+    logAction('حذف إشعار معلق', 'general', { type: 'delete_notification', targetUsername: targetUser?.username || userId, message: deletedNotif?.message || '', sentAt: deletedNotif?.sentAt ? new Date(deletedNotif.sentAt).toLocaleString('ar-EG') : '' });
     onNotifUserChange();
     renderUsersTable();
     notify('تم حذف الإشعار');
