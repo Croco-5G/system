@@ -3401,7 +3401,6 @@ function renderBudgetChart() {
     }
 
     // ─── بناء النقاط ─────────────────────────────────────────────
-    const MAX_RAW_POINTS = 200;
     let chartPoints = [];
     let eventsByDay = {};
 
@@ -3416,29 +3415,13 @@ function renderBudgetChart() {
     }
     chartPoints.push({ x: String(filterStartDay), y: parseFloat(startBalance.toFixed(2)), isStart: true });
 
-    sortedEvents.forEach(ev => {
+    // نستخدم جميع الأحداث دون تجميع لضمان ظهور كل العمليات بدقة
+    let usedEvents = sortedEvents;
+    usedEvents.forEach(ev => {
         let day = parseInt(ev.date.split('-')[2]);
         if(!eventsByDay[day]) eventsByDay[day] = [];
         eventsByDay[day].push(ev);
     });
-
-    // إذا كانت الأحداث كثيرة جداً، نجمّع آخر حدث بكل ساعة فقط
-    let usedEvents = sortedEvents;
-    if(sortedEvents.length > MAX_RAW_POINTS) {
-        let aggregated = {};
-        sortedEvents.forEach(ev => {
-            let h = new Date(ev.ts).getHours();
-            let key = `${ev.date}_${h}`;
-            aggregated[key] = ev;
-        });
-        usedEvents = Object.values(aggregated).sort((a,b) => a.ts - b.ts);
-        eventsByDay = {};
-        usedEvents.forEach(ev => {
-            let day = parseInt(ev.date.split('-')[2]);
-            if(!eventsByDay[day]) eventsByDay[day] = [];
-            eventsByDay[day].push(ev);
-        });
-    }
 
     // تحديد آخر يوم نرسمه
     let lastDayOfMonth;
