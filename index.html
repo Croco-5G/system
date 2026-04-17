@@ -1006,6 +1006,40 @@
         </div>
     </div>
 </div>
+<div id="editHistoryModal" class="modal-overlay hidden" onclick="if(event.target.id==='editHistoryModal') closeEditHistoryModal()" style="z-index:6600;">
+    <div class="modal-content" style="max-width:450px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px;">
+            <i class="fas fa-edit" style="color:var(--warning)"></i> تعديل السجل المالي
+        </h3>
+        <input type="hidden" id="eh_id">
+        <input type="hidden" id="eh_currency">
+        <div class="input-group">
+            <label>الخدمة</label>
+            <input id="eh_sub" placeholder="اسم الخدمة">
+        </div>
+        <div class="input-group">
+            <label>اسم العميل</label>
+            <input id="eh_customer" placeholder="اسم العميل">
+        </div>
+        <div class="input-group">
+            <label>رقم العميل</label>
+            <input id="eh_phone" placeholder="رقم العميل" dir="ltr" style="text-align:right;">
+        </div>
+        <div class="input-group">
+            <label>المبلغ المدفوع (نفس العملة الأصلية)</label>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <input type="number" id="eh_paid" placeholder="المبلغ" step="0.01" style="flex:1;">
+                <span id="eh_currency_label" style="font-weight:bold; color:var(--primary); font-size:16px;">₪</span>
+            </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+            <button class="btn btn-primary" onclick="saveHistoryEdit()"><i class="fas fa-save"></i> حفظ التعديلات</button>
+            <button class="btn btn-danger" onclick="deleteHistoryRecord()"><i class="fas fa-trash"></i> حذف الاشتراك</button>
+            <button class="btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);" onclick="closeEditHistoryModal()">خروج</button>
+        </div>
+    </div>
+</div>
+
 <div class="sidebar" id="mySidebar">
     <div class="brand"><i class="fas fa-rocket"></i> MEGA STORE</div>
     
@@ -1424,7 +1458,6 @@
                 <span id="badgeTotalComps" style="background:rgba(239,68,68,0.15); color:var(--danger); border-radius:20px; padding:4px 14px; font-size:13px; font-weight:700;"></span>
             </div>
         <div class="history-actions-row" style="display:flex; gap:8px; flex-wrap: wrap; margin-bottom: 10px;">
-            <button id="btnUndo" class="btn btn-primary" onclick="undoLastPurchase()"><i class="fas fa-undo"></i> تراجع</button>
             <button id="btnExportCSV" class="btn btn-success" onclick="exportHistoryCSV()" style="font-size:13px; padding:10px 16px;"><i class="fas fa-file-csv"></i> تصدير CSV</button>
             <button id="btnClearHistory" class="btn btn-danger" onclick="clearHistory()"><i class="fas fa-trash-alt"></i> مسح السجلات</button>
         </div>
@@ -5872,11 +5905,119 @@ function refreshHistory(){
         let durStr = (parsedDur === 0) ? "بدون مدة" : (isNaN(parsedDur) ? "-" : parsedDur + " شهر");
         let durBadge = (parsedDur === 0) ? "badge-success" : "badge-warning";
         
-        rows+=`<tr><td>${item.date}</td><td style="${colorStyle}"><b>${esc(item.customer)}</b></td><td style="${colorStyle}">${phoneD}</td><td>${subD}</td><td><span class="badge ${durBadge}">${durStr}</span></td><td style="color:var(--success)">${paidD}</td>${isEmployeeRole ? '' : `<td style="color:var(--danger)">${costD}</td><td>${profitD}</td>`}</tr>`;
+        rows+=`<tr onclick="openEditHistoryModal('${item.id}')" style="cursor:pointer;" title="انقر لتعديل هذا السجل"><td>${item.date}</td><td style="${colorStyle}"><b>${esc(item.customer)}</b></td><td style="${colorStyle}">${phoneD}</td><td>${subD}</td><td><span class="badge ${durBadge}">${durStr}</span></td><td style="color:var(--success)">${paidD}</td>${isEmployeeRole ? '' : `<td style="color:var(--danger)">${costD}</td><td>${profitD}</td>`}</tr>`;
     });
     document.getElementById("historyBody").innerHTML = rows || `<tr><td colspan='8' style='text-align:center; padding:20px; color:var(--text-muted)'>لا توجد بيانات</td></tr>`;
 }
 function filterHistory() { refreshHistory(); }
+
+function openEditHistoryModal(id) {
+    if(currentUser && currentUser.role === 'viewer') return notify("ليس لديك صلاحية", "error");
+    let purchases = safeJSON(store.purchases, []);
+    let item = purchases.find(x => x.id === id);
+    if(!item) return;
+    
+    let paidVal = parseFloat((item.paid || '0').replace(/[^0-9.\-]/g, '')) || 0;
+    let paidCur = (item.paid || '').replace(/[0-9.\-\s]/g, '').trim() || '₪';
+    
+    document.getElementById("eh_id").value = item.id;
+    document.getElementById("eh_sub").value = item.sub || "";
+    document.getElementById("eh_customer").value = item.customer || "";
+    document.getElementById("eh_phone").value = item.phone || "";
+    document.getElementById("eh_paid").value = paidVal;
+    document.getElementById("eh_currency").value = paidCur;
+    document.getElementById("eh_currency_label").innerText = paidCur;
+    
+    document.getElementById("editHistoryModal").classList.remove("hidden");
+}
+
+function closeEditHistoryModal() {
+    document.getElementById("editHistoryModal").classList.add("hidden");
+}
+
+async function saveHistoryEdit() {
+    let id = document.getElementById("eh_id").value;
+    let newSub = document.getElementById("eh_sub").value.trim();
+    let newCustomer = document.getElementById("eh_customer").value.trim();
+    let newPhone = document.getElementById("eh_phone").value.trim();
+    let newPaid = parseFloat(document.getElementById("eh_paid").value);
+    let currency = document.getElementById("eh_currency").value;
+    
+    if(isNaN(newPaid) || newPaid < 0) return notify("يرجى إدخال مبلغ صحيح", "error");
+    if(!newSub || !newCustomer) return notify("الخدمة واسم العميل حقول مطلوبة", "error");
+
+    let purchases = safeJSON(store.purchases, []);
+    let idx = purchases.findIndex(x => x.id === id);
+    if(idx === -1) return notify("السجل غير موجود", "error");
+    
+    let oldPaidVal = parseFloat((purchases[idx].paid || '0').replace(/[^0-9.\-]/g, '')) || 0;
+    let diff = newPaid - oldPaidVal;
+    
+    purchases[idx].sub = newSub;
+    purchases[idx].customer = newCustomer;
+    purchases[idx].phone = newPhone;
+    purchases[idx].paid = newPaid + currency;
+    
+    store.purchases = JSON.stringify(purchases);
+    fbSave("purchases", purchases);
+    
+    // تحديث مسار الميزانية والأرباح
+    if(diff !== 0) {
+        let bHistory = safeJSON(store.budgetHistory, []);
+        let bIdx = bHistory.findIndex(x => x.details && x.details.purchaseId === id);
+        if(bIdx !== -1) {
+            let settings = safeJSON(store.settings, {});
+            let rate = settings.exchangeRate && settings.exchangeRate > 0 ? settings.exchangeRate : 3.5;
+            let diffUSD = currency === '$' ? diff : diff / rate;
+            
+            bHistory[bIdx].deltaUSD = (bHistory[bIdx].deltaUSD || 0) + diffUSD;
+            bHistory[bIdx].details.paid = purchases[idx].paid;
+            bHistory[bIdx].details.sub = newSub;
+            bHistory[bIdx].details.customer = newCustomer;
+            bHistory[bIdx].label = `شراء ${newSub} للعميل ${newCustomer}: ${purchases[idx].paid}`;
+            
+            store.budgetHistory = JSON.stringify(bHistory);
+            fbSave("budgetHistory", bHistory);
+        }
+    } else {
+        let bHistory = safeJSON(store.budgetHistory, []);
+        let bIdx = bHistory.findIndex(x => x.details && x.details.purchaseId === id);
+        if(bIdx !== -1) {
+            bHistory[bIdx].details.sub = newSub;
+            bHistory[bIdx].details.customer = newCustomer;
+            bHistory[bIdx].label = `شراء ${newSub} للعميل ${newCustomer}: ${purchases[idx].paid}`;
+            store.budgetHistory = JSON.stringify(bHistory);
+            fbSave("budgetHistory", bHistory);
+        }
+    }
+
+    logAction(`تعديل سجل مالي: ${newSub} للعميل ${newCustomer}`, 'financial', { type: 'edit_history', id: id });
+    refreshAll();
+    closeEditHistoryModal();
+    notify("تم حفظ التعديلات بنجاح");
+}
+
+async function deleteHistoryRecord() {
+    let id = document.getElementById("eh_id").value;
+    let ok = await showConfirm(
+        "إلغاء وحذف الاشتراك",
+        "أنت على وشك حذف هذا الاشتراك نهائياً.\nسيتم إزالته من هذا السجل ولن يظهر في تنبيهات انتهاء الصلاحية.\n(ملاحظة: هذا الحذف لن يؤثر على مسار الميزانية أو الأرباح).\n\nهل أنت متأكد؟",
+        "نعم، احذف", "إلغاء",
+        '<i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i>'
+    );
+    if(!ok) return;
+
+    let purchases = safeJSON(store.purchases, []);
+    purchases = purchases.filter(x => x.id !== id);
+    
+    store.purchases = JSON.stringify(purchases);
+    fbSave("purchases", purchases);
+    
+    logAction(`إلغاء وحذف اشتراك من السجل المالي`, 'danger', { type: 'delete_history', id: id });
+    refreshAll();
+    closeEditHistoryModal();
+    notify("تم حذف الاشتراك بنجاح");
+}
 
 function refreshInvestment(){
     if (!document.getElementById("investBox")) return;
