@@ -5999,14 +5999,25 @@ async function saveHistoryEdit() {
 
 async function deleteHistoryRecord() {
     let id = document.getElementById("eh_id").value;
+    
+    // 1. إغلاق نافذة التعديل أولاً لتظهر نافذة التأكيد بوضوح
+    closeEditHistoryModal();
+
+    // 2. إظهار نافذة التأكيد
     let ok = await showConfirm(
         "إلغاء وحذف الاشتراك",
-        "أنت على وشك حذف هذا الاشتراك نهائياً.\nسيتم إزالته من هذا السجل ولن يظهر في تنبيهات انتهاء الصلاحية.\n(ملاحظة: هذا الحذف لن يؤثر على مسار الميزانية أو الأرباح).\n\nهل أنت متأكد؟",
+        "أنت على وشك حذف هذا الاشتراك نهائياً.\nسيتم إزالته من السجل ولن يظهر في التنبيهات.\n(ملاحظة: لن يتأثر مسار الميزانية).\n\nهل أنت متأكد؟",
         "نعم، احذف", "إلغاء",
         '<i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i>'
     );
-    if(!ok) return;
 
+    // 3. إذا تراجع المستخدم، نعيد فتح نافذة التعديل له
+    if(!ok) {
+        openEditHistoryModal(id);
+        return;
+    }
+
+    // 4. تنفيذ عملية الحذف الفعلية
     let purchases = safeJSON(store.purchases, []);
     purchases = purchases.filter(x => x.id !== id);
     
@@ -6015,7 +6026,6 @@ async function deleteHistoryRecord() {
     
     logAction(`إلغاء وحذف اشتراك من السجل المالي`, 'danger', { type: 'delete_history', id: id });
     refreshAll();
-    closeEditHistoryModal();
     notify("تم حذف الاشتراك بنجاح");
 }
 
