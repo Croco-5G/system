@@ -5713,7 +5713,7 @@ function refreshExpiring() {
         let status = daysLeft <= 0 ? 'منتهي' : 'يوم';
         let cleanPhone = (item.phone||'').replace(/\D/g, '');
         
-        let expiryPhrase = daysLeft <= 0 ? 'منتهي' : 'متبقي على إنتهائه يوم واحد';
+        let expiryPhrase = 'قرّب ينتهي';
         let waMsg = `${greeting} ${item.customer}\nحابين نذكرك ان اشتراكك في ${item.sub} ${expiryPhrase}\nهل عجبتك الخدمة و حابب تجدد اشتراكك مرة تانية؟`;
         
         let wa = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMsg)}`;
