@@ -2286,6 +2286,13 @@ function _cdParseMoney(str) {
     return { num, cur };
 }
 
+// هل المبلغ المدفوع في العملية صفر؟ (تُستثنى من عدّ المبيعات)
+function _paidIsZero(item) {
+    if (!item) return true;
+    let n = parseFloat(String(item.paid || '0').replace(/[^0-9.\-]/g, '')) || 0;
+    return n <= 0;
+}
+
 function openCustomerDetails(phone, name) {
     let purchases = safeJSON(store.purchases, []);
     let settings  = safeJSON(store.settings, {});
@@ -6064,7 +6071,7 @@ function refreshAll(){
     let ndd = now.getDate().toString().padStart(2,'0');
     let todayStr = `${now.getFullYear()}-${nmm}-${ndd}`;
     let isRestricted = currentUser ? (currentUser.role === 'viewer') : true;
-    document.getElementById("statSales").textContent = p.filter(x => x.date && x.date.includes(todayStr) && !x.isComp).length;
+    document.getElementById("statSales").textContent = p.filter(x => x.date && x.date.includes(todayStr) && !x.isComp && !x.pledgeId && !x.isPledge && !_paidIsZero(x)).length;
     if(isRestricted) {
         document.getElementById("statDollar").textContent = "****";
         document.getElementById("statShekel").textContent = "****";
@@ -6274,11 +6281,11 @@ function refreshWallets(_pPre, _bPre) {
         let itemDate = new Date(item.date);
         let isThisMonth = itemDate.getMonth() === curMonth && itemDate.getFullYear() === curYear;
 
-        // مبيعات اليوم (عدد)
-        if (item.date === today && !item.isComp && !item.pledgeId && !item.isPledge) todayCount++;
+        // مبيعات اليوم (عدد) — تُستثنى التعويضات والرهن والمبلغ الصفري
+        if (item.date === today && !item.isComp && !item.pledgeId && !item.isPledge && !_paidIsZero(item)) todayCount++;
 
-        // مبيعات الشهر (عدد المبيعات معدا الرهن والتعويض)
-        if (isThisMonth && !item.isComp && !item.pledgeId && !item.isPledge) {
+        // مبيعات الشهر (عدد المبيعات معدا الرهن والتعويض والمبلغ الصفري)
+        if (isThisMonth && !item.isComp && !item.pledgeId && !item.isPledge && !_paidIsZero(item)) {
             mSales++;
         }
     });
@@ -6866,7 +6873,7 @@ function renderFilteredSalesChart() {
             let dayStr = String(d).padStart(2,'0');
             let fullDate = viewMonthStr + '-' + dayStr;
             labels.push(dayStr + '/' + vmStr);
-            let cnt = purchases.filter(p => p.date === fullDate && !p.isComp).length;
+            let cnt = purchases.filter(p => p.date === fullDate && !p.isComp && !p.pledgeId && !p.isPledge && !_paidIsZero(p)).length;
             data.push(cnt);
         }
     } else {
@@ -6879,7 +6886,7 @@ function renderFilteredSalesChart() {
             labels.push(lbl); months[lbl] = 0;
         }
         purchases.forEach(p => {
-            if(p.date && !p.isComp) {
+            if(p.date && !p.isComp && !p.pledgeId && !p.isPledge && !_paidIsZero(p)) {
                 let parts = p.date.split('-');
                 if(parts.length===3) { let k = parts[1]+'/'+parts[0]; if(months[k]!==undefined) months[k]++; }
             }
@@ -6950,6 +6957,8 @@ function _svcDemandItemsInRange() {
 
     return purchases.filter(p => {
         if (!p || p.isComp || !p.date) return false; // تجاهل التعويضات
+        if (p.pledgeId || p.isPledge) return false;   // تجاهل الرهن
+        if (_paidIsZero(p)) return false;             // تجاهل المبلغ الصفري
         if (!viewMonthStr || !p.date.startsWith(viewMonthStr)) return false;
         // في الشهر الحالي مع فلتر أيام نشط: نحصر ضمن النطاق
         if (isViewingCurrentMonth && analyticsFilter.active) {
