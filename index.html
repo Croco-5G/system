@@ -10681,6 +10681,132 @@ function dismissAdminNotification(userId, overlay) {
 }
 
 window.onload = init;
+
+/* ════════════════════════════════════════════════════════════════
+   نظام إخفاء الأرقام المالية (زر العين العائم)
+   - زر عين ثابت دائماً على الشاشة (أسفل اليسار)
+   - افتراضياً عند كل دخول: الأرقام المالية مخفية ويظهر بدلها ****
+   - يشمل تلقائياً أي رقم مالي (يحمل رمز عملة ₪ / $ / £) في أي مكان:
+     السجل المالي، التكلفة، الدفع، المحافظ، تفاصيل العميل (أيقونة العين)،
+     الأرباح، الميزانية... ويستمر بالعمل مع أي محتوى يُعاد رسمه لاحقاً.
+   - لا يُخفي الأرقام غير المالية (عدد البروفايلات، الأيام المتبقية،
+     أرقام الجوال، التواريخ، نِسَب الخصم) لأنها بلا رمز عملة.
+   ════════════════════════════════════════════════════════════════ */
+(function () {
+    let _finPrivacy  = true;   // مغلق (إخفاء) افتراضياً في كل مرة يُفتح فيها الموقع
+    let _finApplying = false;  // لمنع تكرار المعالجة أثناء تمريرة الإخفاء/الإظهار الشاملة
+
+    const _FIN_MASK = '****';
+    const _CUR_RE   = /[₪$£]/;                 // يُعتبر الرقم مالياً إذا رافقه رمز عملة
+    const _NUM_RE   = /[+-]?\d[\d.,]*/g;       // أي قيمة رقمية (مع فاصلة/نقطة وإشارة)
+    const _SKIP_TAGS = { SCRIPT:1, STYLE:1, OPTION:1, SELECT:1, INPUT:1, TEXTAREA:1, NOSCRIPT:1 };
+
+    function _eligible(node) {
+        const p = node.parentNode;
+        if (!p || p.nodeType !== 1) return false;
+        if (_SKIP_TAGS[p.nodeName]) return false;                 // لا نلمس الحقول والقوائم
+        if (p.closest && p.closest('#finPrivacyToggle')) return false; // ولا الزر نفسه
+        return true;
+    }
+
+    function _maskNode(node) {
+        if (!_eligible(node)) return;
+        const t = node.nodeValue;
+        // إن كان مُخفى أصلاً ولم يتغيّر نصّه عمّا أخفيناه → لا شيء (يمنع أي تكرار)
+        if (node.__finMasked && t === node.__finMaskedValue) return;
+        // لا يحتوي على رقم مالي (لا رمز عملة أو لا أرقام) → نظّف أي علامات قديمة واخرج
+        if (!t || !_CUR_RE.test(t) || !/\d/.test(t)) {
+            node.__finMasked = false; node.__finOrig = null; node.__finMaskedValue = null;
+            return;
+        }
+        const masked = t.replace(_NUM_RE, _FIN_MASK);
+        node.__finOrig        = t;
+        node.__finMaskedValue = masked;
+        node.__finMasked      = true;
+        node.nodeValue        = masked;
+    }
+
+    function _unmaskNode(node) {
+        if (node.__finMasked && node.__finOrig != null) node.nodeValue = node.__finOrig;
+        node.__finMasked = false; node.__finOrig = null; node.__finMaskedValue = null;
+    }
+
+    function _walk(root, cb) {
+        if (root.nodeType === 3) { cb(root); return; }      // عقدة نص مباشرة
+        if (root.nodeType !== 1) return;
+        const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+        let n; while ((n = tw.nextNode())) cb(n);
+    }
+
+    function _applyAll() {
+        _finApplying = true;
+        _walk(document.body, _finPrivacy ? _maskNode : _unmaskNode);
+        _finApplying = false;
+    }
+
+    // مراقب يُخفي أي رقم مالي يُضاف أو يتغيّر بعد إعادة الرسم (جداول، نوافذ، إحصائيات...)
+    const _obs = new MutationObserver(function (muts) {
+        if (!_finPrivacy || _finApplying) return;
+        _finApplying = true;
+        for (const m of muts) {
+            if (m.type === 'characterData') _maskNode(m.target);
+            else if (m.addedNodes) m.addedNodes.forEach(function (nd) { _walk(nd, _maskNode); });
+        }
+        _finApplying = false;
+    });
+
+    function _updateBtn(btn) {
+        if (!btn) return;
+        const hidden = _finPrivacy;
+        btn.classList.toggle('fin-shown', !hidden);
+        btn.innerHTML = '<i class="fas fa-' + (hidden ? 'eye-slash' : 'eye') + '"></i><span class="fin-dot"></span>';
+        btn.title = hidden ? 'الأرقام المالية مخفية — اضغط للإظهار'
+                           : 'الأرقام المالية ظاهرة — اضغط للإخفاء';
+        btn.setAttribute('aria-label', btn.title);
+    }
+
+    function toggleFinancialPrivacy() {
+        _finPrivacy = !_finPrivacy;
+        _applyAll();
+        _updateBtn(document.getElementById('finPrivacyToggle'));
+    }
+
+    function _initFinPrivacy() {
+        if (document.getElementById('finPrivacyToggle')) return;
+
+        // تنسيق الزر العائم
+        const style = document.createElement('style');
+        style.textContent =
+            '#finPrivacyToggle{position:fixed;bottom:24px;left:24px;z-index:100000;width:54px;height:54px;' +
+            'border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+            'color:#fff;font-size:20px;box-shadow:0 8px 22px rgba(0,0,0,.28);background:linear-gradient(135deg,#6366f1,#a855f7);' +
+            'transition:transform .2s ease,background .25s ease,box-shadow .2s ease;}' +
+            '#finPrivacyToggle:hover{transform:scale(1.08);box-shadow:0 12px 28px rgba(0,0,0,.34);}' +
+            '#finPrivacyToggle:active{transform:scale(.95);}' +
+            '#finPrivacyToggle.fin-shown{background:linear-gradient(135deg,#10b981,#059669);}' +
+            '#finPrivacyToggle .fin-dot{position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;border:2px solid #fff;background:#f59e0b;}' +
+            '#finPrivacyToggle.fin-shown .fin-dot{background:#10b981;}' +
+            '@media(max-width:600px){#finPrivacyToggle{width:48px;height:48px;font-size:18px;bottom:18px;left:18px;}}';
+        document.head.appendChild(style);
+
+        const btn = document.createElement('button');
+        btn.id = 'finPrivacyToggle';
+        btn.type = 'button';
+        document.body.appendChild(btn);
+        btn.addEventListener('click', toggleFinancialPrivacy);
+        _updateBtn(btn);
+
+        _applyAll();   // إخفاء فوري لأي أرقام موجودة حالياً
+        _obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+        window.toggleFinancialPrivacy = toggleFinancialPrivacy; // متاح يدوياً عند الحاجة
+    }
+
+    if (document.readyState === 'loading')
+        document.addEventListener('DOMContentLoaded', _initFinPrivacy);
+    else
+        _initFinPrivacy();
+})();
 </script>
 </body>
 </html>
