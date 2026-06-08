@@ -858,10 +858,10 @@
 </div>
 
 <div id="stockConfirmModal" class="dialog-modal" style="display:none;">
-    <div class="dialog-box" style="text-align:right; max-width:480px">
-        <div style="text-align:center; font-size:48px; margin-bottom:15px; color:var(--primary);"><i class="fas fa-cubes"></i></div>
+    <div class="dialog-box" style="text-align:right; max-width:460px; max-height:88vh; overflow-y:auto; padding:25px;">
+        <div style="text-align:center; font-size:38px; margin-bottom:10px; color:var(--primary);"><i class="fas fa-cubes"></i></div>
         <h3 style="text-align:center; margin-top:0; margin-bottom:5px;">تأكيد شراء المخزون</h3>
-        <div id="stockConfirmBody" style="background:var(--bg-input); border-radius:14px; padding:20px; margin:15px 0; font-size:14px; line-height:1.8; border:1px dashed var(--border-color);"></div>
+        <div id="stockConfirmBody" style="background:var(--bg-input); border-radius:14px; padding:16px; margin:12px 0; font-size:13.5px; line-height:1.7; border:1px dashed var(--border-color);"></div>
         <div class="dialog-actions">
             <button class="btn btn-primary" id="stockConfirmOkBtn"><i class="fas fa-check"></i> تأكيد وخصم الرصيد</button>
             <button class="btn btn-danger" onclick="document.getElementById('stockConfirmModal').style.display='none'">إلغاء</button>
@@ -1201,10 +1201,15 @@
         <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); border-radius:12px; padding:14px; margin-bottom:16px; font-size:14px; line-height:1.7;">
             انتهى اشتراك طلبتَ تذكيراً بإزالة بطاقته. يُرجى الدخول على الحساب وإزالة البطاقة لتجنّب أي خصم غير مرغوب.
         </div>
-        <div id="cardReminderDetails" style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:12px; padding:16px; margin-bottom:18px; font-size:14px; line-height:1.9;"></div>
+        <div id="cardReminderDetails" style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:12px; padding:16px; margin-bottom:14px; font-size:14px; line-height:1.9;"></div>
+        <!-- عداد الدقيقة -->
+        <div id="cardReminderCountdownBox" style="background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:10px; padding:10px 14px; margin-bottom:14px; text-align:center; font-size:13px; color:var(--primary); font-weight:700;">
+            <i class="fas fa-hourglass-half"></i> يمكنك تأكيد الإزالة بعد: <span id="cardReminderCountdown">60</span> ثانية
+        </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn btn-success" style="flex:1; min-width:140px; justify-content:center;" onclick="confirmCardRemoved()"><i class="fas fa-check"></i> قمت بالإزالة</button>
+            <button id="btnConfirmCardRemoved" class="btn btn-success" style="flex:1; min-width:140px; justify-content:center; opacity:0.4; cursor:not-allowed;" onclick="confirmCardRemoved()" disabled><i class="fas fa-check"></i> قمت بالإزالة</button>
             <button class="btn btn-warning" style="flex:1; min-width:140px; justify-content:center; color:#000;" onclick="snoozeCardReminder()"><i class="fas fa-clock"></i> ذكّرني بعد 5 دقائق</button>
+            <button class="btn" style="flex:1; min-width:140px; justify-content:center; background:rgba(100,116,139,0.12); color:var(--text-muted); border:1px solid var(--border-color);" onclick="ignoreCardReminderForMe()"><i class="fas fa-eye-slash"></i> ليس من اختصاصي</button>
         </div>
     </div>
 </div>
@@ -2231,7 +2236,7 @@
         </div>
 
         <div class="input-group"><label>عدد البروفايلات (حسابات)</label>
-            <input type="number" id="stProfiles" min="1" step="1" value="1" oninput="this.value = Math.max(1, Math.floor(this.value||1))">
+            <input type="number" id="stProfiles" min="0" step="1" value="0" oninput="this.value = Math.max(0, Math.floor(this.value||0))">
         </div>
 
         <!-- ── تعديل عدد البروفايلات (يظهر فقط عند عرض التفاصيل) ── -->
@@ -2265,15 +2270,26 @@
         <div class="input-group"><label>البريد الإلكتروني</label><div style="display:flex; gap:8px;"><input id="stEmail" placeholder="email@example.com" style="flex:1"><button type="button" class="btn btn-primary" style="padding:10px 14px; flex-shrink:0;" onclick="copyField('stEmail', this)" title="نسخ الإيميل"><i class="fas fa-copy"></i></button></div></div>
         <div class="input-group"><label>كلمة المرور</label><div style="display:flex; gap:8px;"><input id="stPass" placeholder="Password" style="flex:1"><button type="button" class="btn btn-primary" style="padding:10px 14px; flex-shrink:0;" onclick="copyField('stPass', this)" title="نسخ كلمة المرور"><i class="fas fa-copy"></i></button></div></div>
         <div class="input-group" id="stPurposeGroup"><label>الغرض من الاشتراك</label><select id="stPurpose"><option value="sale">للبيع (يظهر في قائمة البيع)</option><option value="test">للتجربة (لن يُعرض للبيع)</option></select></div>
-        <div class="input-group"><label>ملاحظات (قابل للتعديل لاحقاً)</label><textarea id="stNotes" style="height:80px; resize:vertical;"></textarea></div>
+        <div class="input-group"><label>ملاحظات (قابل للتعديل لاحقاً)</label><textarea id="stNotes" style="height:80px; resize:none; overflow:hidden;" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px'"></textarea></div>
 
-        <label id="stRemindCardBox" style="display:flex; align-items:center; gap:10px; cursor:pointer; background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:12px 14px; margin-bottom:6px;">
-            <input type="checkbox" id="stRemindCard" style="width:18px; height:18px; cursor:pointer; flex-shrink:0;">
-            <span style="font-size:13px; font-weight:700; color:var(--text-main); line-height:1.5;">
-                <i class="fas fa-credit-card" style="color:#eab308;"></i> ذكّرني بإزالة البطاقة بعد انتهاء الاشتراك
-                <div style="font-size:11px; color:var(--text-muted); font-weight:500; margin-top:2px;">سيظهر تنبيه معلّق لكل الأدمن عند انتهاء هذا الاشتراك</div>
-            </span>
-        </label>
+        <div id="stRemindCardBox" style="background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:12px 14px; margin-bottom:6px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                <input type="checkbox" id="stRemindCard" style="width:18px; height:18px; cursor:pointer; flex-shrink:0;" onchange="toggleRemindCardOptions(this)">
+                <span style="font-size:13px; font-weight:700; color:var(--text-main); line-height:1.5; cursor:pointer;" onclick="document.getElementById('stRemindCard').click()">
+                    <i class="fas fa-credit-card" style="color:#eab308;"></i> ذكّرني بإزالة البطاقة بعد انتهاء الاشتراك
+                    <div style="font-size:11px; color:var(--text-muted); font-weight:500; margin-top:2px;">سيظهر تنبيه معلّق لكل الأدمن عند انتهاء هذا الاشتراك</div>
+                </span>
+            </div>
+            <div id="stRemindCardOptions" style="display:none;">
+                <label style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; display:block;"><i class="fas fa-clock" style="color:#eab308;"></i> متى تريد التذكير؟ (إجباري)</label>
+                <select id="stRemindOffset" style="width:100%; border-color:rgba(245,158,11,0.5); background:var(--bg-card);">
+                    <option value="">— اختر وقت التذكير —</option>
+                    <option value="2">ذكّرني قبل يومين من انتهاء الاشتراك</option>
+                    <option value="1">ذكّرني قبل يوم من انتهاء الاشتراك</option>
+                    <option value="0">ذكّرني عند الانتهاء بالضبط</option>
+                </select>
+            </div>
+        </div>
         
         <button id="btnSaveStock" class="btn btn-primary" style="width:100%; margin-top:10px" onclick="verifyStockAdd()"><i class="fas fa-save"></i> حفظ وشراء</button>
         <button id="btnUpdateNote" class="btn btn-warning hidden" style="width:100%; margin-top:10px" onclick="updateStockNote()"><i class="fas fa-edit"></i> تحديث الملاحظات والغرض</button>
@@ -2478,12 +2494,21 @@ function processVipDowngrades() {
 
 function refreshVip() {
     let vips = safeJSON(store.vipCustomers, {});
-    let search = document.getElementById("vipSearch").value.toLowerCase();
+    let rawSearch = document.getElementById("vipSearch").value.trim();
+    let search = rawSearch.toLowerCase();
+    let searchNorm = normalizePhone(rawSearch).replace(/\D/g,''); // أرقام فقط للمقارنة
     let isViewer = currentUser && (currentUser.role === 'viewer' || currentUser.role === 'viewer_plus');
     let isAdmin = currentUser && currentUser.role === 'admin';
 
     let list = Object.keys(vips).map(phone => ({ phone: phone, ...vips[phone] }));
-    list = list.filter(c => !search || c.phone.includes(search) || (c.name && c.name.toLowerCase().includes(search)));
+    list = list.filter(c => {
+        if (!search) return true;
+        let cPhoneNorm = normalizePhone(c.phone||'').replace(/\D/g,'');
+        return cPhoneNorm.includes(searchNorm) ||
+            c.phone.replace(/\D/g,'').includes(searchNorm) ||
+            c.phone.includes(search) ||
+            (c.name && c.name.toLowerCase().includes(search));
+    });
     
     // الترتيب: حسب الشراء الأكبر، ثم برقم الجوال
     list.sort((a, b) => {
@@ -2785,7 +2810,8 @@ function openAddVipModal() {
 
 function saveManualVip() {
     let name = document.getElementById("addVipName").value.trim() || "عميل";
-    let phone = document.getElementById("addVipPhone").value.trim();
+    let phone = normalizePhone(document.getElementById("addVipPhone").value.trim());
+    document.getElementById("addVipPhone").value = phone;
     let count = parseInt(document.getElementById("addVipCount").value);
 
     if (!/^\+97\d{10}$/.test(phone)) return notify("رقم الجوال يجب أن يبدأ بـ +97 ويليه 10 أرقام", "error");
@@ -4877,10 +4903,46 @@ function _getDueCardReminders() {
         let dur = parseInt(s.duration) || 0;
         if (dur <= 0 || !s.timestamp) return false;        // بلا مدة → لا انتهاء
         let expiry = _addMonths30(new Date(s.timestamp), dur).getTime();
-        if (expiry > now) return false;                    // لم ينتهِ بعد
+        // remindOffset: 0=عند الانتهاء، 1=قبل يوم، 2=قبل يومين
+        let offsetMs = (parseInt(s.remindOffset) || 0) * 24 * 60 * 60 * 1000;
+        let triggerTime = expiry - offsetMs; // وقت ظهور التذكير
+        if (now < triggerTime) return false;               // لم يحن وقت التذكير بعد
+        // تجاهل المستخدم الحالي إذا اختار "تجاهل لي فقط"
+        if (s.cardIgnoredBy && currentUser && s.cardIgnoredBy.includes(currentUser.id)) return false;
         if (s.cardSnoozeUntil && now < s.cardSnoozeUntil) return false; // مؤجّل حالياً
         return true;
     });
+}
+
+let _cardCountdownInterval = null;
+
+function _startCardCountdown() {
+    // إيقاف أي عداد سابق
+    if (_cardCountdownInterval) clearInterval(_cardCountdownInterval);
+    let countdownEl = document.getElementById('cardReminderCountdown');
+    let confirmBtn = document.getElementById('btnConfirmCardRemoved');
+    let countdownBox = document.getElementById('cardReminderCountdownBox');
+    if (!countdownEl || !confirmBtn) return;
+    
+    let secs = 60;
+    countdownEl.textContent = secs;
+    confirmBtn.disabled = true;
+    confirmBtn.style.opacity = '0.4';
+    confirmBtn.style.cursor = 'not-allowed';
+    if (countdownBox) countdownBox.style.display = 'block';
+    
+    _cardCountdownInterval = setInterval(() => {
+        secs--;
+        if (countdownEl) countdownEl.textContent = secs;
+        if (secs <= 0) {
+            clearInterval(_cardCountdownInterval);
+            _cardCountdownInterval = null;
+            confirmBtn.disabled = false;
+            confirmBtn.style.opacity = '1';
+            confirmBtn.style.cursor = 'pointer';
+            if (countdownBox) countdownBox.style.display = 'none';
+        }
+    }, 1000);
 }
 
 function checkCardRemovalReminders() {
@@ -4906,9 +4968,13 @@ function checkCardRemovalReminders() {
 
     document.getElementById("cardReminderDetails").innerHTML = detailsHtml;
     modal.style.display = "flex";
+    _startCardCountdown(); // بدء العداد بعد ظهور الـ modal
 }
 
 function confirmCardRemoved() {
+    let confirmBtn = document.getElementById('btnConfirmCardRemoved');
+    if (confirmBtn && confirmBtn.disabled) return; // منع الضغط قبل انتهاء العداد
+    if (_cardCountdownInterval) { clearInterval(_cardCountdownInterval); _cardCountdownInterval = null; }
     if (!_cardReminderActiveId) { document.getElementById("cardRemovalReminderModal").style.display = "none"; return; }
     let stock = safeJSON(store.stock, []);
     let idx = stock.findIndex(s => s && s.id === _cardReminderActiveId);
@@ -4926,6 +4992,7 @@ function confirmCardRemoved() {
 }
 
 function snoozeCardReminder() {
+    if (_cardCountdownInterval) { clearInterval(_cardCountdownInterval); _cardCountdownInterval = null; }
     if (!_cardReminderActiveId) { document.getElementById("cardRemovalReminderModal").style.display = "none"; return; }
     let stock = safeJSON(store.stock, []);
     let idx = stock.findIndex(s => s && s.id === _cardReminderActiveId);
@@ -4937,6 +5004,27 @@ function snoozeCardReminder() {
     document.getElementById("cardRemovalReminderModal").style.display = "none";
     _cardReminderActiveId = null;
     setTimeout(checkCardRemovalReminders, 400); // اعرض اشتراكاً آخر مستحقاً إن وُجد
+}
+
+// زر "ليس من اختصاصي" — يتجاهل التذكير لهذا المستخدم فقط، ويظهر للآخرين
+function ignoreCardReminderForMe() {
+    if (_cardCountdownInterval) { clearInterval(_cardCountdownInterval); _cardCountdownInterval = null; }
+    if (!_cardReminderActiveId || !currentUser) { document.getElementById("cardRemovalReminderModal").style.display = "none"; return; }
+    let stock = safeJSON(store.stock, []);
+    let idx = stock.findIndex(s => s && s.id === _cardReminderActiveId);
+    if (idx !== -1) {
+        if (!stock[idx].cardIgnoredBy) stock[idx].cardIgnoredBy = [];
+        if (!stock[idx].cardIgnoredBy.includes(currentUser.id)) {
+            stock[idx].cardIgnoredBy.push(currentUser.id);
+        }
+        store.stock = JSON.stringify(stock);
+        fbSave("stock", stock);
+        logAction(`تجاهل تذكير البطاقة (ليس من اختصاصي): ${stock[idx].displayName || stock[idx].service}`, 'general', { type: 'card_ignored', stockName: stock[idx].displayName || stock[idx].service, userId: currentUser.id });
+    }
+    document.getElementById("cardRemovalReminderModal").style.display = "none";
+    _cardReminderActiveId = null;
+    notify("تم تجاهل هذا التذكير — لن يظهر لك مجدداً");
+    setTimeout(checkCardRemovalReminders, 400);
 }
 
 function startCardReminderCheck() {
@@ -5782,19 +5870,43 @@ async function resetAllVips(){
     if(document.getElementById("vip") && !document.getElementById("vip").classList.contains("hidden")) refreshVip();
 }
 
+// ── تطبيع رقم الهاتف — يشيل المسافات والشرطات والأحرف غير المرئية فقط ──
+// لا يغيّر الكود الدولي نهائياً (+970 يبقى +970، +972 يبقى +972)
+function normalizePhone(raw) {
+    if (!raw) return '';
+    // شيل كل الأحرف غير المرئية (LTR/RTL marks، zero-width spaces، إلخ)
+    let cleaned = raw.replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF]/g, '');
+    // شيل المسافات والشرطات والأقواس والنقاط وكل ما ليس رقم أو +
+    cleaned = cleaned.replace(/[\s\-\.\(\)\/\\]/g, '');
+    // شيل أي أحرف أخرى غير أرقام و +
+    cleaned = cleaned.replace(/[^\d+]/g, '');
+    // لو ما فيها + في البداية، حطها
+    if (!cleaned.startsWith('+')) cleaned = '+' + cleaned;
+    return cleaned;
+}
+
 function validatePhoneInput(el) {
     let v = el.value.trim();
     if(!v) { el.style.borderColor = ""; return; }
-    // نقبل الرقم مع أو بدون + في البداية للتحقق أثناء الكتابة
-    let normalized = v.startsWith('+') ? v : '+' + v;
-    if(/^\+97\d{10}$/.test(normalized)) el.style.borderColor = "var(--success)";
+    let normalized = normalizePhone(v);
+    if(/^\+97[012]\d{9}$/.test(normalized)) el.style.borderColor = "var(--success)";
     else el.style.borderColor = "var(--danger)";
+}
+
+function toggleRemindCardOptions(cb) {
+    let opts = document.getElementById('stRemindCardOptions');
+    if (!opts) return;
+    opts.style.display = cb.checked ? 'block' : 'none';
+    if (!cb.checked) {
+        let sel = document.getElementById('stRemindOffset');
+        if (sel) sel.value = '';
+    }
 }
 
 function autoAddPlusPhone(el) {
     let v = el.value.trim();
     if(!v) return;
-    if(!v.startsWith('+')) el.value = '+' + v;
+    el.value = normalizePhone(v);
     validatePhoneInput(el);
 }
 
@@ -5864,7 +5976,8 @@ function addPurchase(){
     let customerPhoneVal = document.getElementById("customerPhone").value.trim();
     // إضافة + تلقائياً إن لم تكن موجودة
     if(customerPhoneVal && !customerPhoneVal.startsWith('+')) customerPhoneVal = '+' + customerPhoneVal;
-    if(customerPhoneVal && !/^\+97\d{10}$/.test(customerPhoneVal)) return notify("رقم الجوال يجب أن يبدأ بـ +97 ويليه 10 أرقام", "error");
+    customerPhoneVal = normalizePhone(customerPhoneVal);
+    if(customerPhoneVal && !/^\+97[012]\d{9}$/.test(customerPhoneVal)) return notify("رقم الجوال يجب أن يبدأ بـ +97 ويليه 10 أرقام", "error");
     // تحديث الحقل بالقيمة المعدّلة
     document.getElementById("customerPhone").value = customerPhoneVal;
 
@@ -6609,12 +6722,15 @@ function refreshHistory(){
     if (bSales) bSales.textContent = "إجمالي المبيعات: " + totalSales;
     if (bComps) bComps.textContent = "إجمالي التعويضات: " + totalComps;
     let isRestricted = currentUser ? (currentUser.role === 'viewer') : true;
-    let v = document.getElementById("historySearch").value.toLowerCase();
+    let rawV = document.getElementById("historySearch").value.trim();
+    let v = rawV.toLowerCase();
+    let vNorm = normalizePhone(rawV).replace(/\D/g,''); // أرقام فقط بعد التطبيع (+970→+972)
     let fromDate = document.getElementById("historyFromDate") ? document.getElementById("historyFromDate").value : "";
     let toDate = document.getElementById("historyToDate") ? document.getElementById("historyToDate").value : "";
     
     let filtered = p.slice().filter(item => {
-        let matchesSearch = !v || (item.customer||'').toLowerCase().includes(v) || (item.sub||'').toLowerCase().includes(v) || (item.phone||'').includes(v);
+        let itemPhoneNorm = normalizePhone(item.phone||'').replace(/\D/g,'');
+        let matchesSearch = !v || (item.customer||'').toLowerCase().includes(v) || (item.sub||'').toLowerCase().includes(v) || (item.phone||'').includes(v) || (vNorm && (itemPhoneNorm.includes(vNorm) || (item.phone||'').replace(/\D/g,'').includes(vNorm)));
         let matchesFrom = !fromDate || (item.date && item.date >= fromDate);
         let matchesTo = !toDate || (item.date && item.date <= toDate);
         return matchesSearch && matchesFrom && matchesTo;
@@ -7904,7 +8020,28 @@ async function deleteWallet(){
     document.getElementById("renameWalletInput").value = "";
 }
 
-function exportData(){ if(currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') return; let exportObj = {}; ["users","wallets","purchases","invest","settings","generalNotes","todoList","activityLog","stock","services","discounts","vipCustomers","budgetHistory"].forEach(k=>{ if(store[k]) exportObj[k]=store[k]; }); let a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(exportObj)],{type:"application/json"})); a.download=`MegaBackup_${new Date().toLocaleDateString()}.json`; a.click(); logAction("تصدير نسخة احتياطية", 'general', { type: 'export_backup', exportedAt: new Date().toLocaleString('ar-EG'), records: Object.keys(exportObj).join(', ') }); }
+async function exportData(){
+    if(currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') return;
+    let exportObj = {};
+    // كل مفاتيح store — scalar + array بما فيها المفقودة سابقاً
+    ["wallets","invest","settings","services","vipCustomers","employeeBonus","adminNotifications",
+     "users","purchases","generalNotes","todoList","activityLog","stock","discounts","budgetHistory","pledges"
+    ].forEach(k => { if(store[k]) exportObj[k] = store[k]; });
+    // تصدير الدردشة من Firestore
+    if(!isDemoMode && fbDocRef) {
+        try {
+            const chatSnap = await fbDocRef.collection('teamChat').orderBy('ts','asc').get();
+            const chatMsgs = [];
+            chatSnap.forEach(doc => chatMsgs.push({ id: doc.id, ...doc.data() }));
+            if(chatMsgs.length > 0) exportObj.teamChat = JSON.stringify(chatMsgs);
+        } catch(e) { console.warn('teamChat export skipped:', e); }
+    }
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(exportObj)],{type:"application/json"}));
+    a.download = `MegaBackup_${new Date().toLocaleDateString()}.json`;
+    a.click();
+    logAction("تصدير نسخة احتياطية", 'general', { type: 'export_backup', exportedAt: new Date().toLocaleString('ar-EG'), records: Object.keys(exportObj).join(', ') });
+}
 function importData(){ 
     if(currentUser.role !== 'admin') return notify("للأدمن فقط","error");
     let f=document.getElementById("importFile").files[0];
@@ -7922,8 +8059,8 @@ function importData(){
             );
             if(!ok) return;
             
-            const SCALAR_IMPORT = ["wallets","invest","settings","services","vipCustomers"];
-            const ARRAY_IMPORT  = ["users","purchases","generalNotes","todoList","activityLog","stock","discounts","budgetHistory"];
+            const SCALAR_IMPORT = ["wallets","invest","settings","services","vipCustomers","employeeBonus","adminNotifications"];
+            const ARRAY_IMPORT  = ["users","purchases","generalNotes","todoList","activityLog","stock","discounts","budgetHistory","pledges"];
             
             // حفظ الحقول القياسية في المستند الرئيسي
             let scalarUpdates = {};
@@ -7974,6 +8111,32 @@ function importData(){
             // ضمان وضع علامة V2 بعد الاستيراد
             if(!isDemoMode && fbDocRef) {
                 await fbDocRef.set({ _v2migrated: true }, {merge:true});
+            }
+
+            // استعادة الدردشة (teamChat subcollection)
+            if(d.teamChat && !isDemoMode && fbDocRef) {
+                try {
+                    let chatArr = typeof d.teamChat === 'string' ? JSON.parse(d.teamChat) : d.teamChat;
+                    if(Array.isArray(chatArr) && chatArr.length > 0) {
+                        const chatRef = fbDocRef.collection('teamChat');
+                        // حذف القديم
+                        const oldSnap = await chatRef.get();
+                        for(let i = 0; i < oldSnap.docs.length; i += 400) {
+                            const batch = db.batch();
+                            oldSnap.docs.slice(i, i+400).forEach(doc => batch.delete(doc.ref));
+                            await batch.commit();
+                        }
+                        // كتابة الجديد
+                        for(let i = 0; i < chatArr.length; i += 400) {
+                            const batch = db.batch();
+                            chatArr.slice(i, i+400).forEach(msg => {
+                                if(!msg.id) msg.id = genId();
+                                batch.set(chatRef.doc(msg.id), msg);
+                            });
+                            await batch.commit();
+                        }
+                    }
+                } catch(e) { console.warn('teamChat import skipped:', e); }
             }
             
             notify("تم الاستعادة بنجاح"); 
@@ -8340,7 +8503,7 @@ async function saveCategoryModal() {
 async function deleteCat(docId, name) {
     let linked = adminServicesCache.filter(s => s.categoryId === docId).length;
     let msg = `هل تريد حذف قسم "${name}"؟`;
-    if (linked > 0) msg += `\n⚠️ يوجد ${linked} خدمة مرتبطة بهذا القسم — ستصبح بدون قسم.`;
+    if (linked > 0) msg += `\nيوجد ${linked} خدمة مرتبطة بهذا القسم — ستصبح بدون قسم.`;
     let ok = await showConfirm("حذف القسم", msg, "حذف", "إلغاء", '<i class="fas fa-trash"></i>');
     if (!ok) return;
     // إزالة categoryId من الخدمات المرتبطة
@@ -8457,7 +8620,7 @@ function openAddStockModal() {
     document.getElementById("stService").value = "";
     document.getElementById("stManualName").value = "";
     document.getElementById("stCost").value = "";
-    document.getElementById("stProfiles").value = "1";
+    document.getElementById("stProfiles").value = "0";
     document.getElementById("stVendor").value = "";
     ["stEmail","stPass","stNotes"].forEach(id => document.getElementById(id).value = "");
     document.getElementById("stCostCurrency").value = "";
@@ -8465,6 +8628,10 @@ function openAddStockModal() {
     document.getElementById("stPurpose").value = "sale";
     let _remEl = document.getElementById("stRemindCard");
     if (_remEl) _remEl.checked = false;
+    let _remOffsetEl = document.getElementById("stRemindOffset");
+    if (_remOffsetEl) _remOffsetEl.value = '';
+    let _remOptsEl = document.getElementById("stRemindCardOptions");
+    if (_remOptsEl) _remOptsEl.style.display = 'none';
     let _remBox = document.getElementById("stRemindCardBox");
     if (_remBox) _remBox.style.display = ""; // إظهار خيار التذكير في وضع الإضافة
     
@@ -8490,17 +8657,57 @@ function verifyStockAdd() {
     if(document.getElementById("stDuration")?.value === "") return notify("يرجى اختيار المدة", "error");
     let stManualName = (document.getElementById("stManualName").value.trim()) || stService;
     if(isNaN(stCost) || stCost < 0) return notify("يرجى إدخال التكلفة بشكل صحيح", "error");
+
+    // التحقق من عدد البروفايلات — 0 غير مقبول
+    let stProfiles = parseInt(document.getElementById("stProfiles").value) || 0;
+    if (stProfiles < 1) return notify("عدد البروفايلات غير صالح — يرجى إدخال عدد البروفايلات الصحيح (1 أو أكثر)", "error");
+
+    // التحقق من وقت التذكير إذا فعّل الخيار
+    let remindChecked = document.getElementById("stRemindCard") && document.getElementById("stRemindCard").checked;
+    if (remindChecked) {
+        let remindOffset = document.getElementById("stRemindOffset")?.value;
+        if (remindOffset === '' || remindOffset === undefined || remindOffset === null) {
+            return notify("يرجى اختيار وقت التذكير من القائمة", "error");
+        }
+    }
     
-    let cleanName = stManualName + ((document.getElementById("stProfiles").value > 1) ? " Shared" : "");
-    
+    let cleanName = stManualName + ((stProfiles > 1) ? " Shared" : "");
+
+    // بناء تفاصيل التأكيد الكاملة
+    const row = (icon, label, val, color) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed rgba(0,0,0,0.06);">
+            <span style="color:var(--text-muted); font-size:13px; display:flex; align-items:center; gap:6px;"><i class="${icon}"></i> ${label}</span>
+            <span style="font-weight:700; font-size:13px; color:${color || 'var(--text-main)'};">${val}</span>
+        </div>`;
+
+    let durationMap = {"0":"بدون مدة","1":"1 شهر","2":"2 شهر","3":"3 شهور","6":"6 شهور","12":"12 شهر"};
+    let purposeMap = {"sale":"للبيع","test":"للتجربة"};
+    let durationVal = document.getElementById("stDuration")?.value;
+    let purposeVal = document.getElementById("stPurpose")?.value;
+    let vendorVal = document.getElementById("stVendor")?.value || '—';
+    let emailVal = document.getElementById("stEmail")?.value.trim() || '—';
+    let passVal = document.getElementById("stPass")?.value || '—';
+    let notesVal = document.getElementById("stNotes")?.value.trim() || '—';
+
+    let remindText = '<i class="fas fa-times" style="color:var(--danger);"></i> لا';
+    if (remindChecked) {
+        let offsetMap = {"0":"عند الانتهاء بالضبط","1":"قبل يوم من الانتهاء","2":"قبل يومين من الانتهاء"};
+        let offsetVal = document.getElementById("stRemindOffset")?.value || '0';
+        remindText = '<i class="fas fa-check" style="color:var(--success);"></i> نعم — ' + (offsetMap[offsetVal] || '');
+    }
+
     document.getElementById("stockConfirmBody").innerHTML = `
-        <div style="display:grid; gap:8px;">
-            <div><i class="fas fa-tag"></i> <b>الخدمة:</b> ${esc(cleanName)}</div>
-            <hr style="margin:5px 0; border-top:1px dashed var(--border-color)">
-            <div style="display:flex; justify-content:space-between; align-items:center; color:var(--danger)">
-                <span>التكلفة:</span>
-                <span style="font-weight:bold">${fix(stCost)}${stCostCurrency}</span>
-            </div>
+        <div style="display:grid; gap:2px;">
+            ${row('fas fa-tag', 'الخدمة', esc(cleanName))}
+            ${row('fas fa-users', 'عدد البروفايلات', stProfiles, 'var(--primary)')}
+            ${row('fas fa-money-bill-wave', 'التكلفة', fix(stCost) + stCostCurrency, 'var(--danger)')}
+            ${row('fas fa-calendar', 'المدة', durationMap[durationVal] || durationVal)}
+            ${row('fas fa-store', 'البائع', esc(vendorVal))}
+            ${row('fas fa-envelope', 'الإيميل', esc(emailVal))}
+            ${row('fas fa-key', 'كلمة المرور', esc(passVal))}
+            ${row('fas fa-bullseye', 'الغرض', purposeMap[purposeVal] || purposeVal)}
+            ${row('fas fa-sticky-note', 'الملاحظات', esc(notesVal))}
+            ${row('fas fa-credit-card', 'تذكير بإزالة البطاقة', remindText)}
         </div>
     `;
     
@@ -8552,6 +8759,7 @@ function executeStockAdd(stService, stCost, stCostCurrency) {
         costCurrency: stCostCurrency,
         remainingCost: parseFloat(stCost) || 0, // رصيد التكلفة المتبقي (أسلوب باقي التكلفة)
         remindCardRemoval: !!(document.getElementById("stRemindCard") && document.getElementById("stRemindCard").checked), // تذكير إزالة البطاقة بعد الانتهاء
+        remindOffset: (document.getElementById("stRemindCard") && document.getElementById("stRemindCard").checked && document.getElementById("stRemindOffset")) ? parseInt(document.getElementById("stRemindOffset").value) : 0, // أيام التذكير المسبق: 0=عند الانتهاء، 1=قبل يوم، 2=قبل يومين
         purpose: document.getElementById("stPurpose").value || 'sale'
     };
     
@@ -8697,15 +8905,22 @@ function refreshStock() {
     let isAdmin = currentUser && currentUser.role === 'admin';
     let canControl = isAdmin; 
 
-    let searchTerm = document.getElementById("stockSearch").value.toLowerCase();
-    
+    let rawSearchTerm = document.getElementById("stockSearch").value;
+    let searchTerm = rawSearchTerm.toLowerCase();
+    let searchNormDigits = normalizePhone(rawSearchTerm).replace(/\D/g,''); // أرقام فقط للمقارنة
+
     let filtered = stock.filter(item => {
         let matchesTab = (currentStockTab === 'active') ? (item.status !== 'sold') : (item.status === 'sold');
-        let matchesSearch = (item.displayName||item.service||'').toLowerCase().includes(searchTerm) || 
+        let matchesSearch = !searchTerm ||
+                            (item.displayName||item.service||'').toLowerCase().includes(searchTerm) ||
                             (item.email||'').toLowerCase().includes(searchTerm) ||
                             (item.vendor||'').toLowerCase().includes(searchTerm) ||
                             (item.notes||'').toLowerCase().includes(searchTerm) ||
-                            (item.buyers && item.buyers.some(b => b.toLowerCase().includes(searchTerm)));
+                            (item.buyers && item.buyers.some(b => {
+                                if (b.toLowerCase().includes(searchTerm)) return true;
+                                if (searchNormDigits && normalizePhone(b).replace(/\D/g,'').includes(searchNormDigits)) return true;
+                                return false;
+                            }));
         return matchesTab && matchesSearch;
     });
 
@@ -8841,6 +9056,8 @@ function editStock(id) {
     document.getElementById("stEmail").value = item.email;
     document.getElementById("stPass").value = item.pass;
     document.getElementById("stNotes").value = item.notes;
+    // تشغيل auto-resize بعد تحميل القيمة
+    (function(){ let el = document.getElementById("stNotes"); el.style.height='auto'; el.style.height=el.scrollHeight+'px'; })();
     document.getElementById("stPurpose").value = item.purpose || 'sale';
     let _remBoxEdit = document.getElementById("stRemindCardBox");
     if (_remBoxEdit) _remBoxEdit.style.display = "none"; // خيار التذكير يظهر فقط عند الإضافة
@@ -9508,7 +9725,7 @@ async function deleteServiceById(docId, name) {
         let svc = adminServicesCache.find(s => s._docId === docId);
         return svc && svc.branches && svc.branches.some(b => String(b.code) === String(o.serviceCode));
     });
-    let warnMsg = linkedOrders.length > 0 ? `\n⚠️ يوجد ${linkedOrders.length} طلب مرتبط بهذه الخدمة! حذفها لن يحذف الطلبات.` : '';
+    let warnMsg = linkedOrders.length > 0 ? `\nيوجد ${linkedOrders.length} طلب مرتبط بهذه الخدمة! حذفها لن يحذف الطلبات.` : '';
     let ok = await showConfirm("حذف الخدمة", `هل تريد حذف خدمة "${name}" نهائياً؟${warnMsg}`, "حذف", "إلغاء", '<i class="fas fa-trash"></i>');
     if (!ok) return;
     try {
@@ -9532,7 +9749,9 @@ function deleteService(idx) { notify("استخدم زر الحذف بجانب ك
 //  إدارة الطلبات (Firebase collection: "orders")
 // ══════════════════════════════════════════════════════════════
 function refreshOrders() {
-    let search = (document.getElementById("ordersSearch")?.value||"").toLowerCase();
+    let rawSearch = (document.getElementById("ordersSearch")?.value||"").trim();
+    let search = rawSearch.toLowerCase();
+    let searchNorm = normalizePhone(rawSearch).replace(/\D/g,'');
     let tbody = document.getElementById("ordersBody");
     let bookingsContainer = document.getElementById("bookingsContainer");
     if (!tbody) return;
@@ -9540,7 +9759,7 @@ function refreshOrders() {
     let isAdmin = currentUser && currentUser.role === 'admin';
     let filtered = ordersCache.filter(o => {
         if (!search) return true;
-        return (o.customerName||'').toLowerCase().includes(search) || (o.phone||'').toLowerCase().includes(search) || (o.serviceCode||'').includes(search) || (o.serviceName||'').toLowerCase().includes(search);
+        return (o.customerName||'').toLowerCase().includes(search) || (o.phone||'').toLowerCase().includes(search) || (searchNorm && (o.phone||'').replace(/\D/g,'').includes(searchNorm)) || (o.serviceCode||'').includes(search) || (o.serviceName||'').toLowerCase().includes(search);
     });
     
     renderPagination(filtered.length, 'orders', refreshOrders, 'ordersPagination');
@@ -10604,15 +10823,15 @@ function openPledgeModal() {
 function validatePledgePhone(el) {
     let v = el.value.trim();
     if(!v) { el.style.borderColor = ""; return; }
-    let normalized = v.startsWith('+') ? v : '+' + v;
-    if(/^\+97\d{10}$/.test(normalized)) el.style.borderColor = "var(--success)";
+    let normalized = normalizePhone(v);
+    if(/^\+97[012]\d{9}$/.test(normalized)) el.style.borderColor = "var(--success)";
     else el.style.borderColor = "var(--danger)";
 }
 
 function autoAddPlusPledge(el) {
     let v = el.value.trim();
     if(!v) return;
-    if(!v.startsWith('+')) el.value = '+' + v;
+    el.value = normalizePhone(v);
     validatePledgePhone(el);
 }
 
@@ -10626,8 +10845,8 @@ function savePledge() {
     if(!customer) return notify("يرجى إدخال اسم العميل", "error");
     if(!/^[\u0600-\u06FFa-zA-Z\s]+$/.test(customer)) return notify("اسم العميل يجب أن يكون أحرفاً فقط", "error");
     if(!phone) return notify("يرجى إدخال رقم العميل", "error");
-    if(!phone.startsWith('+')) phone = '+' + phone;
-    if(!/^\+97\d{10}$/.test(phone)) return notify("رقم الجوال يجب أن يبدأ بـ +97 ويكون 12 خانة (مثال: +970595730412)", "error");
+    phone = normalizePhone(phone);
+    if(!/^\+97[012]\d{9}$/.test(phone)) return notify("رقم الجوال يجب أن يبدأ بـ +97 ويكون 12 خانة (مثال: +970595730412)", "error");
     if(!service) return notify("يرجى إدخال نوع الخدمة", "error");
     if(!count || count < 1) return notify("يرجى إدخال عدد الحسابات المرهونة", "error");
 
@@ -10656,15 +10875,19 @@ function refreshPledges() {
     if(!tbody) return;
 
     let searchEl = document.getElementById("pledgeSearch");
-    let term = searchEl ? searchEl.value.toLowerCase() : "";
+    let rawTerm = searchEl ? searchEl.value.trim() : "";
+    let term = rawTerm.toLowerCase();
+    let termNorm = normalizePhone(rawTerm).replace(/\D/g,'');
     if(term) {
-        pledges = pledges.filter(p =>
-            (p.customer||'').toLowerCase().includes(term) ||
-            (p.phone||'').includes(term) ||
-            (p.service||'').toLowerCase().includes(term) ||
-            String(p.totalCount||'').includes(term) ||
-            String(p.duration||'').includes(term)
-        );
+        pledges = pledges.filter(p => {
+            let pPhoneNorm = normalizePhone(p.phone||'').replace(/\D/g,'');
+            return (p.customer||'').toLowerCase().includes(term) ||
+                (p.phone||'').includes(term) ||
+                (termNorm && (pPhoneNorm.includes(termNorm) || (p.phone||'').replace(/\D/g,'').includes(termNorm))) ||
+                (p.service||'').toLowerCase().includes(term) ||
+                String(p.totalCount||'').includes(term) ||
+                String(p.duration||'').includes(term);
+        });
     }
 
     if(pledges.length === 0) {
