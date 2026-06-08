@@ -2521,33 +2521,58 @@ function refreshVip() {
     let paginated = list.slice((currentPage.vip - 1) * ITEMS_PER_PAGE, currentPage.vip * ITEMS_PER_PAGE);
 
     let tbody = document.getElementById("vipBody");
+    let thead = document.querySelector("#vip table thead");
+    let sObj = safeJSON(store.settings, {});
+    let isVipActive = sObj.vipEnabled === true;
+    let isEmpVip = currentUser && currentUser.role === 'employee';
+
+    thead.innerHTML = `<tr>
+        <th style="text-align:center;">العميل</th>
+        <th style="text-align:center;">رقم الجوال</th>
+        ${isVipActive ? '<th style="text-align:center;">الرتبة</th>' : ''}
+        <th style="text-align:center;">عمليات الشراء</th>
+        ${isVipActive ? '<th style="text-align:center;">التراجع بعد</th>' : ''}
+        <th style="text-align:center;">تفاصيل</th>
+        ${isEmpVip ? '' : '<th id="thVipAction" style="text-align:center;">إجراء</th>'}
+    </tr>`;
+
     let rows = "";
     let now = Date.now();
 
     paginated.forEach(c => {
         let rank = VIP_RANKS[c.rankIndex];
         let displayPhone = isViewer ? maskPhone(c.phone) : c.phone;
-        let countDisplay = c.rankIndex < 4 ? `${c.count} / ${c.target}` : `${c.count} (ماكس)`;
-        
-        let daysPassed = Math.floor((now - c.lastPurchaseTime) / (1000 * 60 * 60 * 24));
-        let daysLeft = Math.max(0, 75 - daysPassed);
-        let timeText = c.rankIndex > 0 ? `${daysLeft} يوم` : '-';
+        let countDisplay = "";
+        let timeText = "";
+        let rankTd = "";
+        let timeTd = "";
+
+        if (isVipActive) {
+            countDisplay = c.rankIndex < 4 ? `${c.count} / ${c.target}` : `${c.count} (ماكس)`;
+            let daysPassed = Math.floor((now - c.lastPurchaseTime) / (1000 * 60 * 60 * 24));
+            let daysLeft = Math.max(0, 75 - daysPassed);
+            timeText = c.rankIndex > 0 ? `${daysLeft} يوم` : '-';
+            rankTd = `<td style="text-align:center; font-weight:bold; color:${rank.color}">${rank.name}</td>`;
+            timeTd = `<td style="text-align:center;">${timeText}</td>`;
+        } else {
+            countDisplay = `${c.count}`;
+        }
         
         let delBtn = isAdmin ? `<button class="btn btn-danger" style="padding:4px 10px; font-size:12px" onclick="deleteVip('${c.phone}')"><i class="fas fa-trash"></i></button>` : '-';
-
-        let isEmpVip = currentUser && currentUser.role === 'employee';
         let detailsBtn = `<button class="btn" style="padding:4px 10px; font-size:12px; background:var(--primary); color:#fff;" title="عرض تفاصيل العميل" onclick="openCustomerDetails('${esc(c.phone)}','${esc(c.name)}')"><i class="fas fa-eye"></i></button>`;
+        
         rows += `<tr>
             <td style="text-align:center; font-weight:bold">${esc(c.name)}</td>
             <td style="text-align:center;" dir="ltr">${displayPhone}</td>
-            <td style="text-align:center; font-weight:bold; color:${rank.color}">${rank.name}</td>
+            ${rankTd}
             <td style="text-align:center; font-weight:bold;" class="eng-num">${countDisplay}</td>
-            <td style="text-align:center;">${timeText}</td>
+            ${timeTd}
             <td style="text-align:center;">${detailsBtn}</td>
             ${isEmpVip ? '' : `<td style="text-align:center;">${delBtn}</td>`}
         </tr>`;
     });
-    tbody.innerHTML = rows || `<tr><td colspan='7' style='text-align:center; padding:20px; color:var(--text-muted)'>لا يوجد عملاء بعد</td></tr>`;
+    let colSpan = isVipActive ? (isEmpVip ? 6 : 7) : (isEmpVip ? 4 : 5);
+    tbody.innerHTML = rows || `<tr><td colspan='${colSpan}' style='text-align:center; padding:20px; color:var(--text-muted)'>لا يوجد عملاء بعد</td></tr>`;
     
     let countBadge = document.getElementById("vipTotalCountBadge");
     if(countBadge) countBadge.innerText = `إجمالي العملاء: ${Object.keys(vips).length}`;
@@ -3627,7 +3652,7 @@ function getDefaultData() {
     return {
         wallets:  safeJSON(store.wallets,  {"جوال باي — سعاد":{bal:0,cur:"₪",active:true},"جوال باي — محمد":{bal:0,cur:"₪",active:true},"بال باي — أحمد":{bal:0,cur:"₪",active:true},"بايننس — احمد":{bal:0,cur:"$",active:true}}),
         invest:   safeJSON(store.invest,   {ahmad:{d:0,s:0},mohamed:{d:0,s:0},store:{d:0,s:0}}),
-        settings: safeJSON(store.settings, {ahmad:0,mohamed:0,store:100,deductCost:false,exchangeRate:0,egpRate:13,logsVis:"all",discountEnabled:true,discountChance:25,discountMin:10,discountMax:20,validityMin:15,validityMax:45}),
+        settings: safeJSON(store.settings, {ahmad:0,mohamed:0,store:100,deductCost:false,exchangeRate:0,egpRate:13,logsVis:"all",discountEnabled:false,vipEnabled:false,discountChance:25,discountMin:10,discountMax:20,validityMin:15,validityMax:45}),
         services: safeJSON(store.services, []),
         vipCustomers: safeJSON(store.vipCustomers, {})
     };
@@ -5146,7 +5171,11 @@ function applyRBAC() {
     let settings = safeJSON(store.settings, {});
     let logsVis = settings.logsVis || 'all';
 
-    // 2. توزيع الصلاحيات
+    if (typeof updateVipAndDiscountUiState === 'function') {
+        updateVipAndDiscountUiState(settings.vipEnabled === true, settings.discountEnabled === true);
+    }
+
+    // 2. توزيع الصلاحياتتوزيع الصلاحيات
     if (role === 'admin') {
         safeToggle("btnSecurity", "remove");
         safeToggle("btnBackup", "remove");
@@ -5805,12 +5834,18 @@ function syncPurchaseDuration() {
 function loadProfitSettings(){
     let s = safeJSON(store.settings, {});
     document.getElementById("setExchangeRate").value = s.exchangeRate || 0;
-    let _egpEl = document.getElementById("setEgpRate"); if(_egpEl) _egpEl.value = s.egpRate || 13;
+    let _egpEl = document.getElementById("setEgpRate");
+    if(_egpEl) _egpEl.value = s.egpRate || 13;
     
-    document.getElementById("setDiscountEnabled").checked = s.discountEnabled !== false;
-    document.getElementById("setVipEnabled").checked = s.vipEnabled !== false;
-    let _btnVip = document.getElementById("btnVip");
-    if(_btnVip) _btnVip.style.display = s.vipEnabled !== false ? '' : 'none';
+    let isDiscountActive = s.discountEnabled === true;
+    document.getElementById("setDiscountEnabled").checked = isDiscountActive;
+    
+    let isVipActive = s.vipEnabled === true;
+    document.getElementById("setVipEnabled").checked = isVipActive;
+    
+    if (typeof updateVipAndDiscountUiState === 'function') {
+        updateVipAndDiscountUiState(isVipActive, isDiscountActive);
+    }
     document.getElementById("setDiscountChance").value = s.discountChance ?? 25;
     document.getElementById("setDiscountMin").value = s.discountMin ?? 10;
     document.getElementById("setDiscountMax").value = s.discountMax ?? 20;
@@ -5827,10 +5862,41 @@ function saveProfitSettings(){
     notify("تم الحفظ");
 }
 
+function updateVipAndDiscountUiState(isVipActive, isDiscountActive) {
+    let btnVip = document.getElementById("btnVip");
+    if(btnVip) {
+        btnVip.innerHTML = isVipActive ? '<i class="fas fa-star"></i> العملاء المميزين' : '<i class="fas fa-users"></i> عملائنا';
+    }
+    
+    let vipHeader = document.querySelector("#vip h3");
+    if(vipHeader) {
+        let badgeHtml = `<span id="vipTotalCountBadge" class="badge badge-info" style="font-size:12px;">العدد: 0</span>`;
+        vipHeader.innerHTML = isVipActive 
+            ? `<i class="fas fa-star" style="color:var(--primary)"></i> العملاء المميزين (VIP) ${badgeHtml}`
+            : `<i class="fas fa-users" style="color:var(--primary)"></i> عملائنا ${badgeHtml}`;
+    }
+    
+    let isAdmin = currentUser && currentUser.role === 'admin';
+    
+    let vipDetailsBtn = document.querySelector("#vip button[onclick='openVipInfoModal()']");
+    let vipAddBtn = document.getElementById("btnAddVip");
+    let vipClearBtn = document.getElementById("btnDeleteAllVip");
+    
+    if(vipDetailsBtn) vipDetailsBtn.style.display = isVipActive ? '' : 'none';
+    if(vipAddBtn) vipAddBtn.style.display = (isVipActive && isAdmin) ? '' : 'none';
+    if(vipClearBtn) vipClearBtn.style.display = (isVipActive && isAdmin) ? '' : 'none';
+
+    let btnDiscountsEl = document.getElementById("btnDiscounts");
+    if(btnDiscountsEl) btnDiscountsEl.style.display = isDiscountActive ? '' : 'none';
+}
+
 function saveDiscountSettings(){
     if(currentUser.role !== 'admin') return notify("للأدمن فقط","error");
     let sObj = safeJSON(store.settings, {});
     sObj.discountEnabled = document.getElementById("setDiscountEnabled").checked;
+    if (typeof updateVipAndDiscountUiState === 'function') {
+        updateVipAndDiscountUiState(sObj.vipEnabled === true, sObj.discountEnabled === true);
+    }
     sObj.discountChance = +document.getElementById("setDiscountChance").value || 0;
     sObj.discountMin = +document.getElementById("setDiscountMin").value || 0;
     sObj.discountMax = +document.getElementById("setDiscountMax").value || 0;
@@ -5846,9 +5912,14 @@ function saveVipSettings(){
     if(currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
     let sObj = safeJSON(store.settings, {});
     sObj.vipEnabled = document.getElementById("setVipEnabled").checked;
-    store.settings = JSON.stringify(sObj); fbSave("settings", sObj);
-    let btnVipEl = document.getElementById("btnVip");
-    if(btnVipEl) btnVipEl.style.display = sObj.vipEnabled ? '' : 'none';
+    store.settings = JSON.stringify(sObj);
+    fbSave("settings", sObj);
+    
+    if (typeof updateVipAndDiscountUiState === 'function') {
+        updateVipAndDiscountUiState(sObj.vipEnabled === true, sObj.discountEnabled === true);
+    }
+    if (document.getElementById("vip") && !document.getElementById("vip").classList.contains("hidden")) refreshVip();
+    
     logAction("تعديل إعدادات نظام الرتب", 'general', { type: 'vip_settings', enabled: sObj.vipEnabled });
     notify(sObj.vipEnabled ? "تم تفعيل نظام الرتب" : "تم إيقاف نظام الرتب");
 }
@@ -6136,10 +6207,11 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     let vipRankChanged = false;
     let vipNewRank = null;
     let vipCustomerObj = null;
+    let vipEnabled = settings.vipEnabled === true;
 
-    let vipEnabled = settings.vipEnabled !== false;
+    // الرتب تزيد داخلياً بشكل طبيعي حتى لو كان النظام معطلاً
     // لا يُحتسب في عداد المشتريات إن كان المبلغ المدفوع صفراً أو استُخدم حساب مرهون (أو تعويض)
-    if (vipEnabled && customerPhoneVal && !isComp && !selectedPledge && (parseFloat(paid) || 0) > 0) {
+    if (customerPhoneVal && !isComp && !selectedPledge && (parseFloat(paid) || 0) > 0) {
         vipCustomerObj = vips[customerPhoneVal] || { name: customerVal, count: 0, rankIndex: 0, target: 3, lastPurchaseTime: nd.getTime() };
         vipPrevState = JSON.parse(JSON.stringify(vipCustomerObj)); 
         
@@ -6272,9 +6344,12 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
 
 
     let generatedCoupon = null;
-    let dEnabled = settings.discountEnabled !== false;
+    let dEnabled = settings.discountEnabled === true;
     let baseChance = settings.discountChance !== undefined ? settings.discountChance : 25;
-    let vipChancePerk = vipNewRank ? vipNewRank.chance : 0;
+    
+    // إذا كان نظام الرتب معطلاً، نتعامل مع الكود كأنه لزبون عادي
+    let activeVipRank = vipEnabled && vipNewRank ? vipNewRank : null;
+    let vipChancePerk = activeVipRank ? activeVipRank.chance : 0;
     let finalChance = baseChance + vipChancePerk;
 
     if (dEnabled && !isComp && !selectedPledge && paid > 0 && appliedDiscountPct === 0) {
@@ -6284,10 +6359,9 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
             let dMax = settings.discountMax !== undefined ? settings.discountMax : 20;
             let vMin = settings.validityMin !== undefined ? settings.validityMin : 15;
             let vMax = settings.validityMax !== undefined ? settings.validityMax : 45;
-
-            let pct = Math.floor(Math.random() * (dMax - dMin + 1)) + dMin + (vipNewRank ? vipNewRank.discount : 0);
-            let days = Math.floor(Math.random() * (vMax - vMin + 1)) + vMin + (vipNewRank ? vipNewRank.days : 0);
-            let uses = vipNewRank ? vipNewRank.uses : 1;
+            let pct = Math.floor(Math.random() * (dMax - dMin + 1)) + dMin + (activeVipRank ? activeVipRank.discount : 0);
+            let days = Math.floor(Math.random() * (vMax - vMin + 1)) + vMin + (activeVipRank ? activeVipRank.days : 0);
+            let uses = activeVipRank ? activeVipRank.uses : 1;
 
             let dList = safeJSON(store.discounts, []);
             let code;
@@ -6307,17 +6381,20 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     }
     
     // تسلسل النوافذ المنبثقة للـ VIP والكود
-// تسلسل النوافذ المنبثقة للـ VIP والكود (تم منع الظهور للزبون العادي > 0)
-    if (generatedCoupon && vipRankChanged && vipCustomerObj.rankIndex > 0) {
+    let showVipNotif = vipEnabled && vipRankChanged && vipCustomerObj.rankIndex > 0;
+    
+    if (generatedCoupon && showVipNotif) {
         showCouponModal(generatedCoupon, customerPhoneVal, () => {
-            setTimeout(() => { showVipUpgradeModal(vipCustomerObj, vipNewRank, customerPhoneVal); }, 5000);
+            setTimeout(() => {
+                showVipUpgradeModal(vipCustomerObj, vipNewRank, customerPhoneVal);
+            }, 5000);
         });
     } else if (generatedCoupon) {
         showCouponModal(generatedCoupon, customerPhoneVal, null);
-    } else if (vipRankChanged && vipCustomerObj.rankIndex > 0) {
+    } else if (showVipNotif) {
         showVipUpgradeModal(vipCustomerObj, vipNewRank, customerPhoneVal);
     }
-    
+
     currentPage.history = 1;
     loadPurchaseStock();
     refreshAll();  notify("تمت العملية بنجاح");
