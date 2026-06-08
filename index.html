@@ -545,16 +545,21 @@
         /* ═══════════════════════════════════════
            أنماط الدردشة الجماعية — Team Chat
         ═══════════════════════════════════════ */
+        #teamChat {
+            height: calc(100vh - 180px);
+            min-height: 400px;
+        }
+
         .chat-msg-wrap { display:flex; gap:10px; align-items:flex-start; animation:fadeIn 0.25s ease-out; }
         .chat-msg-wrap.mine { flex-direction:row-reverse; }
 
         .chat-avatar {
-            width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center;
-            font-size:14px; font-weight:800; color:white; flex-shrink:0; text-transform:uppercase;
+            width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+            font-size:13px; font-weight:800; color:white; flex-shrink:0; text-transform:uppercase;
         }
 
         .chat-bubble {
-            max-width:70%; padding:11px 15px; border-radius:16px; font-size:14px; line-height:1.6;
+            max-width:72%; padding:10px 14px; font-size:14px; line-height:1.6;
             word-break:break-word; white-space:pre-wrap;
             background:var(--bg-card); border:1px solid var(--border-color);
             color:var(--text-main); box-shadow:0 2px 8px rgba(0,0,0,0.06);
@@ -572,11 +577,11 @@
         .chat-sender-name { color:var(--primary); }
         .chat-msg-wrap.mine .chat-sender-name { color:rgba(255,255,255,0.9); }
 
-        .chat-meta { font-size:10px; margin-top:5px; opacity:0.6; display:flex; align-items:center; gap:5px; }
+        .chat-meta { font-size:10px; margin-top:4px; opacity:0.6; display:flex; align-items:center; gap:5px; }
         .chat-msg-wrap.mine .chat-meta { justify-content:flex-end; }
 
         .chat-role-badge {
-            font-size:9px; padding:1px 6px; border-radius:6px; font-weight:700;
+            font-size:9px; padding:1px 5px; border-radius:5px; font-weight:700;
             background:rgba(99,102,241,0.12); color:var(--primary);
         }
         .chat-msg-wrap.mine .chat-role-badge { background:rgba(255,255,255,0.18); color:rgba(255,255,255,0.9); }
@@ -587,44 +592,57 @@
             margin:4px auto; max-width:300px; border:1px solid var(--border-color);
         }
 
-        /* تمييز رسائل الأدمن */
-        .chat-msg-admin .chat-bubble:not(.mine .chat-bubble) {
-            border-right:3px solid var(--primary);
-        }
-
         #chatMessagesContainer::-webkit-scrollbar { width:4px; }
         #chatMessagesContainer::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:10px; }
 
-        /* تأثير Focus على منطقة الكتابة */
         #chatInputWrapper:focus-within {
             border-color:var(--primary);
             box-shadow:0 0 0 3px rgba(99,102,241,0.1);
         }
 
-        /* أنيميشن الصوت */
         @keyframes chatBounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
         .chat-new-notif { animation:chatBounce 0.4s ease; }
 
-        /* تاريخ الفاصل */
-        .chat-date-divider {
-            display:flex; align-items:center; gap:10px; margin:10px 0;
-        }
-        .chat-date-divider::before, .chat-date-divider::after {
-            content:''; flex:1; height:1px; background:var(--border-color);
-        }
+        .chat-date-divider { display:flex; align-items:center; gap:10px; margin:8px 0; }
+        .chat-date-divider::before, .chat-date-divider::after { content:''; flex:1; height:1px; background:var(--border-color); }
         .chat-date-divider span {
-            font-size:11px; color:var(--text-muted); white-space:nowrap;
-            padding:3px 10px; background:var(--bg-input);
+            font-size:10px; color:var(--text-muted); white-space:nowrap;
+            padding:2px 10px; background:var(--bg-input);
             border:1px solid var(--border-color); border-radius:20px; font-weight:700;
         }
 
-        /* زر حذف رسالة */
         .chat-del-btn {
             opacity:0; transition:opacity 0.2s; background:none; border:none; cursor:pointer;
             color:var(--danger); font-size:11px; padding:2px 6px; border-radius:6px;
             align-self:center;
         }
         .chat-msg-wrap:hover .chat-del-btn { opacity:1; }
+
+        /* ── تحسينات الجوال ── */
+        @media (max-width: 768px) {
+            #teamChat {
+                /* على الجوال: الارتفاع = كامل الشاشة ناقص شريط التنقل العلوي وهامش الصفحة */
+                height: calc(100dvh - 155px);
+                min-height: 300px;
+                margin: 0 -10px -20px -10px; /* إلغاء padding الـ main-content */
+                border-radius: 0 !important;
+            }
+
+            .chat-bubble { max-width: 82%; font-size:13px; padding:9px 12px; }
+            .chat-avatar { width:30px; height:30px; border-radius:9px; font-size:12px; }
+            .chat-del-btn { opacity:1; } /* على الجوال يظهر دائماً لأنه لا يوجد hover */
+
+            /* إخفاء نص "Enter للإرسال" على الجوال */
+            #chatHintText { display:none; }
+
+            /* زر مسح الكل — إخفاء النص وإبقاء الأيقونة فقط على الشاشات الضيقة */
+            .chat-btn-label { display:none; }
+        }
+
+        @media (max-width: 480px) {
+            #teamChat { height: calc(100dvh - 145px); }
+            .chat-bubble { max-width:86%; font-size:13px; }
+        }
     </style>
 </head>
 
@@ -1976,28 +1994,30 @@
     <!-- ═══════════════════════════════════════════════════
          قسم الدردشة الجماعية (Team Chat)
     ═══════════════════════════════════════════════════ -->
-    <div id="teamChat" class="card hidden" style="padding:0; overflow:hidden; display:flex; flex-direction:column; height:calc(100vh - 180px); min-height:500px;">
+    <div id="teamChat" class="card hidden" id="teamChatCard" style="padding:0; overflow:hidden; display:flex; flex-direction:column; height:calc(100vh - 180px); min-height:400px;">
         <!-- رأس الدردشة -->
-        <div style="background:linear-gradient(135deg,var(--primary),#a855f7); padding:20px 25px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-            <div style="display:flex; align-items:center; gap:14px;">
-                <div style="width:46px; height:46px; background:rgba(255,255,255,0.18); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; color:white; flex-shrink:0;">
+        <div style="background:linear-gradient(135deg,var(--primary),#a855f7); padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:42px; height:42px; background:rgba(255,255,255,0.18); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; color:white; flex-shrink:0;">
                     <i class="fas fa-comments"></i>
                 </div>
                 <div>
-                    <div style="font-size:17px; font-weight:900; color:white; letter-spacing:-0.3px;">دردشة الفريق</div>
-                    <div id="chatOnlineCount" style="font-size:12px; color:rgba(255,255,255,0.75); margin-top:2px;"><i class="fas fa-circle" style="font-size:8px; color:#4ade80;"></i> الكل</div>
+                    <div style="font-size:16px; font-weight:900; color:white; letter-spacing:-0.3px;">دردشة الفريق</div>
+                    <div id="chatOnlineCount" style="font-size:11px; color:rgba(255,255,255,0.75); margin-top:1px;"><i class="fas fa-circle" style="font-size:7px; color:#4ade80;"></i> مشترك للجميع</div>
                 </div>
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div id="chatSyncDot" style="width:10px; height:10px; border-radius:50%; background:#4ade80; box-shadow:0 0 8px rgba(74,222,128,0.6); transition:background 0.3s;" title="متصل"></div>
-                <button onclick="clearAllChatMessages()" id="btnClearChat" class="hidden" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); color:white; padding:7px 14px; border-radius:10px; cursor:pointer; font-size:12px; font-weight:700; transition:0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.5)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
-                    <i class="fas fa-trash"></i> مسح الكل
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div id="chatSyncDot" style="width:9px; height:9px; border-radius:50%; background:#4ade80; box-shadow:0 0 8px rgba(74,222,128,0.6); transition:background 0.3s;" title="متصل"></div>
+                <button onclick="clearAllChatMessages()" id="btnClearChat" class="hidden"
+                    style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); color:white; padding:6px 12px; border-radius:9px; cursor:pointer; font-size:12px; font-weight:700; transition:0.2s; white-space:nowrap;"
+                    onmouseover="this.style.background='rgba(239,68,68,0.5)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+                    <i class="fas fa-trash"></i> <span class="chat-btn-label"> مسح الكل</span>
                 </button>
             </div>
         </div>
 
         <!-- منطقة الرسائل -->
-        <div id="chatMessagesContainer" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:14px; background:var(--bg-body);">
+        <div id="chatMessagesContainer" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; background:var(--bg-body); -webkit-overflow-scrolling:touch;">
             <div id="chatLoadingMsg" style="text-align:center; color:var(--text-muted); padding:40px; font-size:14px;">
                 <div style="width:36px;height:36px;border:3px solid rgba(99,102,241,0.2);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;"></div>
                 جاري تحميل الرسائل...
@@ -2005,24 +2025,22 @@
         </div>
 
         <!-- قسم الكتابة -->
-        <div style="border-top:1px solid var(--border-color); background:var(--bg-card); padding:16px 20px; flex-shrink:0;">
-            <div style="display:flex; gap:10px; align-items:flex-end;">
+        <div style="border-top:1px solid var(--border-color); background:var(--bg-card); padding:12px 14px; flex-shrink:0; padding-bottom:max(12px, env(safe-area-inset-bottom));">
+            <div style="display:flex; gap:8px; align-items:flex-end;">
                 <div style="flex:1; background:var(--bg-input); border:2px solid var(--border-color); border-radius:14px; padding:2px 6px; transition:border-color 0.2s;" id="chatInputWrapper">
-                    <textarea id="chatInput" placeholder="اكتب رسالة للفريق..." maxlength="1000"
-                        style="width:100%; background:transparent; border:none; outline:none; resize:none; font-family:'Tajawal',sans-serif; font-size:15px; color:var(--text-main); padding:10px; min-height:44px; max-height:120px; overflow-y:auto; line-height:1.5;"
+                    <textarea id="chatInput" placeholder="اكتب رسالة..." maxlength="1000"
+                        style="width:100%; background:transparent; border:none; outline:none; resize:none; font-family:'Tajawal',sans-serif; font-size:15px; color:var(--text-main); padding:9px 10px; min-height:42px; max-height:100px; overflow-y:auto; line-height:1.5; display:block;"
                         oninput="chatAutoResize(this)"
-                        onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendChatMessage();}"></textarea>
+                        onkeydown="if(event.key==='Enter' && !event.shiftKey && !_isMobile()){event.preventDefault();sendChatMessage();}"></textarea>
                 </div>
                 <button onclick="sendChatMessage()" id="btnSendChat"
-                    style="width:48px; height:48px; border-radius:14px; background:var(--primary); border:none; color:white; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; box-shadow:0 4px 12px rgba(99,102,241,0.35);"
-                    onmouseover="this.style.background='var(--primary-dark)'; this.style.transform='translateY(-2px)'"
-                    onmouseout="this.style.background='var(--primary)'; this.style.transform='translateY(0)'">
+                    style="width:46px; height:46px; border-radius:13px; background:var(--primary); border:none; color:white; font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; box-shadow:0 4px 12px rgba(99,102,241,0.35); -webkit-tap-highlight-color:transparent;">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding:0 2px;">
-                <span style="font-size:11px; color:var(--text-muted);">اضغط Enter للإرسال، Shift+Enter لسطر جديد</span>
-                <span id="chatCharCount" style="font-size:11px; color:var(--text-muted);">0/1000</span>
+            <div class="chat-input-hint" style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding:0 2px;">
+                <span id="chatHintText" style="font-size:10px; color:var(--text-muted);">Enter للإرسال · Shift+Enter لسطر جديد</span>
+                <span id="chatCharCount" style="font-size:10px; color:var(--text-muted);">0/1000</span>
             </div>
         </div>
     </div>
@@ -10830,7 +10848,30 @@ function dismissAdminNotification(userId, overlay) {
    - مزامنة فورية عبر Firestore real-time listener
    - صوت تنبيه عند رسائل جديدة إذا كان الشات مغلقاً
    - عداد رسائل غير مقروءة على زر الشات في الشريط الجانبي
+   - متوافق مع الجوال والحاسوب
    ════════════════════════════════════════════════════════════════ */
+
+// ── كشف الجوال (لتجنب إرسال بـ Enter على لوحة مفاتيح الجوال) ─
+function _isMobile() {
+    return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        || window.innerWidth <= 768;
+}
+
+// ── تعديل ارتفاع الشات عند ظهور/إخفاء الكيبورد على الجوال ──
+function _initChatKeyboardFix() {
+    if (!_isMobile()) return;
+    // استخدام Visual Viewport API لتتبع ظهور الكيبورد
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            const chat = document.getElementById('teamChat');
+            if (!chat || chat.classList.contains('hidden')) return;
+            const vh = window.visualViewport.height;
+            // ارتفاع الشات = ارتفاع viewport المرئي ناقص أي عناصر فوقه
+            const topOffset = chat.getBoundingClientRect().top;
+            chat.style.height = Math.max(200, vh - topOffset - 10) + 'px';
+        });
+    }
+}
 
 const CHAT_MAX_MESSAGES = 300;
 let _chatListener = null;
@@ -11040,17 +11081,27 @@ function openTeamChat() {
     _chatLastReadTs = Date.now();
     _updateChatBadge(0);
 
+    // تحديث نص التلميح حسب الجهاز
+    const hintEl = document.getElementById('chatHintText');
+    if (hintEl) {
+        hintEl.textContent = _isMobile()
+            ? 'اضغط زر الإرسال ←'
+            : 'Enter للإرسال · Shift+Enter لسطر جديد';
+    }
+
     // احفظ آخر وقت قراءة في localStorage
     if (currentUser) {
         localStorage.setItem('_chatLastRead_' + currentUser.id, String(_chatLastReadTs));
     }
+
+    // إصلاح ارتفاع الشات على الجوال عند ظهور الكيبورد
+    _initChatKeyboardFix();
 
     if (!_chatInitialized) {
         _chatInitialized = true;
         if (!isDemoMode && db && fbDocRef) {
             _initChatListener();
         } else if (isDemoMode) {
-            // وضع تجريبي: اعرض رسائل وهمية
             _chatMessages = [];
             const loadDiv = document.getElementById('chatLoadingMsg');
             if (loadDiv) loadDiv.style.display = 'none';
@@ -11064,9 +11115,11 @@ function openTeamChat() {
         const loadDiv = document.getElementById('chatLoadingMsg');
         if (loadDiv) loadDiv.style.display = 'none';
         _renderAllMessages(_chatMessages, true);
-        // focus على خانة الكتابة
-        const input = document.getElementById('chatInput');
-        if (input) setTimeout(() => input.focus(), 200);
+        // focus على خانة الكتابة (فقط على الحاسوب لتجنب فتح الكيبورد تلقائياً على الجوال)
+        if (!_isMobile()) {
+            const input = document.getElementById('chatInput');
+            if (input) setTimeout(() => input.focus(), 200);
+        }
     }, 300);
 }
 
