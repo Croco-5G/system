@@ -545,40 +545,58 @@
         /* ═══════════════════════════════════════
            أنماط الدردشة الجماعية — Team Chat
         ═══════════════════════════════════════ */
+
+        /* الدردشة جزء عادي من الموقع، تملأ الشاشة بالكامل */
         #teamChat {
-            height: calc(100vh - 180px);
-            min-height: 400px;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 0 !important;
         }
 
-        .chat-msg-wrap { display:flex; gap:10px; align-items:flex-start; animation:fadeIn 0.25s ease-out; }
+        /* إخفاء الإحصائيات المالية عند فتح الدردشة */
+        body.chat-active .stats-grid {
+            display: none !important;
+        }
+
+        /* منع main-content من الـ overflow عند فتح الدردشة */
+        body.chat-active .main-content {
+            overflow: hidden;
+        }
+        .chat-msg-wrap { display:flex; gap:8px; align-items:flex-end; animation:fadeIn 0.2s ease-out; }
         .chat-msg-wrap.mine { flex-direction:row-reverse; }
 
         .chat-avatar {
-            width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center;
-            font-size:13px; font-weight:800; color:white; flex-shrink:0; text-transform:uppercase;
+            width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+            font-size:12px; font-weight:800; color:white; flex-shrink:0; text-transform:uppercase;
+            margin-bottom:2px;
         }
 
         .chat-bubble {
-            max-width:72%; padding:10px 14px; font-size:14px; line-height:1.6;
-            word-break:break-word; white-space:pre-wrap;
+            max-width:74%; padding:9px 13px 22px 13px; font-size:14.5px; line-height:1.55;
+            word-break:break-word; white-space:pre-wrap; position:relative;
             background:var(--bg-card); border:1px solid var(--border-color);
-            color:var(--text-main); box-shadow:0 2px 8px rgba(0,0,0,0.06);
-            border-radius:4px 16px 16px 16px;
+            color:var(--text-main); box-shadow:0 1px 3px rgba(0,0,0,0.08);
+            border-radius:4px 18px 18px 18px;
         }
         .chat-msg-wrap.mine .chat-bubble {
-            background:linear-gradient(135deg,var(--primary),#6366f1);
+            background:linear-gradient(135deg,#5b58e8,var(--primary));
             color:white; border:none;
-            border-radius:16px 4px 16px 16px;
-            box-shadow:0 4px 14px rgba(99,102,241,0.3);
+            border-radius:18px 4px 18px 18px;
+            box-shadow:0 2px 10px rgba(99,102,241,0.28);
         }
 
-        .chat-sender { font-size:11px; font-weight:800; margin-bottom:4px; }
+        .chat-sender { font-size:11.5px; font-weight:800; margin-bottom:3px; }
         .chat-msg-wrap.mine .chat-sender { text-align:left; color:rgba(255,255,255,0.8); }
         .chat-sender-name { color:var(--primary); }
         .chat-msg-wrap.mine .chat-sender-name { color:rgba(255,255,255,0.9); }
 
-        .chat-meta { font-size:10px; margin-top:4px; opacity:0.6; display:flex; align-items:center; gap:5px; }
-        .chat-msg-wrap.mine .chat-meta { justify-content:flex-end; }
+        /* التوقيت داخل الفقاعة (أسفل اليسار/اليمين) زي واتساب */
+        .chat-meta {
+            font-size:10px; position:absolute; bottom:5px; left:10px;
+            opacity:0.55; display:flex; align-items:center; gap:4px;
+        }
+        .chat-msg-wrap.mine .chat-meta { left:auto; right:10px; opacity:0.7; }
 
         .chat-role-badge {
             font-size:9px; padding:1px 5px; border-radius:5px; font-weight:700;
@@ -588,60 +606,130 @@
 
         .chat-system-msg {
             text-align:center; font-size:12px; color:var(--text-muted);
-            padding:6px 14px; background:var(--bg-input); border-radius:20px;
+            padding:5px 14px; background:var(--bg-input); border-radius:20px;
             margin:4px auto; max-width:300px; border:1px solid var(--border-color);
+        }
+
+        #chatMessagesContainer {
+            background-image: radial-gradient(circle, var(--border-color) 1px, transparent 1px);
+            background-size: 22px 22px;
+            background-color: var(--bg-body);
+        }
+        html.dark-mode #chatMessagesContainer {
+            background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
         }
 
         #chatMessagesContainer::-webkit-scrollbar { width:4px; }
         #chatMessagesContainer::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:10px; }
 
         #chatInputWrapper:focus-within {
-            border-color:var(--primary);
-            box-shadow:0 0 0 3px rgba(99,102,241,0.1);
+            border-color:var(--primary) !important;
+            box-shadow:0 0 0 3px rgba(99,102,241,0.12);
         }
 
         @keyframes chatBounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
         .chat-new-notif { animation:chatBounce 0.4s ease; }
 
-        .chat-date-divider { display:flex; align-items:center; gap:10px; margin:8px 0; }
+        .chat-date-divider { display:flex; align-items:center; gap:10px; margin:10px 0 6px 0; }
         .chat-date-divider::before, .chat-date-divider::after { content:''; flex:1; height:1px; background:var(--border-color); }
         .chat-date-divider span {
-            font-size:10px; color:var(--text-muted); white-space:nowrap;
-            padding:2px 10px; background:var(--bg-input);
+            font-size:11px; color:var(--text-muted); white-space:nowrap;
+            padding:3px 12px; background:var(--bg-card);
             border:1px solid var(--border-color); border-radius:20px; font-weight:700;
         }
 
         .chat-del-btn {
             opacity:0; transition:opacity 0.2s; background:none; border:none; cursor:pointer;
-            color:var(--danger); font-size:11px; padding:2px 6px; border-radius:6px;
-            align-self:center;
+            color:var(--danger); font-size:12px; padding:4px 7px; border-radius:8px;
+            align-self:center; flex-shrink:0;
         }
         .chat-msg-wrap:hover .chat-del-btn { opacity:1; }
 
-        /* ── تحسينات الجوال ── */
+        /* ── تحسينات الجوال — واتساب ستايل ── */
         @media (max-width: 768px) {
+
+            /* الشات يملأ الشاشة بالكامل */
             #teamChat {
-                /* على الجوال: الارتفاع = كامل الشاشة ناقص شريط التنقل العلوي وهامش الصفحة */
-                height: calc(100dvh - 155px);
-                min-height: 300px;
-                margin: 0 -10px -20px -10px; /* إلغاء padding الـ main-content */
+                height: 100dvh !important;
+                min-height: unset;
+                margin: 0 !important;
+                border: none !important;
                 border-radius: 0 !important;
             }
 
-            .chat-bubble { max-width: 82%; font-size:13px; padding:9px 12px; }
-            .chat-avatar { width:30px; height:30px; border-radius:9px; font-size:12px; }
-            .chat-del-btn { opacity:1; } /* على الجوال يظهر دائماً لأنه لا يوجد hover */
+            body.chat-active #teamChat {
+                height: 100dvh !important;
+                margin: 0 !important;
+            }
 
-            /* إخفاء نص "Enter للإرسال" على الجوال */
+            /* منع الصفحة نفسها من السكرول عند فتح الدردشة */
+            body.chat-active .main-content {
+                overflow: hidden;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .chat-bubble {
+                max-width: 84%;
+                font-size: 14px;
+                padding: 9px 12px 22px 12px;
+            }
+            .chat-avatar { width:30px; height:30px; font-size:12px; }
+            .chat-del-btn { opacity:1; }
             #chatHintText { display:none; }
-
-            /* زر مسح الكل — إخفاء النص وإبقاء الأيقونة فقط على الشاشات الضيقة */
             .chat-btn-label { display:none; }
+
+            /* تكبير منطقة الإدخال على الجوال */
+            #chatInputWrapper textarea {
+                font-size: 16px !important; /* يمنع iOS من التقريب التلقائي */
+                min-height: 44px !important;
+            }
+
+            #btnSendChat {
+                width: 48px !important;
+                height: 48px !important;
+                border-radius: 50% !important;
+                font-size: 18px !important;
+            }
         }
 
         @media (max-width: 480px) {
-            #teamChat { height: calc(100dvh - 145px); }
-            .chat-bubble { max-width:86%; font-size:13px; }
+            #teamChat { height: 100dvh !important; }
+            body.chat-active #teamChat { height: 100dvh !important; }
+            .chat-bubble { max-width:88%; font-size:14px; }
+        }
+
+        /* ── يجعل الدردشة قسماً حقيقياً كأي خانة أخرى في الموقع ── */
+        /* نلغي كل الـ card styling (border, shadow, border-radius) */
+        #teamChat.card {
+            width: 100%;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            border: none !important;
+            padding: 0 !important;
+            margin-bottom: 0 !important;
+            background: transparent !important;
+        }
+        
+        body.chat-active .main-content {
+            padding: 0 !important;
+            overflow: hidden;
+        }
+        
+        /* ضبط الارتفاع ليملأ الشاشة بالكامل */
+        body.chat-active #teamChat {
+            height: 100dvh !important;
+        }
+        
+        #teamChat:not(.hidden) {
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* إخفاء "متزامن" فقط عند فتح الدردشة — بدون التأثير على باقي الموقع */
+        body.chat-active #syncStatus {
+            display: none !important;
         }
     </style>
 </head>
@@ -1994,22 +2082,22 @@
     <!-- ═══════════════════════════════════════════════════
          قسم الدردشة الجماعية (Team Chat)
     ═══════════════════════════════════════════════════ -->
-    <div id="teamChat" class="card hidden" id="teamChatCard" style="padding:0; overflow:hidden; display:flex; flex-direction:column; height:calc(100vh - 180px); min-height:400px;">
+    <div id="teamChat" class="card hidden" id="teamChatCard" style="padding:0; overflow:hidden; display:flex; flex-direction:column;">
         <!-- رأس الدردشة -->
-        <div style="background:linear-gradient(135deg,var(--primary),#a855f7); padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+        <div style="background:linear-gradient(135deg,var(--primary),#a855f7); padding:14px 16px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; box-shadow:0 2px 12px rgba(99,102,241,0.25);">
             <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:42px; height:42px; background:rgba(255,255,255,0.18); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; color:white; flex-shrink:0;">
-                    <i class="fas fa-comments"></i>
+                <div style="width:40px; height:40px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; color:white; flex-shrink:0; border:2px solid rgba(255,255,255,0.3);">
+                    <i class="fas fa-users"></i>
                 </div>
                 <div>
                     <div style="font-size:16px; font-weight:900; color:white; letter-spacing:-0.3px;">دردشة الفريق</div>
-                    <div id="chatOnlineCount" style="font-size:11px; color:rgba(255,255,255,0.75); margin-top:1px;"><i class="fas fa-circle" style="font-size:7px; color:#4ade80;"></i> مشترك للجميع</div>
+                    <div id="chatOnlineCount" style="font-size:11px; color:rgba(255,255,255,0.8); margin-top:1px; display:flex; align-items:center; gap:4px;"><i class="fas fa-circle" style="font-size:7px; color:#4ade80;"></i> مشترك للجميع</div>
                 </div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <div id="chatSyncDot" style="width:9px; height:9px; border-radius:50%; background:#4ade80; box-shadow:0 0 8px rgba(74,222,128,0.6); transition:background 0.3s;" title="متصل"></div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div id="chatSyncDot" style="width:9px; height:9px; border-radius:50%; background:#4ade80; box-shadow:0 0 8px rgba(74,222,128,0.7); transition:background 0.3s;" title="متصل"></div>
                 <button onclick="clearAllChatMessages()" id="btnClearChat" class="hidden"
-                    style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); color:white; padding:6px 12px; border-radius:9px; cursor:pointer; font-size:12px; font-weight:700; transition:0.2s; white-space:nowrap;"
+                    style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); color:white; padding:6px 12px; border-radius:20px; cursor:pointer; font-size:12px; font-weight:700; transition:0.2s; white-space:nowrap;"
                     onmouseover="this.style.background='rgba(239,68,68,0.5)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
                     <i class="fas fa-trash"></i> <span class="chat-btn-label"> مسح الكل</span>
                 </button>
@@ -2017,28 +2105,28 @@
         </div>
 
         <!-- منطقة الرسائل -->
-        <div id="chatMessagesContainer" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; background:var(--bg-body); -webkit-overflow-scrolling:touch;">
+        <div id="chatMessagesContainer" style="flex:1; overflow-y:auto; padding:14px 12px; display:flex; flex-direction:column; gap:8px; background:var(--bg-body); -webkit-overflow-scrolling:touch;">
             <div id="chatLoadingMsg" style="text-align:center; color:var(--text-muted); padding:40px; font-size:14px;">
                 <div style="width:36px;height:36px;border:3px solid rgba(99,102,241,0.2);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;"></div>
                 جاري تحميل الرسائل...
             </div>
         </div>
 
-        <!-- قسم الكتابة -->
-        <div style="border-top:1px solid var(--border-color); background:var(--bg-card); padding:12px 14px; flex-shrink:0; padding-bottom:max(12px, env(safe-area-inset-bottom));">
+        <!-- قسم الكتابة — واتساب ستايل -->
+        <div style="border-top:1px solid var(--border-color); background:var(--bg-card); padding:10px 12px; flex-shrink:0; padding-bottom:max(10px, env(safe-area-inset-bottom));">
             <div style="display:flex; gap:8px; align-items:flex-end;">
-                <div style="flex:1; background:var(--bg-input); border:2px solid var(--border-color); border-radius:14px; padding:2px 6px; transition:border-color 0.2s;" id="chatInputWrapper">
+                <div style="flex:1; background:var(--bg-input); border:2px solid var(--border-color); border-radius:22px; padding:2px 12px; transition:border-color 0.2s, box-shadow 0.2s;" id="chatInputWrapper">
                     <textarea id="chatInput" placeholder="اكتب رسالة..." maxlength="1000"
-                        style="width:100%; background:transparent; border:none; outline:none; resize:none; font-family:'Tajawal',sans-serif; font-size:15px; color:var(--text-main); padding:9px 10px; min-height:42px; max-height:100px; overflow-y:auto; line-height:1.5; display:block;"
+                        style="width:100%; background:transparent; border:none; outline:none; resize:none; font-family:'Tajawal',sans-serif; font-size:15px; color:var(--text-main); padding:10px 0; min-height:42px; max-height:110px; overflow-y:auto; line-height:1.5; display:block;"
                         oninput="chatAutoResize(this)"
                         onkeydown="if(event.key==='Enter' && !event.shiftKey && !_isMobile()){event.preventDefault();sendChatMessage();}"></textarea>
                 </div>
                 <button onclick="sendChatMessage()" id="btnSendChat"
-                    style="width:46px; height:46px; border-radius:13px; background:var(--primary); border:none; color:white; font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; box-shadow:0 4px 12px rgba(99,102,241,0.35); -webkit-tap-highlight-color:transparent;">
-                    <i class="fas fa-paper-plane"></i>
+                    style="width:46px; height:46px; border-radius:50%; background:var(--primary); border:none; color:white; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; box-shadow:0 4px 14px rgba(99,102,241,0.38); -webkit-tap-highlight-color:transparent;">
+                    <i class="fas fa-paper-plane" style="margin-right:1px; margin-top:1px;"></i>
                 </button>
             </div>
-            <div class="chat-input-hint" style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; padding:0 2px;">
+            <div class="chat-input-hint" style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding:0 6px;">
                 <span id="chatHintText" style="font-size:10px; color:var(--text-muted);">Enter للإرسال · Shift+Enter لسطر جديد</span>
                 <span id="chatCharCount" style="font-size:10px; color:var(--text-muted);">0/1000</span>
             </div>
@@ -5495,6 +5583,9 @@ function showPage(id, btn){
     if(id === 'modify') { refreshTodoList(); updateStorageUI(); loadProfitSettings(); }
     if(id === 'services_mgmt') { renderServicesMain(); renderCategoriesGrid(); }
     if(id === 'teamChat') { openTeamChat(); }
+
+    // تفعيل/إلغاء وضع الدردشة (يخفي الإحصائيات ويملأ الشاشة)
+    document.body.classList.toggle('chat-active', id === 'teamChat');
 
     // إخفاء زر العين المالية فقط عند فتح الدردشة
     const eyeBtn = document.getElementById('finPrivacyToggle');
@@ -10864,15 +10955,13 @@ function _isMobile() {
 // ── تعديل ارتفاع الشات عند ظهور/إخفاء الكيبورد على الجوال ──
 function _initChatKeyboardFix() {
     if (!_isMobile()) return;
-    // استخدام Visual Viewport API لتتبع ظهور الكيبورد
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', () => {
             const chat = document.getElementById('teamChat');
             if (!chat || chat.classList.contains('hidden')) return;
             const vh = window.visualViewport.height;
-            // ارتفاع الشات = ارتفاع viewport المرئي ناقص أي عناصر فوقه
-            const topOffset = chat.getBoundingClientRect().top;
-            chat.style.height = Math.max(200, vh - topOffset - 10) + 'px';
+            // على الجوال: top padding فقط = 75px
+            chat.style.height = Math.max(200, vh - 75) + 'px';
         });
     }
 }
@@ -10928,10 +11017,14 @@ function _getChatInitial(username) {
     return (username || '؟')[0].toUpperCase();
 }
 
-// ── تنسيق التوقيت ─────────────────────────────────────────────
-function _chatFormatTime(ts) {
-    if (!ts) return '';
-    const d = new Date(ts);
+// ── تنسيق التوقيت (يدعم serverTimestamp + clientTs احتياطياً) ──────
+function _chatFormatTime(ts, clientTs) {
+    // استخدام clientTs إذا كان ts لا يزال null (انتظار السيرفر)
+    const effectiveTs = clientTs 
+        || (ts && typeof ts.toMillis === 'function' ? ts.toMillis() : ts) 
+        || 0;
+    if (!effectiveTs) return '';
+    const d = new Date(effectiveTs);
     const now = new Date();
     const isToday = d.toDateString() === now.toDateString();
     const h = String(d.getHours()).padStart(2,'0');
@@ -10944,7 +11037,8 @@ function _chatFormatTime(ts) {
 
 // ── تنسيق تاريخ الفاصل بين الأيام ───────────────────────────
 function _chatFormatDateDivider(ts) {
-    const d = new Date(ts);
+    const effectiveTs = ts && typeof ts.toMillis === 'function' ? ts.toMillis() : (ts || 0);
+    const d = new Date(effectiveTs);
     const now = new Date();
     const isToday = d.toDateString() === now.toDateString();
     const yesterday = new Date(now); yesterday.setDate(now.getDate()-1);
@@ -10985,7 +11079,8 @@ function _renderChatMsg(msg, showDateDivider) {
 
     let dividerHtml = '';
     if (showDateDivider) {
-        dividerHtml = `<div class="chat-date-divider"><span>${_chatFormatDateDivider(msg.ts)}</span></div>`;
+        const divTs = msg._sortTs || msg.clientTs || msg.ts;
+        dividerHtml = `<div class="chat-date-divider"><span>${_chatFormatDateDivider(divTs)}</span></div>`;
     }
 
     return `${dividerHtml}
@@ -10998,7 +11093,7 @@ function _renderChatMsg(msg, showDateDivider) {
             </div>
             <div class="chat-bubble">${esc(msg.text).replace(/\n/g,'<br>')}</div>
             <div class="chat-meta">
-                <span>${_chatFormatTime(msg.ts)}</span>
+                <span>${_chatFormatTime(msg.ts, msg.clientTs)}</span>
             </div>
         </div>
         ${deleteBtn}
@@ -11022,7 +11117,11 @@ function _renderAllMessages(msgs, scrollToBottom) {
     let html = '';
     let lastDateStr = '';
     msgs.forEach((msg, idx) => {
-        const msgDate = new Date(msg.ts).toDateString();
+        // استخدام _sortTs (الـ timestamp الفعلي) لتحديد الفاصل اليومي
+        const effectiveTs = msg._sortTs || msg.clientTs 
+            || (msg.ts && typeof msg.ts.toMillis === 'function' ? msg.ts.toMillis() : msg.ts) 
+            || 0;
+        const msgDate = new Date(effectiveTs).toDateString();
         const showDivider = msgDate !== lastDateStr;
         if (showDivider) lastDateStr = msgDate;
         html += _renderChatMsg(msg, showDivider);
@@ -11046,9 +11145,18 @@ function _initChatListener() {
         .orderBy('ts', 'asc')
         .limitToLast(CHAT_MAX_MESSAGES)
         .onSnapshot(snapshot => {
-            // بناء قائمة كاملة
+            // بناء قائمة كاملة مع حل مشكلة ترتيب الرسائل المتزامنة
             let msgs = [];
-            snapshot.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                // حساب الـ timestamp الفعلي للترتيب (serverTimestamp أو clientTs احتياطياً)
+                const effectiveTs = data.ts 
+                    ? (typeof data.ts.toMillis === 'function' ? data.ts.toMillis() : data.ts)
+                    : (data.clientTs || 0);
+                msgs.push({ id: doc.id, ...data, _sortTs: effectiveTs });
+            });
+            // ترتيب نهائي بالـ timestamp الفعلي لضمان الترتيب الصحيح
+            msgs.sort((a, b) => a._sortTs - b._sortTs);
             _chatMessages = msgs;
 
             // حساب غير مقروء
@@ -11154,7 +11262,8 @@ async function sendChatMessage() {
         username: currentUser.username,
         userId: currentUser.id,
         role: currentUser.role,
-        ts: Date.now()
+        ts: firebase.firestore.FieldValue.serverTimestamp(), // توقيت السيرفر لضمان الترتيب الصحيح
+        clientTs: Date.now()  // للعرض الفوري قبل التزامن مع السيرفر
     };
 
     input.value = '';
