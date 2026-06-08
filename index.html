@@ -593,10 +593,18 @@
 
         /* التوقيت داخل الفقاعة (أسفل اليسار/اليمين) زي واتساب */
         .chat-meta {
-            font-size:10px; position:absolute; bottom:5px; left:10px;
-            opacity:0.55; display:flex; align-items:center; gap:4px;
+            font-size:10px; 
+            opacity:0.6; 
+            display:flex; 
+            align-items:center; 
+            gap:4px;
+            margin-top:4px;
+            text-align:left;
         }
-        .chat-msg-wrap.mine .chat-meta { left:auto; right:10px; opacity:0.7; }
+        .chat-msg-wrap.mine .chat-meta { 
+            text-align:right;
+            opacity:0.75;
+        }
 
         .chat-role-badge {
             font-size:9px; padding:1px 5px; border-radius:5px; font-weight:700;
@@ -11091,9 +11099,11 @@ function _renderChatMsg(msg, showDateDivider) {
                 <span class="chat-sender-name">${esc(msg.username)}</span>
                 <span class="chat-role-badge" style="margin-${isMe?'right':'left'}:6px;">${roleLabel}</span>
             </div>
-            <div class="chat-bubble">${esc(msg.text).replace(/\n/g,'<br>')}</div>
-            <div class="chat-meta">
-                <span>${_chatFormatTime(msg.ts, msg.clientTs)}</span>
+            <div class="chat-bubble">
+                ${esc(msg.text).replace(/\n/g,'<br>')}
+                <div class="chat-meta">
+                    <span>${_chatFormatTime(msg.ts, msg.clientTs)}</span>
+                </div>
             </div>
         </div>
         ${deleteBtn}
