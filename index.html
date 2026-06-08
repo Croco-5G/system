@@ -5495,6 +5495,10 @@ function showPage(id, btn){
     if(id === 'modify') { refreshTodoList(); updateStorageUI(); loadProfitSettings(); }
     if(id === 'services_mgmt') { renderServicesMain(); renderCategoriesGrid(); }
     if(id === 'teamChat') { openTeamChat(); }
+
+    // إخفاء زر العين المالية فقط عند فتح الدردشة
+    const eyeBtn = document.getElementById('finPrivacyToggle');
+    if (eyeBtn) eyeBtn.style.display = (id === 'teamChat') ? 'none' : '';
 }
 
 function toggleSidebar() {
