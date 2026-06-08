@@ -563,54 +563,70 @@
         body.chat-active .main-content {
             overflow: hidden;
         }
-        .chat-msg-wrap { display:flex; gap:8px; align-items:flex-end; animation:fadeIn 0.2s ease-out; }
+        .chat-msg-wrap { display:flex; gap:10px; align-items:flex-end; animation:fadeIn 0.2s ease-out; margin-bottom: 15px; }
         .chat-msg-wrap.mine { flex-direction:row-reverse; }
 
         .chat-avatar {
-            width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-            font-size:12px; font-weight:800; color:white; flex-shrink:0; text-transform:uppercase;
-            margin-bottom:2px;
+            width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+            font-size:13px; font-weight:800; color:white; flex-shrink:0; text-transform:uppercase;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15); margin-bottom: 4px;
         }
 
         .chat-bubble {
-            max-width:74%; padding:9px 13px 22px 13px; font-size:14.5px; line-height:1.55;
-            word-break:break-word; white-space:pre-wrap; position:relative;
-            background:var(--bg-card); border:1px solid var(--border-color);
-            color:var(--text-main); box-shadow:0 1px 3px rgba(0,0,0,0.08);
-            border-radius:4px 18px 18px 18px;
+            width: fit-content; /* هذا هو السر: يمنع التمدد الطولي الغبي */
+            min-width: 130px; /* لتجنب تشوه الشكل مع الرسائل القصيرة جداً */
+            max-width: 75%; 
+            padding: 10px 14px 24px 14px; /* مسافة سفلية مخصصة للوقت */
+            font-size: 14.5px; line-height: 1.6;
+            word-break: break-word; white-space: pre-wrap; position: relative;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            color: var(--text-main); box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+            border-radius: 18px 18px 4px 18px; /* حواف انسيابية ستايل واتساب */
+            text-align: right; /* محاذاة النص لليمين لمنع التوسيط التلقائي */
         }
+        
         .chat-msg-wrap.mine .chat-bubble {
-            background:linear-gradient(135deg,#5b58e8,var(--primary));
-            color:white; border:none;
-            border-radius:18px 4px 18px 18px;
-            box-shadow:0 2px 10px rgba(99,102,241,0.28);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; border: none;
+            border-radius: 18px 18px 18px 4px; /* زاوية مرسل معكوسة */
+            box-shadow: 0 4px 12px rgba(99,102,241,0.25);
         }
 
-        .chat-sender { font-size:11.5px; font-weight:800; margin-bottom:3px; }
-        .chat-msg-wrap.mine .chat-sender { text-align:left; color:rgba(255,255,255,0.8); }
-        .chat-sender-name { color:var(--primary); }
-        .chat-msg-wrap.mine .chat-sender-name { color:rgba(255,255,255,0.9); }
+        .chat-sender { 
+            font-size: 12px; font-weight: 800; margin-bottom: 6px; 
+            display: flex; align-items: center; justify-content: flex-start; gap: 6px; 
+            border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px;
+        }
+        .chat-msg-wrap.mine .chat-sender {
+            justify-content: flex-end; /* لترتيب اسم المرسل للرسائل الخاصة بك */
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+        }
+        
+        .chat-sender-name { color: var(--primary); }
+        .chat-msg-wrap.mine .chat-sender-name { color: #fff; }
 
-        /* التوقيت داخل الفقاعة (أسفل اليسار/اليمين) زي واتساب */
+        /* التوقيت داخل الفقاعة (أسفل اليسار دائماً زي واتساب وتلغرام) */
         .chat-meta {
-            font-size:10px; 
-            opacity:0.6; 
-            display:flex; 
-            align-items:center; 
-            gap:4px;
-            margin-top:4px;
-            text-align:left;
+            position: absolute;
+            bottom: 4px;
+            left: 12px;
+            font-size: 10px; 
+            opacity: 0.6; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px;
+            direction: ltr; /* التوقيت يفضل LTR ليظهر بشكل 17:41 سليم */
         }
         .chat-msg-wrap.mine .chat-meta { 
-            text-align:right;
-            opacity:0.75;
+            opacity: 0.85;
+            color: #fff;
         }
 
         .chat-role-badge {
-            font-size:9px; padding:1px 5px; border-radius:5px; font-weight:700;
+            font-size:9px; padding:2px 6px; border-radius:6px; font-weight:800;
             background:rgba(99,102,241,0.12); color:var(--primary);
         }
-        .chat-msg-wrap.mine .chat-role-badge { background:rgba(255,255,255,0.18); color:rgba(255,255,255,0.9); }
+        .chat-msg-wrap.mine .chat-role-badge { background:rgba(255,255,255,0.2); color:#fff; }
 
         .chat-system-msg {
             text-align:center; font-size:12px; color:var(--text-muted);
@@ -648,10 +664,12 @@
 
         .chat-del-btn {
             opacity:0; transition:opacity 0.2s; background:none; border:none; cursor:pointer;
-            color:var(--danger); font-size:12px; padding:4px 7px; border-radius:8px;
+            color:var(--danger); font-size:12px; padding:2px;
             align-self:center; flex-shrink:0;
         }
         .chat-msg-wrap:hover .chat-del-btn { opacity:1; }
+        .chat-msg-wrap.mine .chat-del-btn { color: rgba(255, 255, 255, 0.7); }
+        .chat-msg-wrap.mine .chat-del-btn:hover { color: #ffcccc; }
 
         /* ── تحسينات الجوال — واتساب ستايل ── */
         @media (max-width: 768px) {
@@ -678,9 +696,9 @@
             }
 
             .chat-bubble {
-                max-width: 84%;
+                max-width: 88%;
                 font-size: 14px;
-                padding: 9px 12px 22px 12px;
+                padding: 10px 12px 24px 12px;
             }
             .chat-avatar { width:30px; height:30px; font-size:12px; }
             .chat-del-btn { opacity:1; }
