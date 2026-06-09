@@ -572,69 +572,88 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.15); margin-bottom: 4px;
         }
 
+        .chat-bubble-col {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            max-width: 75%;
+        }
+        .chat-msg-wrap.mine .chat-bubble-col {
+            align-items: flex-end;
+        }
+        .chat-msg-wrap:not(.mine) .chat-bubble-col {
+            align-items: flex-start;
+        }
+
         .chat-bubble {
-            width: fit-content; 
-            min-width: 85px; /* تم التصغير ليناسب الرسائل القصيرة مثل 'تم' ولا يترك فراغاً */
-            max-width: 75%; 
-            padding: 10px 14px 22px 14px; /* تم تقليل الفراغ السفلي قليلاً ليكون متناسقاً */
-            font-size: 14.5px; line-height: 1.6;
-            word-break: break-word; white-space: pre-wrap; position: relative;
-            background: var(--bg-card); border: 1px solid var(--border-color);
-            color: var(--text-main); box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+            width: fit-content;
+            min-width: 70px;
+            padding: 8px 12px 20px 12px;
+            font-size: 14.5px; 
+            line-height: 1.5;
+            word-break: break-word; 
+            white-space: pre-wrap; 
+            position: relative;
+            background: var(--bg-card); 
+            border: 1px solid var(--border-color);
+            color: var(--text-main); 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             border-radius: 18px 18px 4px 18px; 
             text-align: right; 
         }
         
         .chat-msg-wrap.mine .chat-bubble {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white; border: none;
+            color: white; 
+            border: none;
             border-radius: 18px 18px 18px 4px; 
-            box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+            box-shadow: 0 4px 10px rgba(99,102,241,0.2);
         }
 
         .chat-sender { 
-            font-size: 12px; font-weight: 800; margin-bottom: 6px; 
-            display: flex; align-items: center; justify-content: flex-start; gap: 6px; 
-            border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 4px;
-        }
-        .chat-msg-wrap.mine .chat-sender {
-            /* تم إرجاع المحاذاة لليمين كي يبقى الاسم مرتبطاً بالنص ولا ينفصلان */
+            font-size: 12px; 
+            font-weight: 800; 
+            margin-bottom: 4px; 
+            display: flex; 
+            align-items: center; 
             justify-content: flex-start; 
-            border-bottom: 1px solid rgba(255,255,255,0.15);
+            gap: 6px; 
         }
         
         .chat-sender-name { 
             color: var(--primary); 
-            max-width: 140px; /* الحل الجذري: منع الأسماء الطويلة من تمديد عرض الفقاعة وإجبارها على القص */
+            max-width: 140px; 
             white-space: nowrap; 
             overflow: hidden; 
             text-overflow: ellipsis; 
             display: inline-block;
         }
-        .chat-msg-wrap.mine .chat-sender-name { color: #fff; }
 
-        /* التوقيت داخل الفقاعة (أسفل اليسار دائماً زي واتساب وتلغرام) */
         .chat-meta {
             position: absolute;
-            bottom: 4px;
-            left: 12px;
+            bottom: 3px;
+            left: 10px;
             font-size: 10px; 
             opacity: 0.6; 
             display: flex; 
             align-items: center; 
             gap: 6px;
-            direction: ltr; /* التوقيت يفضل LTR ليظهر بشكل 17:41 سليم */
+            direction: ltr; 
         }
+        
         .chat-msg-wrap.mine .chat-meta { 
             opacity: 0.85;
             color: #fff;
         }
 
         .chat-role-badge {
-            font-size:9px; padding:2px 6px; border-radius:6px; font-weight:800;
-            background:rgba(99,102,241,0.12); color:var(--primary);
+            font-size: 9px; 
+            padding: 2px 6px; 
+            border-radius: 6px; 
+            font-weight: 800;
+            background: rgba(99,102,241,0.12); 
+            color: var(--primary);
         }
-        .chat-msg-wrap.mine .chat-role-badge { background:rgba(255,255,255,0.2); color:#fff; }
 
         .chat-system-msg {
             text-align:center; font-size:12px; color:var(--text-muted);
@@ -703,10 +722,13 @@
                 margin: 0 !important;
             }
 
-            .chat-bubble {
+            .chat-bubble-col {
                 max-width: 88%;
+            }
+            .chat-bubble {
+                max-width: 100%;
                 font-size: 14px;
-                padding: 10px 12px 24px 12px;
+                padding: 8px 12px 20px 12px;
             }
             .chat-avatar { width:30px; height:30px; font-size:12px; }
             .chat-del-btn { opacity:1; }
@@ -730,7 +752,8 @@
         @media (max-width: 480px) {
             #teamChat { height: 100dvh !important; }
             body.chat-active #teamChat { height: 100dvh !important; }
-            .chat-bubble { max-width:88%; font-size:14px; }
+            .chat-bubble-col { max-width: 88%; }
+            .chat-bubble { max-width: 100%; font-size: 14px; }
         }
 
         /* ── يجعل الدردشة قسماً حقيقياً كأي خانة أخرى في الموقع ── */
@@ -9159,8 +9182,6 @@ function editStock(id) {
     document.getElementById("stEmail").value = item.email;
     document.getElementById("stPass").value = item.pass;
     document.getElementById("stNotes").value = item.notes;
-    // تشغيل auto-resize بعد تحميل القيمة
-    (function(){ let el = document.getElementById("stNotes"); el.style.height='auto'; el.style.height=el.scrollHeight+'px'; })();
     document.getElementById("stPurpose").value = item.purpose || 'sale';
     let _remBoxEdit = document.getElementById("stRemindCardBox");
     if (_remBoxEdit) _remBoxEdit.style.display = "none"; // خيار التذكير يظهر فقط عند الإضافة
@@ -9176,8 +9197,18 @@ function editStock(id) {
     inputs.forEach(inp => inp.disabled = true);
     document.getElementById("stNotes").disabled = false;
     document.getElementById("stPurpose").disabled = false;
-
     document.getElementById("stockModal").classList.remove("hidden");
+
+    // السر هنا: ننتظر جزءاً صغيراً من الثانية حتى تظهر النافذة بالفعل على الشاشة
+    // لكي يتمكن المتصفح من قراءة حجم النص الحقيقي وتمديد الحقل ليحتضنه تماماً
+    setTimeout(() => {
+        let el = document.getElementById("stNotes");
+        if (el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+        }
+    }, 50);
+}
 }
 
 // ── عرض حالة البروفايلات داخل صندوق التعديل ──
@@ -11420,13 +11451,15 @@ function _renderChatMsg(msg, showDateDivider) {
     return `${dividerHtml}
     <div class="chat-msg-wrap ${isMe ? 'mine' : ''} ${msg.role === 'admin' ? 'chat-msg-admin' : ''}" data-msg-id="${msg.id}">
         <div class="chat-avatar" style="background:${isMe ? 'linear-gradient(135deg,var(--primary),#a855f7)' : color};">${initial}</div>
-        <div style="display:flex; flex-direction:column; min-width:0;">
-            <div class="chat-sender">
-                <span class="chat-sender-name">${esc(msg.username)}</span>
-                <span class="chat-role-badge" style="margin-${isMe?'right':'left'}:6px;">${roleLabel}</span>
-            </div>
+        <div class="chat-bubble-col">
             <div class="chat-bubble">
-                ${esc(msg.text).replace(/\n/g,'<br>')}
+                ${isMe ? '' : `
+                <div class="chat-sender">
+                    <span class="chat-sender-name">${esc(msg.username)}</span>
+                    <span class="chat-role-badge">${roleLabel}</span>
+                </div>
+                `}
+                <div style="margin-bottom: 2px; word-break: break-word; white-space: pre-wrap;">${esc(msg.text).replace(/\n/g,'<br>')}</div>
                 <div class="chat-meta">
                     <span>${_chatFormatTime(msg.ts, msg.clientTs)}</span>
                 </div>
