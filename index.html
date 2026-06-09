@@ -9202,14 +9202,13 @@ function editStock(id) {
     // السر هنا: ننتظر جزءاً صغيراً من الثانية حتى تظهر النافذة بالفعل على الشاشة
     // لكي يتمكن المتصفح من قراءة حجم النص الحقيقي وتمديد الحقل ليحتضنه تماماً
     setTimeout(() => {
-        let el = document.getElementById("stNotes");
-        if (el) {
-            el.style.height = 'auto';
-            el.style.height = el.scrollHeight + 'px';
-        }
-    }, 50);
-}
-}
+            let el = document.getElementById("stNotes");
+            if (el) {
+                el.style.height = 'auto';
+                el.style.height = el.scrollHeight + 'px';
+            }
+        }, 50);
+    }
 
 // ── عرض حالة البروفايلات داخل صندوق التعديل ──
 function renderStProfilesAdjust(item) {
