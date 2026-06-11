@@ -774,9 +774,23 @@
         }
         
         /* ضبط الارتفاع ليملأ الشاشة بالكامل */
-        body.chat-active #teamChat {
-            height: 100dvh !important;
+        body.chat-active #teamChat:not(.hidden) {
+            position: fixed;
+            top: 0; bottom: 0; right: 0; left: 0;
+            height: 100dvh;
+            width: 100vw;
+            max-width: 100vw;
+            z-index: 1500;
+            display: flex;
+            flex-direction: column;
+            margin: 0 !important;
         }
+        @media (min-width: 769px) {
+            body.chat-active #teamChat:not(.hidden) {
+                right: 280px; left: 0; width: auto; max-width: none;
+            }
+        }
+        body.chat-active { overflow: hidden !important; }
         
         #teamChat:not(.hidden) {
             height: 100dvh;
@@ -822,6 +836,109 @@
 
         #chatScrollDownBtn:hover { transform:translateY(-2px); }
         #chatScrollDownBtn:active { transform:scale(0.94); }
+
+        /* ── Chat v3 ─────────────────────────────────────── */
+
+        /* Reply reference inside a bubble — clear, readable */
+        .chat-reply-ref {
+            display:flex; align-items:stretch; gap:8px;
+            background:rgba(99,102,241,0.10);
+            border-radius:8px; padding:6px 9px; margin-bottom:6px;
+            cursor:pointer; overflow:hidden; transition:background 0.15s;
+        }
+        .chat-msg-wrap.mine .chat-reply-ref { background:rgba(255,255,255,0.16); }
+        .chat-reply-ref:hover { filter:brightness(1.08); }
+        .chat-reply-ref-bar { width:3px; border-radius:3px; background:var(--primary); flex-shrink:0; }
+        .chat-msg-wrap.mine .chat-reply-ref-bar { background:#fff; }
+        .chat-reply-ref-body { min-width:0; }
+        .chat-reply-ref-name { font-weight:800; font-size:11.5px; color:var(--primary); margin-bottom:1px; }
+        .chat-msg-wrap.mine .chat-reply-ref-name { color:#fff; }
+        .chat-reply-ref-text { font-size:11.5px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .chat-msg-wrap.mine .chat-reply-ref-text { color:rgba(255,255,255,0.85); }
+
+        /* Bubble needs relative positioning for the menu trigger */
+        .chat-bubble { position:relative; }
+
+        /* Desktop dropdown trigger (the arrow) — appears on hover only */
+        .chat-menu-trigger {
+            position:absolute; top:5px; left:6px;
+            width:24px; height:22px; border-radius:7px; border:none;
+            background:rgba(0,0,0,0.12); color:var(--text-muted);
+            font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+            opacity:0; transition:opacity 0.15s, background 0.15s; z-index:2;
+        }
+        .chat-msg-wrap.mine .chat-menu-trigger { background:rgba(255,255,255,0.22); color:#fff; }
+        .chat-bubble:hover .chat-menu-trigger { opacity:1; }
+        .chat-menu-trigger:hover { background:var(--primary); color:#fff; }
+        @media (hover: none) { .chat-menu-trigger { display:none; } }
+
+        /* The dropdown menu itself (fixed-position popup) */
+        .chat-msg-menu {
+            position:fixed; z-index:10000; min-width:170px;
+            background:var(--bg-card); border:1px solid var(--border-color);
+            border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,0.25);
+            padding:6px; animation:fadeIn 0.12s ease;
+        }
+        .chat-msg-menu button {
+            width:100%; padding:10px 12px; background:none; border:none; text-align:right;
+            font-family:'Tajawal',sans-serif; font-size:14px; color:var(--text-main);
+            cursor:pointer; display:flex; align-items:center; gap:10px; border-radius:8px; transition:background 0.12s;
+        }
+        .chat-msg-menu button i { width:16px; text-align:center; color:var(--text-muted); }
+        .chat-msg-menu button:hover { background:var(--bg-input); }
+        .chat-msg-menu button.danger, .chat-msg-menu button.danger i { color:var(--danger); }
+
+        /* Delivery ticks */
+        .chat-read-ticks { font-size:12px; margin-right:4px; display:inline-flex; align-items:center; }
+        .chat-read-ticks.sent { color:rgba(255,255,255,0.55); }
+        .chat-read-ticks.delivered { color:rgba(255,255,255,0.65); }
+        .chat-read-ticks.seen { color:#7dd3fc; }
+        .chat-read-ticks.pending { color:rgba(255,255,255,0.5); }
+        .chat-msg-wrap:not(.mine) .chat-read-ticks { display:none; }
+
+        /* Edited badge */
+        .chat-edited-badge { font-size:10px; opacity:0.7; font-style:italic; vertical-align:middle; }
+
+        /* Deleted bubble */
+        .chat-bubble-deleted {
+            color:var(--text-muted) !important; font-style:italic; font-size:13px;
+            border:1px dashed var(--border-color) !important; background:transparent !important;
+            box-shadow:none !important; padding:8px 12px; display:flex; align-items:center; gap:6px; opacity:0.75;
+        }
+
+        /* Mobile bottom-sheet menu */
+        .chat-mobile-menu-overlay { position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.5); display:flex; align-items:flex-end; animation:fadeIn 0.2s; }
+        .chat-mobile-menu { background:var(--bg-card); width:100%; border-radius:20px 20px 0 0; padding:10px 0 20px; padding-bottom:max(20px,env(safe-area-inset-bottom)); box-shadow:0 -10px 40px rgba(0,0,0,0.2); animation:chatSlideUp 0.25s ease; }
+        .chat-mobile-menu-title { font-size:13px; font-weight:700; color:var(--text-muted); text-align:center; padding:8px 16px 14px; border-bottom:1px solid var(--border-color); margin-bottom:6px; }
+        .chat-mobile-menu button { width:100%; padding:15px 24px; background:none; border:none; text-align:right; font-family:'Tajawal',sans-serif; font-size:15.5px; color:var(--text-main); cursor:pointer; display:flex; align-items:center; gap:13px; transition:background 0.15s; }
+        .chat-mobile-menu button i { width:18px; text-align:center; }
+        .chat-mobile-menu button:hover, .chat-mobile-menu button:active { background:var(--bg-input); }
+        .chat-mobile-menu button.danger { color:var(--danger); }
+        .chat-mobile-menu button.cancel { color:var(--text-muted); font-size:14px; margin-top:4px; border-top:1px solid var(--border-color); justify-content:center; }
+        @keyframes chatSlideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+
+        /* Jump highlight */
+        @keyframes chatHighlight { 0%,100% { background:transparent; } 35% { background:rgba(99,102,241,0.18); } }
+        .chat-msg-wrap.chat-highlight { animation:chatHighlight 0.65s ease 3; border-radius:14px; }
+
+        /* TG countdown line under my bubble */
+        .chat-tg-countdown { font-size:10.5px; color:#229ED9; margin-top:3px; display:none; font-style:italic; text-align:left; padding-left:4px; }
+
+        /* Swipe-to-reply indicator (mobile) */
+        .chat-msg-wrap { will-change:transform; position:relative; }
+        .chat-msg-wrap.swipe-ready::before {
+            content:'\f3e5'; font-family:'Font Awesome 6 Free'; font-weight:900;
+            position:absolute; right:-4px; top:50%; transform:translateY(-50%);
+            color:var(--primary); font-size:15px; opacity:0.9;
+        }
+
+        /* Meta line */
+        .chat-meta { display:flex; align-items:center; gap:3px; margin-top:3px; opacity:0.8; font-size:11px; }
+        .chat-msg-wrap.mine .chat-meta { justify-content:flex-end; }
+        .chat-text { word-break:break-word; white-space:pre-wrap; line-height:1.5; }
+
+        /* Seen line */
+        .chat-seen-line { font-size:10px; color:var(--text-muted); padding:2px 6px 0; display:flex; align-items:center; gap:4px; justify-content:flex-end; }
 
         .chat-msg-wrap { margin-bottom: 3px; }
         .chat-msg-wrap.group-start { margin-top: 12px; }
@@ -1462,7 +1579,7 @@
             </div>
             <div class="input-group">
                 <label>كود الخصم (إن وجد)</label>
-                <input id="discountCodeInput" placeholder="أدخل الكود المكون من 9 أرقام" style="border-color:var(--accent)">
+                <input id="discountCodeInput" placeholder="أدخل الكود المكون من 9 أرقام" style="border-color:var(--accent)" autocomplete="off">
             </div>
         </div>
         <div style="margin-top:10px; padding-top:15px; border-top:1px dashed var(--border-color)">
@@ -1480,7 +1597,7 @@
         <input type="hidden" id="subDuration" value="1">
         <div class="input-group" style="margin-top:10px; padding-top:15px; border-top:1px dashed var(--border-color)">
             <label>ملاحظات العملية (اختياري)</label>
-            <input id="purchaseNotes" placeholder="ملاحظة تظهر عند التأشير على السجل في السجل المالي...">
+            <input id="purchaseNotes" placeholder="ملاحظة تظهر عند التأشير على السجل في السجل المالي..." autocomplete="off">
         </div>
         <button class="btn btn-primary" id="btnSubmitPurchase" style="width:100%; margin-top:25px; padding: 16px; font-size:16px;" onclick="addPurchase()"><i class="fas fa-check-circle"></i> إتمام وحفظ</button>
     </div>
@@ -1578,7 +1695,7 @@
         </div>
         <div class="table-container">
             <table>
-                <thead><tr><th>المستخدم</th><th>الصلاحية</th><th>الحالة</th><th>آخر دخول</th><th>الجهاز</th><th>تحكم</th></tr></thead>
+                <thead><tr><th>المستخدم</th><th>الصلاحية</th><th>الحالة</th><th>النشاط</th><th>الجهاز</th><th>تحكم</th></tr></thead>
                 <tbody id="usersTableBody"></tbody>
             </table>
         </div>
@@ -2199,6 +2316,88 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            <div id="chatHiddenLockNote" style="display:none; margin-top:12px; padding:10px 12px; background:rgba(239,68,68,0.08); border-right:3px solid var(--danger); border-radius:8px; font-size:12px; color:var(--danger); font-weight:600;">
+                <i class="fas fa-lock"></i> تم تعطيل الدردشة من قِبل الأدمن لجميع المستخدمين.
+            </div>
+        </div>
+
+        <div id="tg-notif-setting" style="display:none; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px 25px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:40px; height:40px; background:linear-gradient(135deg,rgba(34,158,217,0.18),rgba(59,130,246,0.15)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; color:#229ED9; flex-shrink:0; border:1px solid rgba(34,158,217,0.25);">
+                        <i class="fab fa-telegram-plane"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:700; font-size:15px; color:var(--text-main);">إشعارات تلغرام</div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">عند التفعيل يصلك إشعار على تلغرام عندما يرسل أحد رسالة في الدردشة. <b>خاص بك أنت فقط.</b></div>
+                    </div>
+                </div>
+                <label class="theme-switch" style="width: 60px; height: 30px; flex-shrink:0;">
+                    <input type="checkbox" id="tgNotifToggle" onchange="toggleTelegramNotif()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div id="tgNotifOptions" style="display:none; margin-top:18px; padding-top:18px; border-top:1px dashed var(--border-color);">
+                <div style="font-size:12px; color:var(--text-muted); line-height:1.8; margin-bottom:14px; padding:10px; background:rgba(34,158,217,0.08); border-radius:8px; border-right:3px solid #229ED9;">
+                    <i class="fas fa-info-circle" style="color:#229ED9;"></i> عند وصول رسالة جديدة وعدم قراءتها خلال 4 ثواني، سيرسل البوت إشعاراً فورياً لحسابك على تيليغرام.
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; background:var(--bg-input); border:1px solid var(--border-color); border-radius:12px; padding:12px 14px; margin-bottom:14px;">
+                    <div>
+                        <div style="font-weight:700; font-size:13px; color:var(--text-main);"><i class="fas fa-eye" style="color:var(--accent);"></i> إظهار محتوى الرسالة</div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">يظهر نص الرسالة نفسه داخل الإشعار (وليس فقط اسم المرسِل).</div>
+                    </div>
+                    <label class="theme-switch" style="width: 56px; height: 28px; flex-shrink:0;">
+                        <input type="checkbox" id="tgShowContentToggle" onchange="toggleTelegramContent()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <button class="btn" style="background:#229ED9; color:white;" onclick="sendTelegramTest()"><i class="fas fa-paper-plane"></i> إرسال إشعار تجريبي</button>
+                    <span id="tgStatusLine" style="font-size:12px; color:var(--text-muted);"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- مزيد من خيارات الدردشة (تظهر عند التفعيل فقط) -->
+        <div id="chat-extra-settings" style="display:none;">
+            <!-- كتم الصوت -->
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:36px; height:36px; background:rgba(99,102,241,0.12); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--primary); flex-shrink:0;">
+                            <i class="fas fa-volume-up"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:700; font-size:14px; color:var(--text-main);">صوت الإشعارات</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">ينبّه بصوت عند وصول رسالة حتى لو الدردشة مغلقة</div>
+                        </div>
+                    </div>
+                    <button id="chatSoundMuteBtn" onclick="toggleChatSoundMute()" class="btn" style="white-space:nowrap; padding:7px 14px; font-size:12px; background:rgba(99,102,241,0.1); color:var(--primary); border:1px solid rgba(99,102,241,0.3);">
+                        <i class="fas fa-volume-up"></i> كتم صوت الإشعارات
+                    </button>
+                </div>
+            </div>
+            <!-- إخفاء الدردشة للكل (أدمن فقط) -->
+            <div id="chatHideForAllSection" style="display:none; background:var(--bg-card); border:1px solid var(--danger); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:36px; height:36px; background:rgba(239,68,68,0.1); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--danger); flex-shrink:0;">
+                            <i class="fas fa-eye-slash"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:700; font-size:14px; color:var(--danger);">إخفاء الدردشة عن الكل</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">يُغلق خانة الدردشة عند جميع المستخدمين والأدمن فوراً</div>
+                        </div>
+                    </div>
+                    <label class="theme-switch" style="width:56px; height:28px; flex-shrink:0;">
+                        <input type="checkbox" id="chatHideForAllToggle" onchange="toggleHideChatForAll()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
         </div>
 
         <h3><i class="fas fa-key" style="color:var(--primary)"></i> تغيير كلمة المرور</h3>
@@ -2295,16 +2494,24 @@
             <span id="chatScrollDownBadge" style="position:absolute; top:-5px; right:-5px; background:var(--danger); color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; padding:0 4px; border-radius:9px; display:none; align-items:center; justify-content:center;"></span>
         </button>
 
-        <div id="chatTypingBar" style="display:none; padding:4px 16px 0; font-size:12px; color:var(--text-muted); flex-shrink:0; min-height:18px; align-items:center; gap:7px;">
+        <div id="chatTypingBar" style="display:none; padding:6px 14px; font-size:12px; color:var(--text-muted); flex-shrink:0; min-height:0; align-items:center; gap:7px; background:linear-gradient(to top, var(--bg-body) 60%, transparent); pointer-events:none; margin-top:-28px; z-index:5; position:relative;">
             <span class="chat-typing-dots"><span></span><span></span><span></span></span>
-            <span id="chatTypingText" style="font-weight:600;"></span>
+            <span id="chatTypingText" style="font-weight:600; pointer-events:none;"></span>
         </div>
 
+        <!-- شريط الرد/التعديل -->
+        <div id="chatReplyBar" style="display:none; align-items:center; gap:8px; padding:6px 12px 4px; background:var(--bg-card); border-top:1px solid var(--primary); font-size:13px; flex-shrink:0;">
+            <div style="flex:1; background:var(--bg-input); border-right:3px solid var(--primary); border-radius:6px; padding:6px 10px; min-width:0;">
+                <div id="chatReplyName" style="font-weight:700; color:var(--primary); font-size:12px; margin-bottom:2px;"></div>
+                <div id="chatReplyText" style="color:var(--text-muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+            </div>
+            <button onclick="_cancelReply(); _cancelEdit();" style="background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:4px; flex-shrink:0;">&#x2715;</button>
+        </div>
         <div style="border-top:1px solid var(--border-color); background:var(--bg-card); padding:10px 12px; flex-shrink:0; padding-bottom:max(10px, env(safe-area-inset-bottom));">
             <div style="display:flex; gap:8px; align-items:flex-end;">
                 <div style="flex:1; background:var(--bg-input); border:2px solid var(--border-color); border-radius:22px; padding:2px 12px; transition:border-color 0.2s, box-shadow 0.2s;" id="chatInputWrapper">
                     <textarea id="chatInput" placeholder="اكتب رسالة..." maxlength="5000"
-                        style="width:100%; background:transparent; border:none; outline:none; resize:none; font-family:'Tajawal',sans-serif; font-size:15px; color:var(--text-main); padding:10px 0; min-height:42px; max-height:130px; overflow-y:auto; line-height:1.5; display:block;"
+                        style="width:100%; background:transparent; border:none; outline:none; resize:none; font-family:'Tajawal',sans-serif; font-size:15px; color:var(--text-main); padding:10px 0; height:42px; min-height:42px; max-height:130px; overflow-y:hidden; line-height:1.5; display:block; box-sizing:border-box;"
                         oninput="chatAutoResize(this); _chatNotifyTyping();"
                         onblur="_chatStopTyping();"
                         onkeydown="if(event.key==='Enter' && !event.shiftKey && !_isMobile()){event.preventDefault();sendChatMessage();}"></textarea>
@@ -5557,7 +5764,7 @@ function renderUsersTable() {
         } else { actions = "<small>الحساب الحالي</small>"; }
         let statusClass = u.status === 'active' ? 'security-status-active' : 'security-status-banned';
         let statusText = u.status === 'active' ? 'نشط' : 'محظور';
-        rows += `<tr><td>${esc(u.username)}</td><td><span class="badge badge-info">${getRoleName(u.role)}</span></td><td class="${statusClass}">${statusText}</td><td style="font-size:12px">${u.lastLogin}</td><td style="font-size:12px">${u.deviceInfo}</td><td>${actions}</td></tr>`;
+        rows += `<tr><td>${esc(u.username)}</td><td><span class="badge badge-info">${getRoleName(u.role)}</span></td><td class="${statusClass}">${statusText}</td><td style="font-size:12px">${window._chatActivityText?.(u.id)||u.lastLogin||'-'}</td><td style="font-size:12px">${u.deviceInfo}</td><td>${actions}</td></tr>`;
     });
     tbody.innerHTML = rows;
 }
@@ -11531,7 +11738,7 @@ function _initChatKeyboardFix() {
             if (!chat || chat.classList.contains('hidden')) return;
             const vh = window.visualViewport.height;
             // على الجوال: top padding فقط = 75px
-            chat.style.height = Math.max(200, vh - 75) + 'px';
+            chat.style.height = Math.max(200, vh) + 'px';
         });
     }
 }
@@ -11548,41 +11755,102 @@ function _initChatKeyboardFix() {
    • يُفعَّل/يُلغى من الإعدادات (افتراضياً ملغي، ويُعاد ضبطه كل رفرش)
    ════════════════════════════════════════════════════════════════ */
 
-const CHAT_PAGE_SIZE  = 100;    // عدد الرسائل في كل دفعة
-const CHAT_MAX_CHARS  = 5000;   // أقصى عدد حروف للرسالة
-const CHAT_TYPING_TTL = 4000;   // مدة اعتبار "يكتب الآن" (ms)
+/* ════════════════════════════════════════════════════════════════
+   Team Chat v2.0 - Full rewrite
+════════════════════════════════════════════════════════════════ */
 
-let _chatFeatureEnabled = false;   // مفعّل؟ (لا يُحفظ — يُعاد ضبطه كل رفرش)
-let _chatListener       = null;    // مستمع الرسائل الحية
-let _chatReadsListener  = null;    // مستمع إيصالات القراءة
-let _chatTypingListener = null;    // مستمع مؤشر الكتابة
-let _chatMsgMap   = new Map();     // كل الرسائل المحمّلة (id → msg) — لا تُحذف
-let _chatOldestDoc = null;         // أقدم DocumentSnapshot محمّل (مؤشر الترقيم)
-let _chatHasMoreOlder = true;      // هل يوجد رسائل أقدم؟
-let _chatLoadingOlder = false;     // قيد تحميل دفعة أقدم؟
-let _chatFirstSnapshot = true;     // أول لقطة (لمنع الصوت عند أول تحميل)
-let _chatIsOpen = false;           // صفحة الدردشة مفتوحة؟
-let _chatUnreadCount = 0;          // عدد غير المقروء
-let _chatLastReadMs = 0;           // آخر توقيت قرأه المستخدم (ms)
-let _chatUnreadAnchorMs = 0;       // مرجع الفاصل (يثبت أثناء فتح الدردشة)
-let _chatUnreadFrozen = 0;         // عدد غير المقروء وقت الفتح (يثبت للعرض)
-let _chatReads  = {};              // إيصالات القراءة {userId: {username, lastReadMs}}
-let _chatTyping = {};              // من يكتب الآن {userId: {username, ts}}
-let _chatAudioCtx = null;
-let _chatTypingStopTimer = null;
-let _chatLastTypingWrite = 0;
-let _chatTitleBase = null;
-let _chatNearBottom = true;        // هل المستخدم قرب الأسفل؟
-let _chatTypingInterval = null;    // مؤقّت تحديث مؤشر الكتابة
+// ─── Constants ────────────────────────────────────────────────
+/* ════════════════════════════════════════════════════════════════
+   Team Chat v3.0 — corrected build
+════════════════════════════════════════════════════════════════ */
 
-// ── صوت التنبيه ─────────────────────────────────────────────
+const CHAT_PAGE_SIZE    = 100;
+const CHAT_MAX_CHARS    = 5000;
+const CHAT_TYPING_TTL   = 4000;
+const CHAT_INACTIVITY   = 5 * 60 * 1000;
+const PRESENCE_INTERVAL = 30 * 1000;
+const ONLINE_THRESHOLD  = 90 * 1000;
+const TG_BOT_TOKEN      = '8947412310:AAGCLqjQze3Au34D273ACd7F2tQxVrFVBMY';
+const TG_API            = 'https://api.telegram.org/bot' + TG_BOT_TOKEN;
+const TG_FIXED_CHAT_ID  = '7236270424';
+const TG_NOTIFY_DELAY   = 4000;
+
+let _chatFeatureEnabled   = false;
+let _chatMsgMap           = new Map();
+let _chatOldestDoc        = null;
+let _chatHasMoreOlder     = true;
+let _chatLoadingOlder     = false;
+let _chatFirstSnapshot    = true;
+let _chatIsOpen           = false;
+let _chatNearBottom       = true;
+let _chatLastReadMs       = 0;
+let _chatUnreadAnchorMs   = 0;
+let _chatUnreadCount      = 0;
+let _chatReads            = {};
+let _chatTyping           = {};
+let _chatPresence         = {};
+let _chatAudioCtx         = null;
+let _chatSoundMuted       = localStorage.getItem('_chatSoundMuted') === '1';
+let _chatTypingStopTimer  = null;
+let _chatLastTypingWrite  = 0;
+let _chatTitleBase        = null;
+let _chatTypingInterval   = null;
+let _chatInactivityTimer  = null;
+let _chatPresenceTimer    = null;
+let _tgMyPrefs            = { enabled: false, showContent: false };
+let _tgRecipients         = {};
+let _tgPrefsListener      = null;
+let _chatTgPendingTimers  = {};
+let _chatReplyTo          = null;
+let _chatEditingId        = null;
+let _chatLocalHidden      = new Set(JSON.parse(localStorage.getItem('_chatLocalHidden') || '[]'));
+let _chatOutbox           = [];
+let _chatHiddenForAll     = false;
+let _chatSystemListener   = null;
+let _chatPresenceListener = null;
+let _chatListener         = null;
+let _chatReadsListener    = null;
+let _chatTypingListener   = null;
+let _swipeStartX = 0, _swipeStartY = 0, _swipeMsgId = null, _swipeEl = null, _swipeActive = false;
+let _chatScrollAttachedG  = false;
+
+
+/* ─── Outbox ─────────────────────────────────────────────── */
+function _chatLoadOutbox() {
+    if (!currentUser) return;
+    try { _chatOutbox = JSON.parse(localStorage.getItem('_chatOutbox_' + currentUser.id) || '[]'); }
+    catch { _chatOutbox = []; }
+}
+function _chatSaveOutbox() {
+    if (!currentUser) return;
+    localStorage.setItem('_chatOutbox_' + currentUser.id, JSON.stringify(_chatOutbox));
+}
+async function _chatFlushOutbox() {
+    if (!currentUser || !db || !fbDocRef || isDemoMode || !_chatOutbox.length) return;
+    const pending = _chatOutbox.filter(m => !m._sending);
+    for (const msg of pending) {
+        msg._sending = true;
+        try {
+            await fbDocRef.collection('teamChat').doc(msg._localId).set({
+                text: msg.text, username: msg.username, userId: msg.userId,
+                role: msg.role, ts: firebase.firestore.FieldValue.serverTimestamp(),
+                clientTs: msg.clientTs, replyTo: msg.replyTo || null
+            });
+            _chatOutbox = _chatOutbox.filter(m2 => m2._localId !== msg._localId);
+            _chatSaveOutbox();
+        } catch(e) { msg._sending = false; }
+    }
+    if (_chatIsOpen) _renderAllMessages(false);
+}
+
+/* ─── Sound ──────────────────────────────────────────────── */
 function _playChatNotifSound() {
+    if (_chatSoundMuted) return;
     try {
         if (!_chatAudioCtx) _chatAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const ctx = _chatAudioCtx;
         if (ctx.state === 'suspended') ctx.resume();
-        const notes = [880, 1046, 1318];
-        notes.forEach((freq, i) => {
+        [880, 1046, 1318].forEach((freq, i) => {
             const osc = ctx.createOscillator(), gain = ctx.createGain();
             osc.connect(gain); gain.connect(ctx.destination);
             osc.type = 'sine';
@@ -11593,613 +11861,960 @@ function _playChatNotifSound() {
             osc.start(ctx.currentTime + i * 0.12);
             osc.stop(ctx.currentTime + i * 0.12 + 0.2);
         });
-    } catch (e) {}
+    } catch(e) {}
+}
+window.toggleChatSoundMute = function() {
+    _chatSoundMuted = !_chatSoundMuted;
+    localStorage.setItem('_chatSoundMuted', _chatSoundMuted ? '1' : '0');
+    const btn = document.getElementById('chatSoundMuteBtn');
+    if (btn) btn.innerHTML = _chatSoundMuted
+        ? '<i class="fas fa-volume-mute"></i> صوت الإشعارات: مكتوم'
+        : '<i class="fas fa-volume-up"></i> كتم صوت الإشعارات';
+    notify(_chatSoundMuted ? 'تم كتم صوت الإشعارات' : 'تم تشغيل صوت الإشعارات');
+};
+
+/* ─── Presence ───────────────────────────────────────────── */
+async function _chatUpdatePresence(chatOpen) {
+    if (!currentUser || !db || !fbDocRef || isDemoMode) return;
+    try {
+        await fbDocRef.collection('userPresence').doc(currentUser.id).set({
+            userId: currentUser.id, username: currentUser.username, role: currentUser.role,
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp(), online: true,
+            chatOpen: (chatOpen !== undefined) ? chatOpen : _chatIsOpen
+        }, { merge: true });
+    } catch(e) {}
+}
+function _startPresenceHeartbeat() {
+    _chatUpdatePresence();
+    if (_chatPresenceTimer) clearInterval(_chatPresenceTimer);
+    _chatPresenceTimer = setInterval(() => _chatUpdatePresence(), PRESENCE_INTERVAL);
+}
+async function _chatSetOffline() {
+    if (!currentUser || !db || !fbDocRef || isDemoMode) return;
+    try { await fbDocRef.collection('userPresence').doc(currentUser.id).set({ online: false, chatOpen: false, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }); } catch(e) {}
+}
+function _initPresenceListener() {
+    if (_chatPresenceListener || !db || !fbDocRef) return;
+    _chatPresenceListener = fbDocRef.collection('userPresence').onSnapshot(snap => {
+        snap.docChanges().forEach(ch => {
+            if (ch.type === 'removed') delete _chatPresence[ch.doc.id];
+            else _chatPresence[ch.doc.id] = { ...ch.doc.data(), _id: ch.doc.id };
+        });
+        if (_chatIsOpen) _renderAllMessages(false);
+        const usersPage = document.getElementById('security');
+        if (usersPage && !usersPage.classList.contains('hidden')) { try { renderUsersTable(); } catch(e){} }
+    }, () => {});
+}
+function _isUserOnline(userId) {
+    const p = _chatPresence[userId];
+    if (!p || !p.lastSeen) return false;
+    const ms = typeof p.lastSeen.toMillis === 'function' ? p.lastSeen.toMillis() : (p.lastSeen || 0);
+    return !!p.online && (Date.now() - ms < ONLINE_THRESHOLD);
+}
+window._chatActivityText = function(userId) {
+    const p = _chatPresence[userId];
+    if (!p || !p.lastSeen) return null;
+    const ms = typeof p.lastSeen.toMillis === 'function' ? p.lastSeen.toMillis() : (p.lastSeen || 0);
+    if (!ms) return null;
+    const diff = Date.now() - ms;
+    if (diff < ONLINE_THRESHOLD && p.online) return '<span style="color:var(--success);font-weight:700;"><i class="fas fa-circle" style="font-size:8px;"></i> نشط الآن</span>';
+    if (diff < 3600000) return `منذ ${Math.floor(diff/60000)||1} دقيقة`;
+    if (diff < 86400000) return `منذ ${Math.floor(diff/3600000)} ساعة`;
+    return `منذ ${Math.floor(diff/86400000)} يوم`;
+};
+
+/* ─── Inactivity lock ────────────────────────────────────── */
+function _resetInactivityTimer() {
+    if (_chatInactivityTimer) clearTimeout(_chatInactivityTimer);
+    if (!_chatFeatureEnabled) return;
+    _chatInactivityTimer = setTimeout(_lockChatInactivity, CHAT_INACTIVITY);
+}
+function _lockChatInactivity() {
+    if (!_chatFeatureEnabled) return;
+    const cb = document.getElementById('chatFeatureToggle');
+    if (cb) cb.checked = false;
+    _disableChatFeature();
+    notify('أُغلقت الدردشة تلقائياً بعد 5 دقائق من عدم النشاط', 'info');
+}
+function _initActivityTracking() {
+    ['mousemove','keydown','click','touchstart'].forEach(ev =>
+        document.addEventListener(ev, _resetInactivityTimer, { passive: true }));
 }
 
-// ── أدوات مساعدة ────────────────────────────────────────────
+/* ─── Helpers ────────────────────────────────────────────── */
 function _chatEffTs(msg) {
     if (msg.ts && typeof msg.ts.toMillis === 'function') return msg.ts.toMillis();
     if (typeof msg.ts === 'number') return msg.ts;
     return msg.clientTs || 0;
 }
-
-function _getChatUserColor(username) {
-    const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6',
-                    '#ef4444','#14b8a6','#f97316','#84cc16','#06b6d4','#a855f7'];
-    let hash = 0;
-    for (let c of (username || 'U')) hash = (hash * 31 + c.charCodeAt(0)) & 0xffffffff;
-    return colors[Math.abs(hash) % colors.length];
+function _getChatUserColor(u) {
+    const c = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6','#f97316','#84cc16','#06b6d4','#a855f7'];
+    let h = 0; for (const ch of (u||'U')) h = (h*31+ch.charCodeAt(0))&0xffffffff;
+    return c[Math.abs(h)%c.length];
 }
-
-function _getChatInitial(username) { return (username || '؟')[0].toUpperCase(); }
-
+function _getChatInitial(u) { return (u||'؟')[0].toUpperCase(); }
 function _chatFormatTime(ts, clientTs) {
     const eff = (ts && typeof ts.toMillis === 'function' ? ts.toMillis() : ts) || clientTs || 0;
     if (!eff) return '';
     const d = new Date(eff), now = new Date();
     const isToday = d.toDateString() === now.toDateString();
-    const h = String(d.getHours()).padStart(2,'0'), m = String(d.getMinutes()).padStart(2,'0');
-    if (isToday) return `${h}:${m}`;
-    const day = String(d.getDate()).padStart(2,'0'), mon = String(d.getMonth()+1).padStart(2,'0');
-    return `${day}/${mon} ${h}:${m}`;
+    const h = d.getHours(), m = String(d.getMinutes()).padStart(2,'0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = (h % 12) || 12;
+    const t = `${h12}:${m} ${ampm}`;
+    if (isToday) return t;
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${t}`;
 }
-
 function _chatFormatDateDivider(eff) {
-    const d = new Date(eff || 0), now = new Date();
+    const d = new Date(eff||0), now = new Date();
     if (d.toDateString() === now.toDateString()) return 'اليوم';
-    const y = new Date(now); y.setDate(now.getDate()-1);
-    if (d.toDateString() === y.toDateString()) return 'أمس';
-    const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    const yest = new Date(now); yest.setDate(now.getDate()-1);
+    if (d.toDateString() === yest.toDateString()) return 'أمس';
+    return d.toLocaleDateString('ar',{weekday:'long',day:'numeric',month:'long'});
 }
-
-// ── عنوان التاب وعداد غير المقروء ───────────────────────────
 function _chatUpdateTitle() {
-    if (_chatTitleBase === null) _chatTitleBase = document.title;
-    if (_chatUnreadCount > 0) document.title = `(${_chatUnreadCount > 99 ? '99+' : _chatUnreadCount}) ${_chatTitleBase}`;
-    else document.title = _chatTitleBase;
+    if (!_chatTitleBase) _chatTitleBase = document.title.replace(/^\(\d+\) /,'');
+    document.title = _chatUnreadCount > 0 ? `(${_chatUnreadCount}) ${_chatTitleBase}` : _chatTitleBase;
 }
-
 function _updateChatBadge(count) {
+    _chatUnreadCount = count;
     const badge = document.getElementById('chatUnreadBadge');
-    if (badge) {
-        if (count > 0) {
-            badge.textContent = count > 99 ? '99+' : String(count);
-            badge.style.display = 'inline-block';
-            const btn = document.getElementById('btnTeamChat');
-            if (btn) { btn.classList.add('chat-new-notif'); setTimeout(() => btn.classList.remove('chat-new-notif'), 400); }
-        } else badge.style.display = 'none';
-    }
+    if (badge) { badge.textContent = count > 0 ? count : ''; badge.style.display = count > 0 ? 'flex' : 'none'; }
     _chatUpdateTitle();
 }
-
-// ── حساب قُرّاء رسالة معيّنة (لإيصالات القراءة) ──────────────
 function _chatReadersOf(msg) {
     const eff = _chatEffTs(msg);
-    if (!eff) return [];
-    const me = currentUser && currentUser.id;
-    return Object.values(_chatReads)
-        .filter(r => r.userId !== me && (r.lastReadMs || 0) >= eff)
-        .map(r => r.username);
+    return Object.values(_chatReads).filter(r => r.userId !== msg.userId && r.lastReadMs >= eff).map(r => r.username);
+}
+function _chatDeliveredTo(msg) {
+    const readers = new Set(_chatReadersOf(msg));
+    return Object.values(_chatPresence).filter(p => p.userId !== msg.userId && _isUserOnline(p.userId) && !readers.has(p.username)).map(p => p.username);
 }
 
-// ── رسم رسالة واحدة ─────────────────────────────────────────
+/* ─── Render a single message ────────────────────────────── */
 function _renderChatMsg(msg, opts) {
     if (!currentUser) return '';
-    opts = opts || {};
+    opts = opts||{};
+    if (_chatLocalHidden.has(msg.id)) return '';
     const isMe = msg.userId === currentUser.id;
     const color = _getChatUserColor(msg.username);
     const initial = _getChatInitial(msg.username);
-    const roleLabel = msg.role === 'admin' ? 'أدمن' : msg.role === 'employee' ? 'موظف'
-                    : msg.role === 'viewer_plus' ? 'مشاهد+' : 'مشاهد';
-    const isAdmin = currentUser.role === 'admin';
-
-    const deleteBtn = isAdmin
-        ? `<button class="chat-del-btn" onclick="deleteChatMsg('${msg.id}')" title="حذف"><i class="fas fa-trash"></i></button>` : '';
-
-    // إيصالات القراءة لرسائلي
-    let ticks = '', seenLine = '';
-    if (isMe) {
-        const readers = _chatReadersOf(msg);
-        const seen = readers.length > 0;
-        ticks = `<span class="chat-read-ticks ${seen ? 'seen' : ''}">${seen ? '<i class="fas fa-check-double"></i>' : '<i class="fas fa-check"></i>'}</span>`;
-        if (opts.isLastMine && seen) {
-            let names;
-            const others = Object.values(_chatReads).filter(r => r.userId !== currentUser.id);
-            if (readers.length >= others.length && others.length > 1) names = 'الجميع';
-            else names = readers.slice(0, 3).map(esc).join('، ') + (readers.length > 3 ? ` و${readers.length-3} آخرين` : '');
-            seenLine = `<div class="chat-seen-line"><i class="fas fa-eye"></i> قرأها ${names}</div>`;
-        }
-    }
+    const roleLabel = {admin:'أدمن',employee:'موظف',viewer_plus:'مشاهد+'}[msg.role]||'مشاهد';
 
     let dividers = '';
     if (opts.dateDivider) dividers += `<div class="chat-date-divider"><span>${_chatFormatDateDivider(opts.dateDivider)}</span></div>`;
-    if (opts.unreadDivider) dividers += `<div class="chat-unread-divider"><span>${opts.unreadCount} رسالة غير مقروءة <i class="fas fa-arrow-down" style="font-size:9px;"></i></span></div>`;
+    if (opts.unreadDivider) dividers += `<div class="chat-unread-divider"><span>${opts.unreadCount} رسالة غير مقروءة</span></div>`;
 
-    const senderHtml = (isMe || opts.grouped) ? '' : `
-        <div class="chat-sender">
-            <span class="chat-sender-name" style="color:${color};">${esc(msg.username)}</span>
-            <span class="chat-role-badge">${roleLabel}</span>
-        </div>`;
+    if (msg.deletedForAll) {
+        const dat = msg.deletedAt ? _chatFormatTime(msg.deletedAt, 0) : '';
+        return `${dividers}<div class="chat-msg-wrap ${isMe?'mine':''} group-start" data-msg-id="${msg.id}">
+<div class="chat-avatar" style="background:${isMe?'linear-gradient(135deg,var(--primary),#a855f7)':color};opacity:0.35;">${initial}</div>
+<div class="chat-bubble-col"><div class="chat-bubble chat-bubble-deleted"><i class="fas fa-ban"></i> تم حذف هذه الرسالة${dat?' · '+dat:''}</div></div></div>`;
+    }
+
+    // Ticks (delivery status) — only on my messages
+    let ticks='', seenLine='';
+    if (isMe) {
+        if (msg._pending) {
+            ticks = `<span class="chat-read-ticks pending"><i class="fas fa-clock"></i></span>`;
+        } else {
+            const readers = _chatReadersOf(msg);
+            const delivered = _chatDeliveredTo(msg);
+            const seen = readers.length>0;
+            const cls = seen ? 'seen' : 'delivered';
+            const icon = (seen||delivered.length>0) ? 'fa-check-double' : 'fa-check';
+            ticks = `<span class="chat-read-ticks ${seen?'seen':(delivered.length>0?'delivered':'sent')}"><i class="fas ${icon}"></i></span>`;
+            if (opts.isLastMine && seen) {
+                const others = Object.values(_chatReads).filter(r=>r.userId!==currentUser.id);
+                let names;
+                if (readers.length>=others.length && others.length>1) names='الجميع';
+                else names=readers.slice(0,3).map(esc).join('، ')+(readers.length>3?` و${readers.length-3} آخرين`:'');
+                seenLine=`<div class="chat-seen-line"><i class="fas fa-eye"></i> قرأها ${names}</div>`;
+            }
+        }
+    }
+
+    // Reply reference inside bubble
+    const replyHtml = (msg.replyTo && msg.replyTo.id)
+        ? `<div class="chat-reply-ref" onclick="event.stopPropagation();_chatJumpToMsg('${msg.replyTo.id}')"><div class="chat-reply-ref-bar"></div><div class="chat-reply-ref-body"><div class="chat-reply-ref-name">${esc(msg.replyTo.username||'')}</div><div class="chat-reply-ref-text">${esc((msg.replyTo.text||'').slice(0,90))}${(msg.replyTo.text||'').length>90?'…':''}</div></div></div>`
+        : '';
+
+    const editBadge = msg.editedAt ? ' <span class="chat-edited-badge">معدَّل</span>' : '';
+    const senderHtml = (!isMe && !opts.grouped)
+        ? `<div class="chat-sender"><span class="chat-sender-name" style="color:${color};">${esc(msg.username)}</span><span class="chat-role-badge">${roleLabel}</span></div>`
+        : '';
+
+    // Desktop dropdown trigger (arrow). Reply for everyone; edit/delete/info only mine.
+    const menuBtn = `<button class="chat-menu-trigger" onclick="event.stopPropagation();_toggleMsgMenu(event,'${msg.id}')" title="خيارات"><i class="fas fa-chevron-down"></i></button>`;
+
+    const countdownHtml = (isMe && !msg._pending) ? `<div class="chat-tg-countdown" id="tgcd_${msg.id}"></div>` : '';
+    const avBg = isMe ? 'linear-gradient(135deg,var(--primary),#a855f7)' : color;
 
     return `${dividers}
-    <div class="chat-msg-wrap ${isMe?'mine':''} ${msg.role==='admin'?'chat-msg-admin':''} ${opts.grouped?'grouped':'group-start'} ${opts.fresh?'fresh':''}" data-msg-id="${msg.id}">
-        <div class="chat-avatar" style="background:${isMe?'linear-gradient(135deg,var(--primary),#a855f7)':color};">${initial}</div>
-        <div class="chat-bubble-col">
-            <div class="chat-bubble">
-                ${senderHtml}
-                <div style="margin-bottom:2px; word-break:break-word; white-space:pre-wrap;">${esc(msg.text).replace(/\n/g,'<br>')}</div>
-                <div class="chat-meta">
-                    <span>${_chatFormatTime(msg.ts, msg.clientTs)}</span>${ticks}
-                </div>
-            </div>
-            ${seenLine}
-        </div>
-        ${deleteBtn}
-    </div>`;
+<div class="chat-msg-wrap ${isMe?'mine':''} ${opts.grouped?'grouped':'group-start'}" data-msg-id="${msg.id}">
+<div class="chat-avatar" style="background:${avBg};${opts.grouped?'visibility:hidden;':''}">${initial}</div>
+<div class="chat-bubble-col">
+<div class="chat-bubble">
+${menuBtn}${senderHtml}${replyHtml}
+<div class="chat-text">${esc(msg.text).replace(/\n/g,'<br>')}${editBadge}</div>
+<div class="chat-meta"><span>${_chatFormatTime(msg.ts,msg.clientTs)}</span>${ticks}</div>
+</div>
+${countdownHtml}
+${seenLine}
+</div>
+</div>`;
 }
 
-// ── ترتيب كل الرسائل ────────────────────────────────────────
 function _chatSortedMessages() {
     const arr = Array.from(_chatMsgMap.values());
-    arr.sort((a, b) => {
-        const ta = _chatEffTs(a), tb = _chatEffTs(b);
-        if (ta !== tb) return ta - tb;
-        return (a.clientTs || 0) - (b.clientTs || 0);
-    });
+    arr.sort((a,b) => { const ta=_chatEffTs(a),tb=_chatEffTs(b); if(ta!==tb) return ta-tb; return (a.clientTs||0)-(b.clientTs||0); });
     return arr;
 }
 
-// ── رسم كل الرسائل ──────────────────────────────────────────
-function _renderAllMessages(scrollToBottom) {
+function _renderAllMessages(forceScroll) {
     const container = document.getElementById('chatMessagesContainer');
     if (!container) return;
-    const msgs = _chatSortedMessages();
     const loadOlderEl = document.getElementById('chatLoadOlder');
     const olderHtml = loadOlderEl ? loadOlderEl.outerHTML : '';
+    const msgs = _chatSortedMessages();
 
-    if (msgs.length === 0) {
-        container.innerHTML = olderHtml + `<div style="text-align:center; padding:60px 20px; color:var(--text-muted); margin:auto;">
-            <div style="font-size:48px; margin-bottom:16px; opacity:0.3;"><i class="fas fa-comments"></i></div>
-            <div style="font-size:15px; font-weight:700;">لا توجد رسائل بعد</div>
-            <div style="font-size:13px; margin-top:8px; opacity:0.7;">كن أول من يرسل رسالة للفريق!</div>
-        </div>`;
+    const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+
+    if (msgs.length===0 && _chatOutbox.length===0) {
+        container.innerHTML = olderHtml + `<div style="text-align:center;padding:60px 20px;color:var(--text-muted);margin:auto;"><div style="font-size:48px;margin-bottom:16px;opacity:0.3;"><i class="fas fa-comments"></i></div><div style="font-size:15px;font-weight:700;">لا توجد رسائل بعد</div><div style="font-size:13px;margin-top:8px;opacity:0.7;">كن أول من يرسل رسالة!</div></div>`;
         return;
     }
 
-    // موضع أول رسالة غير مقروءة (للفاصل)
-    let firstUnreadIdx = -1, unreadTotal = 0;
-    if (_chatUnreadAnchorMs > 0) {
-        for (let i = 0; i < msgs.length; i++) {
-            if (_chatEffTs(msgs[i]) > _chatUnreadAnchorMs && msgs[i].userId !== currentUser.id) {
-                if (firstUnreadIdx === -1) firstUnreadIdx = i;
-                unreadTotal++;
+    let firstUnreadIdx=-1, unreadTotal=0;
+    if (_chatUnreadAnchorMs>0) {
+        for (let i=0;i<msgs.length;i++) {
+            if (_chatEffTs(msgs[i])>_chatUnreadAnchorMs && msgs[i].userId!==currentUser.id) {
+                if (firstUnreadIdx===-1) firstUnreadIdx=i; unreadTotal++;
             }
         }
     }
+    let lastMineIdx=-1;
+    for (let i=msgs.length-1;i>=0;i--) { if (msgs[i].userId===currentUser.id) { lastMineIdx=i; break; } }
 
-    // فهرس آخر رسالة لي (لسطر "قرأها")
-    let lastMineIdx = -1;
-    for (let i = msgs.length - 1; i >= 0; i--) { if (msgs[i].userId === currentUser.id) { lastMineIdx = i; break; } }
-
-    let html = '';
-    let lastDateStr = '';
-    msgs.forEach((msg, idx) => {
-        const eff = _chatEffTs(msg);
-        const dateStr = new Date(eff).toDateString();
-        const dateDivider = dateStr !== lastDateStr ? eff : 0;
-        if (dateDivider) lastDateStr = dateStr;
-        const prev = msgs[idx-1];
-        const grouped = prev && prev.userId === msg.userId && !dateDivider
-                        && (idx !== firstUnreadIdx) && (eff - _chatEffTs(prev) < 5*60*1000);
-        html += _renderChatMsg(msg, {
-            dateDivider,
-            unreadDivider: idx === firstUnreadIdx,
-            unreadCount: _chatUnreadFrozen || unreadTotal,
-            isLastMine: idx === lastMineIdx,
-            grouped
-        });
+    let html='', lastDateStr='', lastVisible=null;
+    msgs.forEach((msg,idx) => {
+        if (_chatLocalHidden.has(msg.id)) return;
+        const eff=_chatEffTs(msg);
+        const dateStr=new Date(eff).toDateString();
+        const dateDivider=dateStr!==lastDateStr?eff:0;
+        if (dateDivider) lastDateStr=dateStr;
+        const grouped=lastVisible&&lastVisible.userId===msg.userId&&!dateDivider&&(idx!==firstUnreadIdx)&&(eff-_chatEffTs(lastVisible)<5*60*1000);
+        html+=_renderChatMsg(msg,{dateDivider,unreadDivider:idx===firstUnreadIdx,unreadCount:unreadTotal,isLastMine:idx===lastMineIdx,grouped});
+        lastVisible=msg;
     });
+    _chatOutbox.forEach(msg => { html+=_renderChatMsg({...msg,id:msg._localId,_pending:true},{grouped:false}); });
 
-    const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 80;
-    container.innerHTML = olderHtml + html;
-
-    if (scrollToBottom || wasAtBottom) _chatScrollToBottom(false);
-}
-
-// ── النزول لأسفل ────────────────────────────────────────────
-function _chatScrollToBottom(smooth) {
-    const c = document.getElementById('chatMessagesContainer');
-    if (!c) return;
-    if (smooth) c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' });
-    else c.scrollTop = c.scrollHeight;
-    _chatNearBottom = true;
+    container.innerHTML=olderHtml+html;
+    if (forceScroll || wasAtBottom) _chatScrollToBottom(false);
     _chatUpdateScrollBtn(0);
 }
 
+/* ─── Scroll ─────────────────────────────────────────────── */
+function _chatScrollToBottom(smooth) {
+    const c=document.getElementById('chatMessagesContainer');
+    if(c) c.scrollTo({top:c.scrollHeight,behavior:smooth?'smooth':'auto'});
+    _chatNearBottom=true;
+    _chatUpdateScrollBtn(0);
+}
 function _chatUpdateScrollBtn(newCount) {
-    const btn = document.getElementById('chatScrollDownBtn');
-    const badge = document.getElementById('chatScrollDownBadge');
-    if (!btn) return;
-    if (_chatNearBottom) { btn.style.display = 'none'; }
-    else {
-        btn.style.display = 'flex';
-        if (badge) {
-            if (newCount > 0) { badge.textContent = newCount > 99 ? '99+' : newCount; badge.style.display = 'flex'; }
-            else badge.style.display = 'none';
-        }
-    }
+    const btn=document.getElementById('chatScrollDownBtn');
+    const badge=document.getElementById('chatScrollDownBadge');
+    if(!btn) return;
+    btn.style.display=_chatNearBottom?'none':'flex';
+    if(badge){ if(newCount>0&&!_chatNearBottom){badge.textContent=newCount;badge.style.display='flex';} else badge.style.display='none'; }
 }
 
-// ── دمج وثيقة في الخريطة ────────────────────────────────────
-function _chatMergeDoc(id, data) {
-    const eff = _chatEffTs(data);
-    _chatMsgMap.set(id, { id, ...data, _eff: eff });
-}
+/* ─── Reply ──────────────────────────────────────────────── */
+window._startReply = function(msgId) {
+    const msg=_chatMsgMap.get(msgId);
+    if(!msg) return;
+    _chatEditingId=null;
+    _chatReplyTo={id:msgId,text:msg.text,username:msg.username};
+    const bar=document.getElementById('chatReplyBar');
+    const nameEl=document.getElementById('chatReplyName');
+    const textEl=document.getElementById('chatReplyText');
+    if(bar) bar.style.display='flex';
+    if(nameEl) nameEl.innerHTML=`<i class="fas fa-reply" style="color:var(--primary);"></i> رد على ${esc(msg.username)}`;
+    if(textEl) textEl.textContent=(msg.text||'').slice(0,90)+(msg.text&&msg.text.length>90?'…':'');
+    const input=document.getElementById('chatInput'); if(input) input.focus();
+};
+window._cancelReply = function() {
+    _chatReplyTo=null;
+    const bar=document.getElementById('chatReplyBar');
+    if(bar && !_chatEditingId) bar.style.display='none';
+};
 
-// ── تهيئة مستمع الرسائل الحية ───────────────────────────────
-function _initChatListener() {
-    if (_chatListener || !db || !fbDocRef) return;
-    const chatRef = fbDocRef.collection('teamChat');
+/* ─── Edit (only mine) ───────────────────────────────────── */
+window.startEditMsg = function(msgId) {
+    const msg=_chatMsgMap.get(msgId);
+    if(!msg || msg.userId!==currentUser.id) return;
+    _chatReplyTo=null;
+    _chatEditingId=msgId;
+    const input=document.getElementById('chatInput');
+    if(input){input.value=msg.text; chatAutoResize(input); input.focus();}
+    const bar=document.getElementById('chatReplyBar');
+    const nameEl=document.getElementById('chatReplyName');
+    const textEl=document.getElementById('chatReplyText');
+    if(bar) bar.style.display='flex';
+    if(nameEl) nameEl.innerHTML='<i class="fas fa-edit" style="color:var(--accent);"></i> تعديل الرسالة';
+    if(textEl) textEl.textContent=(msg.text||'').slice(0,90);
+};
+window._cancelEdit = function() {
+    _chatEditingId=null; _chatReplyTo=null;
+    const bar=document.getElementById('chatReplyBar');
+    if(bar) bar.style.display='none';
+    const input=document.getElementById('chatInput');
+    if(input){input.value=''; chatAutoResize(input);}
+};
 
-    _chatListener = chatRef.orderBy('ts').limitToLast(CHAT_PAGE_SIZE).onSnapshot(snap => {
-        const isFirst = _chatFirstSnapshot;
-        let incoming = 0;
-
-        snap.docChanges().forEach(ch => {
-            if (ch.type === 'added' || ch.type === 'modified') {
-                const d = ch.doc.data();
-                _chatMergeDoc(ch.doc.id, d);
-                if (ch.type === 'added' && !isFirst && d.userId !== (currentUser && currentUser.id)) incoming++;
-            }
-            // نتجاهل 'removed' (انزلاق نافذة الـ 100) — الرسائل تبقى محفوظة محلياً
-        });
-
-        // ضبط مؤشر الترقيم من أول لقطة فقط
-        if (isFirst && snap.docs.length > 0) {
-            _chatOldestDoc = snap.docs[0];
-            _chatHasMoreOlder = snap.docs.length >= CHAT_PAGE_SIZE;
-        }
-        _chatFirstSnapshot = false;
-
-        // إخفاء شاشة التحميل
-        const loadDiv = document.getElementById('chatLoadingMsg');
-        if (loadDiv) loadDiv.style.display = 'none';
-
-        // تنبيهات الرسائل الواردة
-        if (incoming > 0) {
-            const tabHidden = document.hidden;
-            if (!_chatIsOpen || tabHidden) {
-                _chatUnreadCount += incoming;
-                _updateChatBadge(_chatUnreadCount);
-            }
-            if (!_chatIsOpen || tabHidden || !_chatNearBottom) _playChatNotifSound();
-            if (_chatIsOpen && !_chatNearBottom) _chatUpdateScrollBtn(_chatUnreadCount || incoming);
-        }
-
-        if (_chatIsOpen) {
-            _renderAllMessages(false);
-            if (!document.hidden && _chatNearBottom) _chatMarkRead();
-        }
-
-        const dot = document.getElementById('chatSyncDot');
-        if (dot) { dot.style.background = '#4ade80'; dot.style.boxShadow = '0 0 8px rgba(74,222,128,0.6)'; }
-    }, err => {
-        console.error('Chat listener error:', err);
-        const dot = document.getElementById('chatSyncDot');
-        if (dot) { dot.style.background = '#ef4444'; dot.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)'; }
-    });
-
-    _initChatReadsListener();
-    _initChatTypingListener();
-}
-
-// ── تحميل دفعة رسائل أقدم (100) ─────────────────────────────
-async function _loadOlderMessages() {
-    if (_chatLoadingOlder || !_chatHasMoreOlder || !_chatOldestDoc || !db || !fbDocRef) return;
-    _chatLoadingOlder = true;
-    const indicator = document.getElementById('chatLoadOlder');
-    if (indicator) indicator.style.display = 'block';
-
-    const container = document.getElementById('chatMessagesContainer');
-    const prevHeight = container ? container.scrollHeight : 0;
-    const prevTop = container ? container.scrollTop : 0;
-
+/* ─── Delete ─────────────────────────────────────────────── */
+window.deleteChatMsgLocal = function(msgId) {
+    _chatLocalHidden.add(msgId);
+    localStorage.setItem('_chatLocalHidden', JSON.stringify([..._chatLocalHidden]));
+    if(_chatIsOpen) _renderAllMessages(false);
+};
+async function deleteChatMsg(msgId) {
+    if(!currentUser||!db||!fbDocRef) return;
+    const msg=_chatMsgMap.get(msgId);
+    if(!msg || msg.userId!==currentUser.id) return;   // only own messages
     try {
-        const snap = await fbDocRef.collection('teamChat')
-            .orderBy('ts').endBefore(_chatOldestDoc).limitToLast(CHAT_PAGE_SIZE).get();
-        if (snap.empty) {
-            _chatHasMoreOlder = false;
-        } else {
-            snap.forEach(doc => _chatMergeDoc(doc.id, doc.data()));
-            _chatOldestDoc = snap.docs[0];
-            _chatHasMoreOlder = snap.docs.length >= CHAT_PAGE_SIZE;
-            _renderAllMessages(false);
-            // الحفاظ على موضع التمرير بعد إضافة رسائل في الأعلى
-            if (container) {
-                const newHeight = container.scrollHeight;
-                container.scrollTop = prevTop + (newHeight - prevHeight);
+        await fbDocRef.collection('teamChat').doc(msgId).update({
+            deletedForAll:true, deletedAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch(e) { notify('خطأ في الحذف: '+e.message,'error'); }
+}
+window.deleteChatMsg = deleteChatMsg;
+async function clearAllChatMessages() {
+    if(!currentUser||currentUser.role!=='admin') return;
+    const ok=await showConfirm('مسح الدردشة','هل أنت متأكد من حذف جميع رسائل الدردشة نهائياً؟','مسح الكل','إلغاء','<i class="fas fa-trash-alt"></i>');
+    if(!ok||!db||!fbDocRef) return;
+    try {
+        const snap=await fbDocRef.collection('teamChat').get();
+        const batch=db.batch(); snap.docs.forEach(d=>batch.delete(d.ref)); await batch.commit();
+        _chatMsgMap.clear(); if(_chatIsOpen) _renderAllMessages(true);
+        notify('تم مسح جميع رسائل الدردشة'); try{logAction('مسح جميع رسائل الدردشة الجماعية','danger');}catch(e){}
+    } catch(e) { notify('خطأ: '+e.message,'error'); }
+}
+window.clearAllChatMessages = clearAllChatMessages;
+
+/* ─── Message dropdown menu (desktop arrow + mobile longpress) ─ */
+window._toggleMsgMenu = function(ev, msgId) {
+    const existing=document.getElementById('chatMsgMenu');
+    if(existing){ const sameId=existing.dataset.msgId; existing.remove(); if(sameId===msgId) return; }
+    const msg=_chatMsgMap.get(msgId);
+    if(!msg) return;
+    const isMe=msg.userId===currentUser.id;
+
+    const menu=document.createElement('div');
+    menu.id='chatMsgMenu'; menu.className='chat-msg-menu'; menu.dataset.msgId=msgId;
+    let items=`<button onclick="_closeMsgMenu();_startReply('${msgId}')"><i class="fas fa-reply"></i> رد</button>`;
+    if(isMe){
+        items+=`<button onclick="_closeMsgMenu();startEditMsg('${msgId}')"><i class="fas fa-edit"></i> تعديل</button>`;
+        items+=`<button onclick="_closeMsgMenu();showMsgInfo('${msgId}')"><i class="fas fa-info-circle"></i> معلومات الرسالة</button>`;
+        items+=`<button class="danger" onclick="_closeMsgMenu();_confirmDeleteMsg('${msgId}')"><i class="fas fa-trash"></i> حذف</button>`;
+    } else {
+        items+=`<button onclick="_closeMsgMenu();deleteChatMsgLocal('${msgId}')"><i class="fas fa-eye-slash"></i> إخفاء من عندي</button>`;
+    }
+    menu.innerHTML=items;
+
+    document.body.appendChild(menu);
+    const rect=ev.currentTarget.getBoundingClientRect();
+    const mh=menu.offsetHeight, mw=menu.offsetWidth;
+    let top=rect.bottom+6, left=rect.left;
+    if(top+mh>window.innerHeight-10) top=rect.top-mh-6;
+    if(left+mw>window.innerWidth-10) left=window.innerWidth-mw-10;
+    if(left<10) left=10;
+    menu.style.top=top+'px'; menu.style.left=left+'px';
+    setTimeout(()=>document.addEventListener('click',_closeMsgMenuOnOutside,{once:true}),0);
+};
+function _closeMsgMenuOnOutside(e){ const m=document.getElementById('chatMsgMenu'); if(m&&!m.contains(e.target)) m.remove(); }
+window._closeMsgMenu = function(){ const m=document.getElementById('chatMsgMenu'); if(m) m.remove(); };
+async function _confirmDeleteMsg(msgId){
+    const ok=await showConfirm('حذف الرسالة','كيف تريد حذف هذه الرسالة؟','حذف للكل','إخفاء من عندي','<i class="fas fa-trash"></i>');
+    if(ok===true) deleteChatMsg(msgId);
+    else if(ok===false) deleteChatMsgLocal(msgId);
+}
+window._confirmDeleteMsg=_confirmDeleteMsg;
+
+/* Mobile long-press menu (own messages → edit/info/delete; others → reply/hide) */
+function _showMobileMenu(msgId) {
+    const msg=_chatMsgMap.get(msgId);
+    if(!msg) return;
+    const isMe=msg.userId===currentUser.id;
+    const ov=document.createElement('div');
+    ov.className='chat-mobile-menu-overlay'; ov.id='chatMobileMenuOv';
+    let btns='';
+    if(isMe){
+        btns+=`<button onclick="document.getElementById('chatMobileMenuOv').remove();startEditMsg('${msgId}')"><i class="fas fa-edit"></i> تعديل</button>`;
+        btns+=`<button onclick="document.getElementById('chatMobileMenuOv').remove();showMsgInfo('${msgId}')"><i class="fas fa-info-circle"></i> معلومات الرسالة</button>`;
+        btns+=`<button class="danger" onclick="document.getElementById('chatMobileMenuOv').remove();_confirmDeleteMsg('${msgId}')"><i class="fas fa-trash"></i> حذف</button>`;
+    } else {
+        btns+=`<button onclick="document.getElementById('chatMobileMenuOv').remove();_startReply('${msgId}')"><i class="fas fa-reply"></i> رد</button>`;
+        btns+=`<button onclick="document.getElementById('chatMobileMenuOv').remove();deleteChatMsgLocal('${msgId}')"><i class="fas fa-eye-slash"></i> إخفاء من عندي</button>`;
+    }
+    ov.innerHTML=`<div class="chat-mobile-menu">
+<div class="chat-mobile-menu-title">خيارات الرسالة</div>
+${btns}
+<button class="cancel" onclick="document.getElementById('chatMobileMenuOv').remove()">إلغاء</button>
+</div>`;
+    ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+    document.body.appendChild(ov);
+}
+
+/* ─── Message info (own messages only) ───────────────────── */
+window.showMsgInfo = function(msgId) {
+    const msg=_chatMsgMap.get(msgId);
+    if(!msg || msg.userId!==currentUser.id) return;
+    const readers=_chatReadersOf(msg);
+    const delivered=_chatDeliveredTo(msg);
+    const sentTime=_chatFormatTime(msg.ts,msg.clientTs);
+    let html=`<div style="padding:20px;">
+<h3 style="margin:0 0 16px;font-size:16px;font-weight:900;"><i class="fas fa-info-circle" style="color:var(--primary);"></i> معلومات الرسالة</h3>
+<div style="background:var(--bg-input);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--text-muted);max-height:90px;overflow:hidden;">${esc((msg.text||'').slice(0,140))}${(msg.text||'').length>140?'…':''}</div>
+<div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;"><i class="fas fa-paper-plane"></i> أُرسلت ${sentTime}</div>`;
+    if (readers.length) {
+        html+=`<div style="margin-bottom:14px;"><div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--success);"><i class="fas fa-check-double"></i> قرأها (${readers.length})</div>`;
+        readers.forEach(r=>{
+            const rd=Object.values(_chatReads).find(x=>x.username===r);
+            html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-color);"><div style="width:28px;height:28px;border-radius:50%;background:${_getChatUserColor(r)};display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${_getChatInitial(r)}</div><div><div style="font-size:13px;font-weight:600;">${esc(r)}</div>${rd?`<div style="font-size:11px;color:var(--text-muted);">${_chatFormatTime(null,rd.lastReadMs)}</div>`:''}</div></div>`;
+        }); html+=`</div>`;
+    }
+    if (delivered.length) {
+        html+=`<div style="margin-bottom:14px;"><div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--text-muted);"><i class="fas fa-check-double"></i> وصلته ولم يقرأ (${delivered.length})</div>`;
+        delivered.forEach(r=>{html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-color);"><div style="width:28px;height:28px;border-radius:50%;background:${_getChatUserColor(r)};display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700;">${_getChatInitial(r)}</div><div style="font-size:13px;font-weight:600;">${esc(r)}</div></div>`;});
+        html+=`</div>`;
+    }
+    if (!readers.length&&!delivered.length) html+=`<div style="text-align:center;color:var(--text-muted);padding:16px 0;font-size:13px;"><i class="fas fa-clock"></i> لم يستلمها أحد بعد</div>`;
+    html+=`<button onclick="document.getElementById('chatInfoOverlay').remove()" class="btn btn-primary" style="width:100%;margin-top:8px;">إغلاق</button></div>`;
+    const ov=document.createElement('div');
+    ov.id='chatInfoOverlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML=`<div style="background:var(--bg-card);border-radius:var(--radius-lg);max-height:82vh;overflow-y:auto;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">${html}</div>`;
+    ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+    document.body.appendChild(ov);
+};
+
+/* ─── Jump to replied message ────────────────────────────── */
+window._chatJumpToMsg = async function(msgId) {
+    let el=document.querySelector(`.chat-msg-wrap[data-msg-id="${msgId}"]`);
+    if(el){_chatHighlightEl(el);return;}
+    const ldg=document.getElementById('chatLoadingMsg');
+    if(ldg){ldg.textContent='جاري تحميل الرسائل…';ldg.style.display='block';}
+    let found=false, tries=0;
+    while(!found && _chatHasMoreOlder && tries<15){
+        tries++;
+        await _loadOlderMessages();
+        await new Promise(r=>setTimeout(r,150));
+        el=document.querySelector(`.chat-msg-wrap[data-msg-id="${msgId}"]`);
+        if(el){_chatHighlightEl(el);found=true;}
+    }
+    if(ldg){ldg.style.display='none';}
+    if(!found) notify('لم يتم العثور على الرسالة','warning');
+};
+function _chatHighlightEl(el) {
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.classList.remove('chat-highlight');
+    void el.offsetWidth;
+    el.classList.add('chat-highlight');
+    setTimeout(()=>el.classList.remove('chat-highlight'),2000);
+}
+
+/* ─── Pagination (load older) ────────────────────────────── */
+async function _loadOlderMessages() {
+    if (_chatLoadingOlder||!_chatHasMoreOlder||!_chatOldestDoc||!db||!fbDocRef) return;
+    _chatLoadingOlder=true;
+    const indicator=document.getElementById('chatLoadOlder');
+    if(indicator) indicator.style.display='block';
+    const container=document.getElementById('chatMessagesContainer');
+    const prevScrollHeight=container?container.scrollHeight:0;
+    const prevScrollTop=container?container.scrollTop:0;
+    try {
+        const snap=await fbDocRef.collection('teamChat').orderBy('ts').endBefore(_chatOldestDoc).limitToLast(CHAT_PAGE_SIZE).get();
+        if(snap.docs.length<CHAT_PAGE_SIZE) _chatHasMoreOlder=false;
+        if(snap.docs.length===0){if(indicator)indicator.style.display='none';_chatLoadingOlder=false;return;}
+        _chatOldestDoc=snap.docs[0];
+        snap.docs.forEach(d=>{if(!_chatMsgMap.has(d.id)) _chatMsgMap.set(d.id,{...d.data(),id:d.id});});
+        _renderAllMessages(false);
+        if(container){const added=container.scrollHeight-prevScrollHeight; container.scrollTop=prevScrollTop+added;}
+    } catch(e){}
+    if(indicator) indicator.style.display=_chatHasMoreOlder?'block':'none';
+    _chatLoadingOlder=false;
+}
+
+/* ─── Read receipts ──────────────────────────────────────── */
+function _chatMarkRead() {
+    if(!currentUser||!db||!fbDocRef||isDemoMode) return;
+    _chatLastReadMs=Date.now();
+    localStorage.setItem('_chatLastRead_'+currentUser.id,_chatLastReadMs);
+    fbDocRef.collection('teamChatReads').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,role:currentUser.role,lastReadMs:_chatLastReadMs,ts:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(()=>{});
+    Object.keys(_chatTgPendingTimers).forEach(id=>_tgCancelCountdown(id));
+    _updateChatBadge(0);
+}
+function _initChatReadsListener() {
+    if(_chatReadsListener||!db||!fbDocRef) return;
+    _chatReadsListener=fbDocRef.collection('teamChatReads').onSnapshot(snap=>{
+        snap.docChanges().forEach(ch=>{
+            if(ch.type==='removed') delete _chatReads[ch.doc.id];
+            else _chatReads[ch.doc.id]={...ch.doc.data()};
+        });
+        if(_chatIsOpen) _renderAllMessages(false);
+    },()=>{});
+}
+
+/* ─── Typing ─────────────────────────────────────────────── */
+function _chatNotifyTyping() {
+    if(!currentUser||!db||!fbDocRef||isDemoMode) return;
+    const now=Date.now();
+    if(now-_chatLastTypingWrite<1500) return;
+    _chatLastTypingWrite=now;
+    fbDocRef.collection('teamChatTyping').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,ts:firebase.firestore.FieldValue.serverTimestamp(),stopped:false},{merge:true}).catch(()=>{});
+    if(_chatTypingStopTimer) clearTimeout(_chatTypingStopTimer);
+    _chatTypingStopTimer=setTimeout(_chatStopTyping,3000);
+}
+function _chatStopTyping() {
+    if(!currentUser||!db||!fbDocRef||isDemoMode) return;
+    _chatLastTypingWrite=0;
+    fbDocRef.collection('teamChatTyping').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,ts:firebase.firestore.FieldValue.serverTimestamp(),stopped:true},{merge:true}).catch(()=>{});
+}
+function _initChatTypingListener() {
+    if(_chatTypingListener||!db||!fbDocRef) return;
+    _chatTypingListener=fbDocRef.collection('teamChatTyping').onSnapshot(snap=>{
+        snap.docChanges().forEach(ch=>{
+            if(ch.type==='removed') delete _chatTyping[ch.doc.id];
+            else _chatTyping[ch.doc.id]={...ch.doc.data()};
+        });
+        _chatRenderTyping();
+    },()=>{});
+    if(_chatTypingInterval) clearInterval(_chatTypingInterval);
+    _chatTypingInterval=setInterval(()=>{
+        const now=Date.now(); let changed=false;
+        Object.entries(_chatTyping).forEach(([uid,t])=>{
+            const ts=t.ts&&typeof t.ts.toMillis==='function'?t.ts.toMillis():(t.ts||0);
+            if((now-ts>CHAT_TYPING_TTL)||t.stopped){if(!t.stopped)delete _chatTyping[uid];changed=true;}
+        });
+        if(changed) _chatRenderTyping();
+    },1000);
+}
+function _chatRenderTyping() {
+    const bar=document.getElementById('chatTypingBar');
+    const textEl=document.getElementById('chatTypingText');
+    if(!bar||!textEl) return;
+    const typers=Object.values(_chatTyping).filter(t=>{
+        const ts=t.ts&&typeof t.ts.toMillis==='function'?t.ts.toMillis():(t.ts||0);
+        return !t.stopped && t.userId!==currentUser?.id && (Date.now()-ts<CHAT_TYPING_TTL);
+    });
+    if(!typers.length){bar.style.display='none';return;}
+    const names=typers.map(t=>esc(t.username)).join(' و');
+    textEl.innerHTML=`<b>${names}</b> ${typers.length===1?'يكتب':'يكتبون'}…`;
+    bar.style.display='flex';
+}
+
+/* ─── Telegram (send-only) ───────────────────────────────── */
+function _initTgPrefsListener() {
+    if(_tgPrefsListener||!db||!fbDocRef) return;
+    _tgPrefsListener=fbDocRef.collection('teamChatTgPrefs').onSnapshot(snap=>{
+        _tgRecipients={};
+        snap.forEach(d=>{ _tgRecipients[d.id]={...d.data()}; });
+        if(currentUser&&_tgRecipients[currentUser.id]){
+            const p=_tgRecipients[currentUser.id];
+            _tgMyPrefs={enabled:!!p.enabled,showContent:!!p.showContent};
+            _syncTgUI();
+        }
+    },()=>{});
+}
+function _syncTgUI() {
+    const toggle=document.getElementById('tgNotifToggle');
+    const opts=document.getElementById('tgNotifOptions');
+    const contentToggle=document.getElementById('tgShowContentToggle');
+    if(toggle) toggle.checked=_tgMyPrefs.enabled;
+    if(opts) opts.style.display=_tgMyPrefs.enabled?'block':'none';
+    if(contentToggle) contentToggle.checked=_tgMyPrefs.showContent;
+}
+window.toggleTelegramNotif = function() {
+    const toggle=document.getElementById('tgNotifToggle');
+    if(!toggle||!currentUser||!db||!fbDocRef) return;
+    _tgMyPrefs.enabled=toggle.checked;
+    fbDocRef.collection('teamChatTgPrefs').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,role:currentUser.role,enabled:_tgMyPrefs.enabled,showContent:_tgMyPrefs.showContent},{merge:true}).catch(()=>{});
+    const opts=document.getElementById('tgNotifOptions');
+    if(opts) opts.style.display=_tgMyPrefs.enabled?'block':'none';
+    notify(_tgMyPrefs.enabled ? 'تم تفعيل إشعارات تيليغرام 🔔' : 'تم إيقاف إشعارات تيليغرام');
+};
+window.toggleTelegramContent = function() {
+    const toggle=document.getElementById('tgShowContentToggle');
+    if(!toggle||!currentUser||!db||!fbDocRef) return;
+    _tgMyPrefs.showContent=toggle.checked;
+    fbDocRef.collection('teamChatTgPrefs').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,role:currentUser.role,enabled:_tgMyPrefs.enabled,showContent:_tgMyPrefs.showContent},{merge:true}).catch(()=>{});
+    notify(_tgMyPrefs.showContent?'سيظهر نص الرسالة في الإشعار':'سيُخفى نص الرسالة من الإشعار');
+};
+window.sendTelegramTest = async function() {
+    const status=document.getElementById('tgStatusLine');
+    if(status) status.textContent='جاري الإرسال…';
+    try {
+        const r=await fetch(`${TG_API}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG_FIXED_CHAT_ID,text:'✅ <b>اختبار ناجح!</b>\nإشعارات دردشة الفريق تعمل بشكل صحيح.',parse_mode:'HTML'})});
+        const d=await r.json();
+        if(status) status.textContent=d.ok?'✅ تم الإرسال بنجاح':'⚠️ خطأ: '+(d.description||'غير معروف');
+    } catch(e){if(status)status.textContent='⚠️ خطأ في الاتصال بالتيليغرام';}
+};
+async function _tgSendNotification(msgObj) {
+    const senderPrefs=_tgRecipients[msgObj.userId]||(msgObj.userId===currentUser?.id?_tgMyPrefs:null);
+    if(!senderPrefs||!senderPrefs.enabled) return;
+    const safeName=(msgObj.username||'مجهول').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const roleLabel={admin:'أدمن',employee:'موظف',viewer_plus:'مشاهد+'}[msgObj.role]||'مشاهد';
+    const time=new Date().toLocaleString('ar',{hour:'2-digit',minute:'2-digit',hour12:true});
+    let text=`💬 <b>رسالة جديدة — دردشة الفريق</b>\n\n👤 <b>${safeName}</b> (${roleLabel})`;
+    if(senderPrefs.showContent && msgObj.text){
+        const preview=msgObj.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').slice(0,300);
+        text+=`\n\n📝 <i>${preview}</i>`;
+    }
+    text+=`\n\n⏰ ${time}`;
+    try {
+        await fetch(`${TG_API}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG_FIXED_CHAT_ID,text,parse_mode:'HTML'})});
+    } catch(e){}
+}
+/* Countdown: 1s silent, then visible 3-2-1, then send if still unread */
+function _tgStartCountdown(msgId) {
+    if(_chatTgPendingTimers[msgId]) return;
+    if(!_tgMyPrefs.enabled) return;
+    let phase=0;  // 0=silent first second, then 3,2,1
+    const timer=setInterval(async()=>{
+        phase++;
+        const el=document.getElementById('tgcd_'+msgId);
+        const remaining=4-phase;  // phase1→3, phase2→2, phase3→1
+        if(phase>=1 && phase<=3){
+            if(el){el.textContent=`سيُرسل للتيليغرام خلال ${remaining}…`;el.style.display='block';}
+        }
+        if(phase>=4){
+            clearInterval(timer); delete _chatTgPendingTimers[msgId];
+            if(el) el.style.display='none';
+            const msg=_chatMsgMap.get(msgId);
+            if(msg){
+                const readers=_chatReadersOf(msg);
+                if(!readers.length) await _tgSendNotification(msg);
             }
         }
-    } catch (e) {
-        console.error('loadOlder error:', e);
+    },1000);
+    _chatTgPendingTimers[msgId]=timer;
+}
+function _tgCancelCountdown(msgId) {
+    if(_chatTgPendingTimers[msgId]){clearInterval(_chatTgPendingTimers[msgId]);delete _chatTgPendingTimers[msgId];}
+    const el=document.getElementById('tgcd_'+msgId);
+    if(el) el.style.display='none';
+}
+
+/* ─── System settings: hide chat for all ─────────────────── */
+function _initSystemSettingsListener() {
+    if(_chatSystemListener||!db||!fbDocRef) return;
+    _chatSystemListener=fbDocRef.collection('systemSettings').doc('chat').onSnapshot(snap=>{
+        const d=snap.exists?(snap.data()||{}):{};
+        _chatHiddenForAll=!!d.hiddenForAll;
+        const adminToggle=document.getElementById('chatHideForAllToggle');
+        if(adminToggle) adminToggle.checked=_chatHiddenForAll;
+        // Disable the "show chat" feature toggle for everyone
+        const featRow=document.getElementById('chat-feature-row');
+        const featToggle=document.getElementById('chatFeatureToggle');
+        if(_chatHiddenForAll){
+            if(_chatFeatureEnabled){ if(featToggle)featToggle.checked=false; _disableChatFeature(); }
+            if(featToggle) featToggle.disabled=true;
+            const lockNote=document.getElementById('chatHiddenLockNote');
+            if(lockNote) lockNote.style.display='block';
+        } else {
+            if(featToggle) featToggle.disabled=false;
+            const lockNote=document.getElementById('chatHiddenLockNote');
+            if(lockNote) lockNote.style.display='none';
+        }
+    },()=>{});
+}
+window.toggleHideChatForAll = async function() {
+    if(!currentUser||currentUser.role!=='admin'||!db||!fbDocRef) return;
+    const toggle=document.getElementById('chatHideForAllToggle');
+    const want=toggle?toggle.checked:false;
+    if(want){
+        const ok=await showConfirm('إخفاء الدردشة للكل','سيتم إيقاف خيار «دردشة الفريق» عند جميع المستخدمين (بمن فيهم الأدمن) وإخفاء الخانة فوراً. متابعة؟','إخفاء للكل','إلغاء','<i class="fas fa-eye-slash"></i>');
+        if(!ok){if(toggle)toggle.checked=false;return;}
     }
-    if (indicator) indicator.style.display = 'none';
-    _chatLoadingOlder = false;
+    try {
+        await fbDocRef.collection('systemSettings').doc('chat').set({hiddenForAll:want,changedAt:firebase.firestore.FieldValue.serverTimestamp(),changedBy:currentUser.username},{merge:true});
+        notify(want?'تم إخفاء الدردشة عن جميع المستخدمين':'تم إعادة تفعيل خيار الدردشة للمستخدمين');
+        try{logAction(want?'إخفاء خانة الدردشة للكل':'إظهار خانة الدردشة للكل','danger');}catch(e){}
+    } catch(e){ notify('خطأ: '+e.message,'error'); if(toggle)toggle.checked=!want; }
+};
+
+/* ─── Main chat listener ─────────────────────────────────── */
+function _initChatListener() {
+    if(_chatListener||!db||!fbDocRef) return;
+    const loadDiv=document.getElementById('chatLoadingMsg');
+    if(loadDiv){loadDiv.textContent='جاري تحميل الرسائل…';loadDiv.style.display='block';}
+    _chatListener=fbDocRef.collection('teamChat').orderBy('ts').limitToLast(CHAT_PAGE_SIZE)
+        .onSnapshot(snap=>{
+            if(loadDiv)loadDiv.style.display='none';
+            if(_chatFirstSnapshot){
+                _chatFirstSnapshot=false;
+                if(snap.docs.length>0&&!_chatOldestDoc) _chatOldestDoc=snap.docs[0];
+                snap.forEach(d=>{ if(!_chatMsgMap.has(d.id)) _chatMsgMap.set(d.id,{...d.data(),id:d.id}); });
+                _chatHasMoreOlder=snap.docs.length>=CHAT_PAGE_SIZE;
+                const indicator=document.getElementById('chatLoadOlder');
+                if(indicator) indicator.style.display=_chatHasMoreOlder?'block':'none';
+                _renderAllMessages(true);
+                _chatAttachScrollHandler();
+                return;
+            }
+            let incomingCount=0;
+            snap.docChanges().forEach(ch=>{
+                const d=ch.doc;
+                if(ch.type==='removed'){ _chatMsgMap.delete(d.id); return; }
+                const existed=_chatMsgMap.has(d.id);
+                const data={...d.data(),id:d.id};
+                _chatMsgMap.set(d.id,data);
+                if(ch.type==='added' && !existed){
+                    if(data.userId!==currentUser?.id){
+                        incomingCount++;
+                        _playChatNotifSound();
+                    } else {
+                        // my own message landed → clear from outbox, start TG countdown
+                        _chatOutbox=_chatOutbox.filter(m=>m._localId!==d.id);
+                        _chatSaveOutbox();
+                        if(_tgMyPrefs.enabled) _tgStartCountdown(d.id);
+                    }
+                }
+            });
+            _renderAllMessages(false);
+            if(incomingCount>0){
+                if(_chatNearBottom){
+                    // user is near bottom → snap down once
+                    _chatScrollToBottom(true);
+                    if(_chatIsOpen && !document.hidden) _chatMarkRead();
+                } else {
+                    _updateChatBadge(_chatUnreadCount+incomingCount);
+                    _chatUpdateScrollBtn(incomingCount);
+                }
+            }
+        },e=>{if(loadDiv){loadDiv.textContent='خطأ في التحميل';loadDiv.style.display='block';}});
 }
 
-// ── تسجيل القراءة (إيصالات) ─────────────────────────────────
-function _chatMarkRead() {
-    const msgs = _chatSortedMessages();
-    if (msgs.length === 0) return;
-    const latest = _chatEffTs(msgs[msgs.length - 1]);
-    if (latest <= _chatLastReadMs) return;
-    _chatLastReadMs = latest;
-    if (currentUser) localStorage.setItem('_chatLastRead_' + currentUser.id, String(_chatLastReadMs));
-    _chatUnreadCount = 0;
-    _updateChatBadge(0);
-    // كتابة الإيصال في فايربيس
-    if (db && fbDocRef && currentUser && !isDemoMode) {
-        fbDocRef.collection('teamChatReads').doc(currentUser.id).set({
-            userId: currentUser.id,
-            username: currentUser.username,
-            role: currentUser.role,
-            lastReadMs: _chatLastReadMs,
-            ts: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true }).catch(()=>{});
-    }
+/* ─── Scroll handler + gestures ──────────────────────────── */
+function _chatAttachScrollHandler() {
+    if(_chatScrollAttachedG) return;
+    const c=document.getElementById('chatMessagesContainer');
+    if(!c) return;
+    _chatScrollAttachedG=true;
+    c.addEventListener('scroll',()=>{
+        if(c.scrollTop<140) _loadOlderMessages();
+        _chatNearBottom = (c.scrollHeight-c.scrollTop-c.clientHeight) < 140;
+        _chatUpdateScrollBtn(0);
+        if(_chatNearBottom&&_chatIsOpen&&!document.hidden) _chatMarkRead();
+    },{passive:true});
+
+    // Touch: swipe-right to reply + long-press for menu
+    c.addEventListener('touchstart',e=>{
+        const wrap=e.target.closest('.chat-msg-wrap[data-msg-id]');
+        if(!wrap){_swipeEl=null;_swipeMsgId=null;return;}
+        _swipeStartX=e.touches[0].clientX; _swipeStartY=e.touches[0].clientY;
+        _swipeMsgId=wrap.dataset.msgId; _swipeEl=wrap; _swipeActive=false;
+        if(c._lpTimer) clearTimeout(c._lpTimer);
+        c._lpTimer=setTimeout(()=>{
+            _swipeEl=null;
+            if(navigator.vibrate) try{navigator.vibrate(15);}catch(e){}
+            _showMobileMenu(wrap.dataset.msgId);
+        },500);
+    },{passive:true});
+    c.addEventListener('touchmove',e=>{
+        if(!_swipeEl){ if(c._lpTimer){clearTimeout(c._lpTimer);c._lpTimer=null;} return; }
+        const dx=e.touches[0].clientX-_swipeStartX;
+        const dy=e.touches[0].clientY-_swipeStartY;
+        if(Math.abs(dy)>30){ if(c._lpTimer){clearTimeout(c._lpTimer);c._lpTimer=null;} _swipeEl.style.transform=''; _swipeEl=null; return; }
+        if(dx>6){
+            if(c._lpTimer){clearTimeout(c._lpTimer);c._lpTimer=null;}
+            _swipeActive=true;
+            const move=Math.min(dx*0.6,70);
+            _swipeEl.style.transition='none';
+            _swipeEl.style.transform=`translateX(${move}px)`;
+            _swipeEl.classList.toggle('swipe-ready',move>40);
+        }
+    },{passive:true});
+    c.addEventListener('touchend',e=>{
+        if(c._lpTimer){clearTimeout(c._lpTimer);c._lpTimer=null;}
+        if(!_swipeEl){return;}
+        const dx=e.changedTouches[0].clientX-_swipeStartX;
+        const el=_swipeEl; const id=_swipeMsgId;
+        el.style.transition='transform 0.2s'; el.style.transform='';
+        el.classList.remove('swipe-ready');
+        setTimeout(()=>{el.style.transition='';},220);
+        if(_swipeActive && dx>40 && id) _startReply(id);
+        _swipeEl=null; _swipeMsgId=null; _swipeActive=false;
+    },{passive:true});
 }
 
-// ── مستمع إيصالات القراءة ───────────────────────────────────
-function _initChatReadsListener() {
-    if (_chatReadsListener || !db || !fbDocRef) return;
-    _chatReadsListener = fbDocRef.collection('teamChatReads').onSnapshot(snap => {
-        _chatReads = {};
-        snap.forEach(doc => { const d = doc.data(); if (d && d.userId) _chatReads[d.userId] = d; });
-        if (_chatIsOpen) _renderAllMessages(false);
-    }, ()=>{});
-}
-
-// ── مؤشر الكتابة: إعلام الآخرين أنني أكتب ───────────────────
-function _chatNotifyTyping() {
-    if (!_chatFeatureEnabled || isDemoMode || !db || !fbDocRef || !currentUser) return;
-    const now = Date.now();
-    if (now - _chatLastTypingWrite > 1500) {
-        _chatLastTypingWrite = now;
-        fbDocRef.collection('teamChatTyping').doc(currentUser.id).set({
-            userId: currentUser.id, username: currentUser.username, ts: now
-        }).catch(()=>{});
-    }
-    clearTimeout(_chatTypingStopTimer);
-    _chatTypingStopTimer = setTimeout(_chatStopTyping, 3000);
-}
-
-function _chatStopTyping() {
-    clearTimeout(_chatTypingStopTimer);
-    if (isDemoMode || !db || !fbDocRef || !currentUser) return;
-    _chatLastTypingWrite = 0;
-    fbDocRef.collection('teamChatTyping').doc(currentUser.id).set({
-        userId: currentUser.id, username: currentUser.username, ts: 0
-    }).catch(()=>{});
-}
-
-// ── مستمع مؤشر الكتابة ──────────────────────────────────────
-function _initChatTypingListener() {
-    if (_chatTypingListener || !db || !fbDocRef) return;
-    _chatTypingListener = fbDocRef.collection('teamChatTyping').onSnapshot(snap => {
-        _chatTyping = {};
-        snap.forEach(doc => { const d = doc.data(); if (d && d.userId) _chatTyping[d.userId] = d; });
-        _chatRenderTyping();
-    }, ()=>{});
-    if (!_chatTypingInterval) _chatTypingInterval = setInterval(_chatRenderTyping, 2000); // تحديث دوري لإخفاء المنتهي
-}
-
-function _chatRenderTyping() {
-    const bar = document.getElementById('chatTypingBar');
-    const txt = document.getElementById('chatTypingText');
-    if (!bar || !txt || !currentUser) return;
-    const now = Date.now();
-    const typers = Object.values(_chatTyping)
-        .filter(t => t.userId !== currentUser.id && t.ts && (now - t.ts) < CHAT_TYPING_TTL)
-        .map(t => t.username);
-    if (typers.length === 0 || !_chatIsOpen) { bar.style.display = 'none'; return; }
-    bar.style.display = 'flex';
-    if (typers.length === 1) txt.textContent = `${typers[0]} يكتب الآن...`;
-    else if (typers.length === 2) txt.textContent = `${typers[0]} و${typers[1]} يكتبان...`;
-    else txt.textContent = `${typers.length} أشخاص يكتبون...`;
-}
-
-// ── فتح صفحة الدردشة ─────────────────────────────────────────
+/* ─── Open chat ──────────────────────────────────────────── */
 function openTeamChat() {
-    if (!_chatFeatureEnabled) { showPage('purchase', document.getElementById('btnPurchase')); return; }
-    _chatIsOpen = true;
-    _chatNearBottom = true;
-    _chatUnreadAnchorMs = _chatLastReadMs; // ثبّت مرجع الفاصل قبل التحديث
-    _chatUnreadFrozen = _chatSortedMessages().filter(m => _chatEffTs(m) > _chatUnreadAnchorMs && m.userId !== currentUser.id).length;
-
-    const hintEl = document.getElementById('chatHintText');
-    if (hintEl) hintEl.textContent = _isMobile() ? 'اضغط زر الإرسال ←' : 'Enter للإرسال · Shift+Enter لسطر جديد';
-
-    _initChatKeyboardFix();
-    _chatAttachScrollHandler();
-
-    if (isDemoMode) {
-        const loadDiv = document.getElementById('chatLoadingMsg');
-        if (loadDiv) loadDiv.style.display = 'none';
+    _chatIsOpen=true;
+    _chatUnreadAnchorMs=_chatLastReadMs;
+    _updateChatBadge(0);
+    _chatUpdatePresence(true);
+    if(!_chatListener&&_chatFeatureEnabled) _initChatListener();
+    if(_chatFeatureEnabled){
         _renderAllMessages(true);
+        setTimeout(()=>{
+            _chatScrollToBottom(false);
+            _chatMarkRead();
+            _chatAttachScrollHandler();
+        },90);
+    }
+}
+window.openTeamChat = openTeamChat;
+
+/* ─── Send message ───────────────────────────────────────── */
+async function sendChatMessage() {
+    if(!currentUser) return;
+    const input=document.getElementById('chatInput');
+    if(!input) return;
+    let text=input.value.trim();
+    if(!text) return;
+    if(text.length>CHAT_MAX_CHARS) text=text.slice(0,CHAT_MAX_CHARS);
+    if(isDemoMode){notify('الدردشة غير متاحة في الوضع التجريبي','warning');return;}
+    if(!db||!fbDocRef){notify('لا يوجد اتصال بقاعدة البيانات','error');return;}
+
+    if(_chatEditingId){
+        const editId=_chatEditingId;
+        _cancelEdit();
+        try { await fbDocRef.collection('teamChat').doc(editId).update({text,editedAt:firebase.firestore.FieldValue.serverTimestamp()}); }
+        catch(e){notify('خطأ في التعديل: '+e.message,'error');}
         return;
     }
 
-    if (!_chatListener && db && fbDocRef) _initChatListener();
+    const replyTo=_chatReplyTo?{..._chatReplyTo}:null;
+    _cancelReply();
+    input.value=''; chatAutoResize(input);
+    _chatStopTyping(); _chatNearBottom=true;
 
-    setTimeout(() => {
-        const loadDiv = document.getElementById('chatLoadingMsg');
-        if (loadDiv) loadDiv.style.display = 'none';
-        _renderAllMessages(true);
-        _chatMarkRead();
-        if (!_isMobile()) { const inp = document.getElementById('chatInput'); if (inp) setTimeout(()=>inp.focus(), 200); }
-    }, 250);
-}
-
-// ── ربط مستمع التمرير (تحميل أقدم + زر النزول) ──────────────
-let _chatScrollAttached = false;
-function _chatAttachScrollHandler() {
-    if (_chatScrollAttached) return;
-    const c = document.getElementById('chatMessagesContainer');
-    if (!c) return;
-    _chatScrollAttached = true;
-    c.addEventListener('scroll', () => {
-        // تحميل الأقدم عند الاقتراب من الأعلى
-        if (c.scrollTop < 120) _loadOlderMessages();
-        // حالة القرب من الأسفل
-        const near = c.scrollHeight - c.scrollTop - c.clientHeight < 120;
-        _chatNearBottom = near;
-        _chatUpdateScrollBtn(0);
-        if (near && _chatIsOpen && !document.hidden) _chatMarkRead();
-    }, { passive: true });
-}
-
-// ── إرسال رسالة ─────────────────────────────────────────────
-async function sendChatMessage() {
-    if (!currentUser) return;
-    const input = document.getElementById('chatInput');
-    if (!input) return;
-    let text = input.value.trim();
-    if (!text) return;
-    if (text.length > CHAT_MAX_CHARS) text = text.slice(0, CHAT_MAX_CHARS);
-
-    if (isDemoMode) { notify("الدردشة غير متاحة في الوضع التجريبي", "warning"); return; }
-    if (!db || !fbDocRef) { notify("لا يوجد اتصال بقاعدة البيانات", "error"); return; }
-
-    const btn = document.getElementById('btnSendChat');
-    if (btn) btn.style.opacity = '0.5';
-
-    const msg = {
-        text,
-        username: currentUser.username,
-        userId: currentUser.id,
-        role: currentUser.role,
-        ts: firebase.firestore.FieldValue.serverTimestamp(), // ترتيب حسب وصول السيرفر
-        clientTs: Date.now()                                 // للعرض الفوري قبل التزامن
-    };
-
-    input.value = '';
-    chatAutoResize(input);
-    _chatStopTyping();
-    _chatNearBottom = true;
+    const localId='_local_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);
+    const clientTs=Date.now();
+    // Add to outbox (persists in localStorage until confirmed)
+    _chatOutbox.push({_localId:localId,text,username:currentUser.username,userId:currentUser.id,role:currentUser.role,clientTs,replyTo:replyTo||null});
+    _chatSaveOutbox();
+    _renderAllMessages(true);
 
     try {
-        await fbDocRef.collection('teamChat').add(msg);
-        // لا حذف نهائياً — الرسائل تبقى محفوظة بالكامل
-        _chatScrollToBottom(true);
-    } catch (e) {
-        notify("خطأ في الإرسال: " + e.message, "error");
-        input.value = msg.text; // إعادة النص عند الفشل
+        await fbDocRef.collection('teamChat').doc(localId).set({
+            text,username:currentUser.username,userId:currentUser.id,role:currentUser.role,
+            ts:firebase.firestore.FieldValue.serverTimestamp(),clientTs,replyTo:replyTo||null
+        });
+        _chatOutbox=_chatOutbox.filter(m=>m._localId!==localId);
+        _chatSaveOutbox();
+    } catch(e){
+        notify('فشل الإرسال، سيُعاد المحاولة تلقائياً','warning');
+        _renderAllMessages(false);
     }
-    if (btn) btn.style.opacity = '1';
 }
+window.sendChatMessage = sendChatMessage;
 
-// ── حذف رسالة (للأدمن فقط — يدوي) ───────────────────────────
-async function deleteChatMsg(msgId) {
-    if (!currentUser || currentUser.role !== 'admin') return;
-    if (!db || !fbDocRef) return;
-    try {
-        await fbDocRef.collection('teamChat').doc(msgId).delete();
-        _chatMsgMap.delete(msgId);
-        if (_chatIsOpen) _renderAllMessages(false);
-    } catch (e) { notify("خطأ في الحذف: " + e.message, "error"); }
-}
-
-// ── مسح كل الرسائل (للأدمن فقط — يدوي) ──────────────────────
-async function clearAllChatMessages() {
-    if (!currentUser || currentUser.role !== 'admin') return;
-    const ok = await showConfirm("مسح الدردشة", "هل أنت متأكد من حذف جميع رسائل الدردشة نهائياً؟",
-        "مسح الكل", "إلغاء", '<i class="fas fa-trash-alt"></i>');
-    if (!ok || !db || !fbDocRef) return;
-    try {
-        const snap = await fbDocRef.collection('teamChat').get();
-        const batch = db.batch();
-        snap.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        _chatMsgMap.clear();
-        if (_chatIsOpen) _renderAllMessages(true);
-        notify("تم مسح جميع رسائل الدردشة");
-        logAction("مسح جميع رسائل الدردشة الجماعية", 'danger');
-    } catch (e) { notify("خطأ: " + e.message, "error"); }
-}
-
-// ── auto-resize + عدّاد الحروف ──────────────────────────────
+/* ─── Auto-resize textarea ───────────────────────────────── */
 function chatAutoResize(el) {
-    el.style.height = '44px';
-    el.style.height = Math.min(el.scrollHeight, 130) + 'px';
-    const count = el.value.length;
-    const countEl = document.getElementById('chatCharCount');
-    if (countEl) {
-        countEl.textContent = count + '/' + CHAT_MAX_CHARS;
-        countEl.style.color = count > CHAT_MAX_CHARS*0.95 ? 'var(--danger)'
-                            : count > CHAT_MAX_CHARS*0.8 ? 'var(--accent)' : 'var(--text-muted)';
+    el.style.height='auto';
+    const h=Math.min(el.scrollHeight,130);
+    el.style.height=h+'px';
+    el.style.overflowY = el.scrollHeight>130 ? 'auto' : 'hidden';
+    const count=el.value.length;
+    const countEl=document.getElementById('chatCharCount');
+    if(countEl){
+        countEl.textContent=count+'/'+CHAT_MAX_CHARS;
+        countEl.style.color=count>CHAT_MAX_CHARS*0.95?'var(--danger)':count>CHAT_MAX_CHARS*0.8?'var(--accent)':'var(--text-muted)';
     }
 }
+window.chatAutoResize = chatAutoResize;
 
-// ── تتبّع إغلاق صفحة الدردشة ────────────────────────────────
-(function() {
-    function _checkChatVisible() {
-        const el = document.getElementById('teamChat');
-        if (!el) return;
-        const isHidden = el.classList.contains('hidden');
-        if (isHidden && _chatIsOpen) {
-            _chatIsOpen = false;
-            _chatStopTyping();
-            const bar = document.getElementById('chatTypingBar');
-            if (bar) bar.style.display = 'none';
-        } else if (!isHidden && !_chatIsOpen && _chatFeatureEnabled) {
-            _chatIsOpen = true;
+/* ─── Visibility / lifecycle ─────────────────────────────── */
+(function(){
+    function _checkChatVisible(){
+        const el=document.getElementById('teamChat');
+        if(!el) return;
+        const hidden=el.classList.contains('hidden');
+        if(hidden&&_chatIsOpen){
+            _chatIsOpen=false; _chatStopTyping();
+            const tb=document.getElementById('chatTypingBar'); if(tb) tb.style.display='none';
+            _chatUpdatePresence(false);
+        } else if(!hidden&&!_chatIsOpen&&_chatFeatureEnabled){
+            _chatIsOpen=true; _chatUpdatePresence(true);
         }
     }
-    document.addEventListener('DOMContentLoaded', () => {
-        const el = document.getElementById('teamChat');
-        if (el) new MutationObserver(_checkChatVisible).observe(el, { attributes: true, attributeFilter: ['class'] });
+    document.addEventListener('DOMContentLoaded',()=>{
+        const el=document.getElementById('teamChat');
+        if(el) new MutationObserver(_checkChatVisible).observe(el,{attributes:true,attributeFilter:['class']});
     });
 })();
-
-// ── عند العودة لتاب الموقع: علّم القراءة وأزل العداد ─────────
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-        if (_chatIsOpen && _chatNearBottom) _chatMarkRead();
-        _chatUpdateTitle();
+document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden){
+        if(_chatIsOpen&&_chatNearBottom) _chatMarkRead();
+        _chatUpdateTitle(); _chatUpdatePresence(); _resetInactivityTimer();
     }
 });
+window.addEventListener('beforeunload',()=>{ _chatSetOffline(); });
 
-// ── تفعيل/إلغاء ميزة الدردشة (من الإعدادات) ─────────────────
+/* ─── Enable / disable feature ───────────────────────────── */
 function _enableChatFeature() {
-    _chatFeatureEnabled = true;
-    const btn = document.getElementById('btnTeamChat');
-    if (btn) btn.style.display = '';
-    if (!isDemoMode && db && fbDocRef) _initChatListener();
-    notify("تم تفعيل خانة المحادثات");
-}
-
-function _disableChatFeature() {
-    _chatFeatureEnabled = false;
-    const btn = document.getElementById('btnTeamChat');
-    if (btn) btn.style.display = 'none';
-    // إن كنا داخل صفحة الدردشة، نخرج منها
-    const chatEl = document.getElementById('teamChat');
-    if (chatEl && !chatEl.classList.contains('hidden')) {
-        showPage('purchase', document.getElementById('btnPurchase'));
+    if(_chatHiddenForAll){
+        notify('خانة الدردشة معطّلة من الأدمن حالياً','warning');
+        const cb=document.getElementById('chatFeatureToggle'); if(cb)cb.checked=false;
+        return;
     }
-    // فصل المستمعين لتوفير القراءات
-    if (_chatListener) { _chatListener(); _chatListener = null; }
-    if (_chatReadsListener) { _chatReadsListener(); _chatReadsListener = null; }
-    if (_chatTypingListener) { _chatTypingListener(); _chatTypingListener = null; }
-    if (_chatTypingInterval) { clearInterval(_chatTypingInterval); _chatTypingInterval = null; }
-    _chatFirstSnapshot = true;
-    _chatScrollAttached = false;
-    _chatUnreadCount = 0;
-    _updateChatBadge(0);
-    _chatStopTyping();
+    _chatFeatureEnabled=true;
+    const bt=document.getElementById('btnTeamChat'); if(bt) bt.style.display='';
+    const tg=document.getElementById('tg-notif-setting'); if(tg) tg.style.display='';
+    const ex=document.getElementById('chat-extra-settings'); if(ex) ex.style.display='';
+    if(!isDemoMode&&db&&fbDocRef){
+        _initChatListener(); _initChatReadsListener(); _initChatTypingListener();
+        _initPresenceListener(); _initTgPrefsListener();
+    }
+    _resetInactivityTimer();
+    notify('تم تفعيل خانة المحادثات');
 }
-
-window.toggleChatFeature = function() {
-    const cb = document.getElementById('chatFeatureToggle');
-    const enabled = cb ? cb.checked : false;
-    if (enabled) _enableChatFeature();
-    else _disableChatFeature();
+function _disableChatFeature() {
+    _chatFeatureEnabled=false;
+    const bt=document.getElementById('btnTeamChat'); if(bt) bt.style.display='none';
+    const tg=document.getElementById('tg-notif-setting'); if(tg) tg.style.display='none';
+    const ex=document.getElementById('chat-extra-settings'); if(ex) ex.style.display='none';
+    const chatEl=document.getElementById('teamChat');
+    if(chatEl&&!chatEl.classList.contains('hidden')){ try{ showPage('purchase',document.getElementById('btnPurchase')); }catch(e){} }
+    if(_chatListener){_chatListener();_chatListener=null;}
+    if(_chatReadsListener){_chatReadsListener();_chatReadsListener=null;}
+    if(_chatTypingListener){_chatTypingListener();_chatTypingListener=null;}
+    if(_chatTypingInterval){clearInterval(_chatTypingInterval);_chatTypingInterval=null;}
+    if(_chatInactivityTimer){clearTimeout(_chatInactivityTimer);_chatInactivityTimer=null;}
+    _chatFirstSnapshot=true; _chatScrollAttachedG=false; _chatUnreadCount=0;
+    _updateChatBadge(0); _chatStopTyping();
+}
+window.toggleChatFeature=function(){
+    const cb=document.getElementById('chatFeatureToggle');
+    if(cb&&cb.disabled){ return; }
+    const enabled=cb?cb.checked:false;
+    if(enabled) _enableChatFeature(); else _disableChatFeature();
 };
 
-// ── تهيئة بعد تسجيل الدخول (لا تشغّل المستمع — الميزة ملغاة افتراضياً) ──
-function _startChatOnLogin() {
-    // استرجاع آخر وقت قراءة فقط (لا نبدأ المستمع حتى يفعّل المستخدم الميزة)
-    if (currentUser) {
-        const saved = localStorage.getItem('_chatLastRead_' + currentUser.id);
-        _chatLastReadMs = saved ? parseInt(saved) : 0;
+/* ─── Init after login ───────────────────────────────────── */
+function _startChatOnLogin(){
+    if(currentUser){
+        const saved=localStorage.getItem('_chatLastRead_'+currentUser.id);
+        _chatLastReadMs=saved?parseInt(saved):0;
+        _chatLoadOutbox();
+        _startPresenceHeartbeat();
+        _initSystemSettingsListener();
+        _initPresenceListener();
+        _initTgPrefsListener();
+        _chatFlushOutbox();
     }
-    // التأكد أن الزر مخفي والمفتاح غير مفعّل (يُعاد ضبطه كل رفرش)
-    _chatFeatureEnabled = false;
-    const cb = document.getElementById('chatFeatureToggle');
-    if (cb) cb.checked = false;
-    const btn = document.getElementById('btnTeamChat');
-    if (btn) btn.style.display = 'none';
+    _chatFeatureEnabled=false;
+    const cb=document.getElementById('chatFeatureToggle');
+    if(cb)cb.checked=false;
+    const bt=document.getElementById('btnTeamChat'); if(bt) bt.style.display='none';
+    const soundBtn=document.getElementById('chatSoundMuteBtn');
+    if(soundBtn) soundBtn.innerHTML=_chatSoundMuted?'<i class="fas fa-volume-mute"></i> صوت الإشعارات: مكتوم':'<i class="fas fa-volume-up"></i> كتم صوت الإشعارات';
+    const adminSect=document.getElementById('chatHideForAllSection');
+    if(adminSect) adminSect.style.display=(currentUser&&currentUser.role==='admin')?'':'none';
+    _initActivityTracking();
 }
 window.onload = init;
 
