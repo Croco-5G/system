@@ -788,6 +788,55 @@
         body.chat-active #syncStatus {
             display: none !important;
         }
+
+        /* ═══════ تحسينات الدردشة v2 ═══════ */
+        .chat-typing-dots { display:inline-flex; align-items:center; gap:3px; }
+        .chat-typing-dots span {
+            width:6px; height:6px; border-radius:50%; background:var(--primary);
+            opacity:0.4; animation: chatTyping 1.2s infinite ease-in-out;
+        }
+        .chat-typing-dots span:nth-child(2){ animation-delay:0.18s; }
+        .chat-typing-dots span:nth-child(3){ animation-delay:0.36s; }
+        @keyframes chatTyping { 0%,60%,100%{ transform:translateY(0); opacity:0.4; } 30%{ transform:translateY(-4px); opacity:1; } }
+
+        .chat-unread-divider { display:flex; align-items:center; gap:10px; margin:14px 2px 8px; }
+        .chat-unread-divider::before, .chat-unread-divider::after {
+            content:''; flex:1; height:1px; background:linear-gradient(90deg, transparent, var(--danger));
+        }
+        .chat-unread-divider::after { background:linear-gradient(90deg, var(--danger), transparent); }
+        .chat-unread-divider span {
+            font-size:11px; font-weight:800; color:#fff; white-space:nowrap;
+            padding:4px 14px; background:var(--danger); border-radius:20px;
+            box-shadow:0 3px 10px rgba(239,68,68,0.35);
+        }
+
+        .chat-read-ticks { display:inline-flex; align-items:center; margin-right:3px; font-size:11px; }
+        .chat-read-ticks.seen { color:#7dd3fc; }
+        .chat-msg-wrap:not(.mine) .chat-read-ticks { display:none; }
+        .chat-seen-line {
+            font-size:10.5px; color:var(--text-muted); margin-top:3px;
+            display:flex; align-items:center; gap:5px; justify-content:flex-end; padding-left:4px;
+        }
+        .chat-seen-line i { color:#38bdf8; font-size:11px; }
+        html.dark-mode .chat-seen-line { color:#94a3b8; }
+
+        #chatScrollDownBtn:hover { transform:translateY(-2px); }
+        #chatScrollDownBtn:active { transform:scale(0.94); }
+
+        .chat-msg-wrap { margin-bottom: 3px; }
+        .chat-msg-wrap.group-start { margin-top: 12px; }
+        .chat-msg-wrap.grouped .chat-avatar { visibility:hidden; }
+        .chat-msg-wrap.grouped:not(.mine) .chat-bubble { border-top-right-radius: 6px; }
+        .chat-msg-wrap.grouped.mine .chat-bubble { border-top-left-radius: 6px; }
+
+        @media (max-width: 768px) {
+            #chatScrollDownBtn { bottom: 92px; left: 12px; width:42px; height:42px; }
+            .chat-typing-dots span { width:5px; height:5px; }
+            #chatTypingBar { padding:3px 14px 0; }
+        }
+
+        @keyframes chatMsgIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+        .chat-msg-wrap.fresh { animation: chatMsgIn 0.25s ease; }
     </style>
 </head>
 
@@ -959,6 +1008,10 @@
             <div class="input-group">
                 <label>اسم العميل (اختياري)</label>
                 <input id="mcCustomer" placeholder="اسم العميل">
+            </div>
+            <div class="input-group">
+                <label>رقم جوال العميل (اختياري)</label>
+                <input id="mcPhone" placeholder="97xxxxxxxxxx أو +97xxxxxxxxxx" dir="ltr" style="text-align:right;" oninput="validatePhoneInput(this)" onblur="autoAddPlusPhone(this)">
             </div>
             <div class="grid-2">
                 <div class="input-group">
@@ -1354,7 +1407,7 @@
         <button onclick="showPage('security', this)" id="btnSecurity" class="hidden"><i class="fas fa-users-cog"></i> المستخدمين</button>
         <button onclick="showPage('logs', this)" id="btnLogs" class="hidden"><i class="fas fa-clipboard-list"></i> سجل النشاط</button>
         <button onclick="showPage('backup', this)" id="btnBackup"><i class="fas fa-database"></i> نسخ احتياطي</button>
-        <button onclick="showPage('teamChat', this)" id="btnTeamChat"><i class="fas fa-comments"></i> الدردشة <span id="chatUnreadBadge" style="background:var(--danger); color:white; padding:2px 7px; border-radius:10px; font-size:10px; display:none; margin-right:4px; font-weight:800;"></span></button>
+        <button onclick="showPage('teamChat', this)" id="btnTeamChat" style="display:none;"><i class="fas fa-comments"></i> الدردشة <span id="chatUnreadBadge" style="background:var(--danger); color:white; padding:2px 7px; border-radius:10px; font-size:10px; display:none; margin-right:4px; font-weight:800;"></span></button>
         <button onclick="showPage('modify', this)" id="btnSettings"><i class="fas fa-cog"></i> الإعدادات</button>
         <button onclick="logout()" style="color:var(--danger); margin-top:10px"><i class="fas fa-sign-out-alt"></i> تسجيل خروج</button>
     </div>
@@ -1425,6 +1478,10 @@
             </div>
         </div>
         <input type="hidden" id="subDuration" value="1">
+        <div class="input-group" style="margin-top:10px; padding-top:15px; border-top:1px dashed var(--border-color)">
+            <label>ملاحظات العملية (اختياري)</label>
+            <input id="purchaseNotes" placeholder="ملاحظة تظهر عند التأشير على السجل في السجل المالي...">
+        </div>
         <button class="btn btn-primary" id="btnSubmitPurchase" style="width:100%; margin-top:25px; padding: 16px; font-size:16px;" onclick="addPurchase()"><i class="fas fa-check-circle"></i> إتمام وحفظ</button>
     </div>
 
@@ -1444,7 +1501,7 @@
         </div>
         <div class="table-container">
             <table>
-                <thead><tr><th style="text-align:center;">كود الخصم</th><th style="text-align:center;">العميل</th><th style="text-align:center;">نسبة الخصم</th><th style="text-align:center;">الاستعمالات</th><th style="text-align:center;">المتبقي</th><th id="thDiscountsDelete" style="text-align:center;">حذف</th></tr></thead>
+                <thead><tr><th style="text-align:center;">كود الخصم</th><th style="text-align:center;">العميل</th><th style="text-align:center;">رقم الجوال</th><th style="text-align:center;">نسبة الخصم</th><th style="text-align:center;">الاستعمالات</th><th style="text-align:center;">المتبقي</th><th id="thDiscountsDelete" style="text-align:center;">حذف</th></tr></thead>
                 <tbody id="discountsBody"></tbody>
             </table>
         </div>
@@ -1978,6 +2035,20 @@
             </div>
         </div>
 
+        <div id="sec-expiry-alert-settings" style="margin-bottom:20px; margin-top:20px;">
+            <h3><i class="fas fa-bell" style="color:var(--primary)"></i> إعدادات تنبيه انتهاء الاشتراكات</h3>
+            <div class="inner-box" style="margin-bottom:20px;">
+                <div class="input-group" style="margin-bottom:0;">
+                    <label>عدد الأيام قبل الانتهاء لإظهار التنبيه</label>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <input type="number" id="setExpiryAlertDays" placeholder="مثلاً 1" min="1" step="1" style="max-width:130px;">
+                        <span style="color:var(--text-muted); font-size:13px; flex-shrink:0;">أيام (افتراضي: 1)</span>
+                        <button class="btn btn-primary" onclick="saveAlertSettings()" style="flex-shrink:0;">حفظ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="sec-budget-reset" style="margin-bottom:20px; margin-top:20px;">
             <h3><i class="fas fa-chart-line" style="color:var(--primary)"></i> إعادة تعيين مسار الميزانية</h3>
             <div class="inner-box" style="border-style:dashed!important;">
@@ -2111,6 +2182,25 @@
             </div>
         </div>
 
+        <!-- ═══ إعداد تفعيل خانة المحادثات (الدردشة) ═══ -->
+        <div id="chat-feature-setting" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px 25px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:40px; height:40px; background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(59,130,246,0.15)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--success); flex-shrink:0; border:1px solid rgba(16,185,129,0.2);">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:700; font-size:15px; color:var(--text-main);">خانة المحادثات (دردشة الفريق)</div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">عند التفعيل يظهر زر الدردشة في القائمة. <b>ملاحظة:</b> يُعاد ضبطه إلى "غير مفعّل" تلقائياً عند كل تحديث للصفحة.</div>
+                    </div>
+                </div>
+                <label class="theme-switch" style="width: 60px; height: 30px; flex-shrink:0;">
+                    <input type="checkbox" id="chatFeatureToggle" onchange="toggleChatFeature()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
         <h3><i class="fas fa-key" style="color:var(--primary)"></i> تغيير كلمة المرور</h3>
         <div class="inner-box" style="margin-bottom:20px">
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -2186,20 +2276,37 @@
         </div>
 
         <!-- منطقة الرسائل -->
-        <div id="chatMessagesContainer" style="flex:1; overflow-y:auto; padding:14px 12px; display:flex; flex-direction:column; gap:8px; background:var(--bg-body); -webkit-overflow-scrolling:touch;">
+        <div id="chatMessagesContainer" style="flex:1; overflow-y:auto; padding:14px 12px 8px; display:flex; flex-direction:column; gap:2px; background:var(--bg-body); -webkit-overflow-scrolling:touch; position:relative;">
+            <div id="chatLoadOlder" style="display:none; text-align:center; padding:10px 0 6px;">
+                <div style="display:inline-flex; align-items:center; gap:8px; background:var(--bg-card); border:1px solid var(--border-color); color:var(--text-muted); font-size:12px; font-weight:700; padding:6px 14px; border-radius:20px;">
+                    <div style="width:14px;height:14px;border:2px solid rgba(99,102,241,0.25);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+                    تحميل الرسائل الأقدم...
+                </div>
+            </div>
             <div id="chatLoadingMsg" style="text-align:center; color:var(--text-muted); padding:40px; font-size:14px;">
                 <div style="width:36px;height:36px;border:3px solid rgba(99,102,241,0.2);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;"></div>
                 جاري تحميل الرسائل...
             </div>
         </div>
 
-        <!-- قسم الكتابة — واتساب ستايل -->
+        <button id="chatScrollDownBtn" onclick="_chatScrollToBottom(true)"
+            style="display:none; position:absolute; left:16px; bottom:96px; z-index:20; width:44px; height:44px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border-color); color:var(--primary); font-size:16px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.18); align-items:center; justify-content:center; transition:transform 0.15s;">
+            <i class="fas fa-arrow-down"></i>
+            <span id="chatScrollDownBadge" style="position:absolute; top:-5px; right:-5px; background:var(--danger); color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; padding:0 4px; border-radius:9px; display:none; align-items:center; justify-content:center;"></span>
+        </button>
+
+        <div id="chatTypingBar" style="display:none; padding:4px 16px 0; font-size:12px; color:var(--text-muted); flex-shrink:0; min-height:18px; align-items:center; gap:7px;">
+            <span class="chat-typing-dots"><span></span><span></span><span></span></span>
+            <span id="chatTypingText" style="font-weight:600;"></span>
+        </div>
+
         <div style="border-top:1px solid var(--border-color); background:var(--bg-card); padding:10px 12px; flex-shrink:0; padding-bottom:max(10px, env(safe-area-inset-bottom));">
             <div style="display:flex; gap:8px; align-items:flex-end;">
                 <div style="flex:1; background:var(--bg-input); border:2px solid var(--border-color); border-radius:22px; padding:2px 12px; transition:border-color 0.2s, box-shadow 0.2s;" id="chatInputWrapper">
-                    <textarea id="chatInput" placeholder="اكتب رسالة..." maxlength="1000"
-                        style="width:100%; background:transparent; border:none; outline:none; resize:none; font-family:'Tajawal',sans-serif; font-size:15px; color:var(--text-main); padding:10px 0; min-height:42px; max-height:110px; overflow-y:auto; line-height:1.5; display:block;"
-                        oninput="chatAutoResize(this)"
+                    <textarea id="chatInput" placeholder="اكتب رسالة..." maxlength="5000"
+                        style="width:100%; background:transparent; border:none; outline:none; resize:none; font-family:'Tajawal',sans-serif; font-size:15px; color:var(--text-main); padding:10px 0; min-height:42px; max-height:130px; overflow-y:auto; line-height:1.5; display:block;"
+                        oninput="chatAutoResize(this); _chatNotifyTyping();"
+                        onblur="_chatStopTyping();"
                         onkeydown="if(event.key==='Enter' && !event.shiftKey && !_isMobile()){event.preventDefault();sendChatMessage();}"></textarea>
                 </div>
                 <button onclick="sendChatMessage()" id="btnSendChat"
@@ -2209,7 +2316,7 @@
             </div>
             <div class="chat-input-hint" style="display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding:0 6px;">
                 <span id="chatHintText" style="font-size:10px; color:var(--text-muted);">Enter للإرسال · Shift+Enter لسطر جديد</span>
-                <span id="chatCharCount" style="font-size:10px; color:var(--text-muted);">0/1000</span>
+                <span id="chatCharCount" style="font-size:10px; color:var(--text-muted);">0/5000</span>
             </div>
         </div>
     </div>
@@ -2333,7 +2440,7 @@
         </div>
         <div class="input-group"><label>اسم البائع</label><input id="stVendor" placeholder="اسم البائع"></div>
         <div class="input-group"><label>المدة</label>
-            <select id="stDuration"><option value="">اختر المدة</option><option value="0">بدون مدة</option><option value="1">1 شهر</option><option value="2">2 شهر</option><option value="3">3 شهور</option><option value="6">6 شهور</option><option value="12">12 شهر</option></select>
+            <select id="stDuration" onchange="onStDurationChange(this)"><option value="">اختر المدة</option><option value="0">بدون مدة</option><option value="1">1 شهر</option><option value="2">2 شهر</option><option value="3">3 شهور</option><option value="6">6 شهور</option><option value="12">12 شهر</option></select>
         </div>
         <div class="input-group"><label>البريد الإلكتروني</label><div style="display:flex; gap:8px;"><input id="stEmail" placeholder="email@example.com" style="flex:1"><button type="button" class="btn btn-primary" style="padding:10px 14px; flex-shrink:0;" onclick="copyField('stEmail', this)" title="نسخ الإيميل"><i class="fas fa-copy"></i></button></div></div>
         <div class="input-group"><label>كلمة المرور</label><div style="display:flex; gap:8px;"><input id="stPass" placeholder="Password" style="flex:1"><button type="button" class="btn btn-primary" style="padding:10px 14px; flex-shrink:0;" onclick="copyField('stPass', this)" title="نسخ كلمة المرور"><i class="fas fa-copy"></i></button></div></div>
@@ -2410,6 +2517,22 @@ function _addMonths30(baseDate, months) {
     let m = parseInt(months) || 0;
     d.setTime(d.getTime() + m * 30 * 86400000);
     return d;
+}
+
+// دالة مساعدة: تُعيد نص الوقت المتبقي
+// - أقل من 24 ساعة → بالساعات فقط
+// - 24 ساعة أو أكثر → بالأيام فقط
+// msLeft: الفرق بالميلي ثانية (موجب = لم ينتهِ، صفر أو سالب = منتهي)
+function _formatTimeLeft(msLeft) {
+    if (msLeft <= 0) return null; // منتهي
+    let totalHours = Math.floor(msLeft / 3600000);
+    if (totalHours < 24) {
+        // أقل من 24 ساعة → عرض بالساعات فقط
+        if (totalHours === 0) return 'أقل من ساعة';
+        return `${totalHours} ساعة`;
+    }
+    // 24 ساعة أو أكثر → عرض بالأيام فقط
+    return `${Math.floor(totalHours / 24)} يوم`;
 }
 
 function safeJSON(str, fallback) {
@@ -2572,8 +2695,8 @@ function refreshVip() {
     list = list.filter(c => {
         if (!search) return true;
         let cPhoneNorm = normalizePhone(c.phone||'').replace(/\D/g,'');
-        return cPhoneNorm.includes(searchNorm) ||
-            c.phone.replace(/\D/g,'').includes(searchNorm) ||
+        return (searchNorm && cPhoneNorm.includes(searchNorm)) ||
+            (searchNorm && c.phone.replace(/\D/g,'').includes(searchNorm)) ||
             c.phone.includes(search) ||
             (c.name && c.name.toLowerCase().includes(search));
     });
@@ -2617,9 +2740,17 @@ function refreshVip() {
 
         if (isVipActive) {
             countDisplay = c.rankIndex < 4 ? `${c.count} / ${c.target}` : `${c.count} (ماكس)`;
-            let daysPassed = Math.floor((now - c.lastPurchaseTime) / (1000 * 60 * 60 * 24));
-            let daysLeft = Math.max(0, 75 - daysPassed);
-            timeText = c.rankIndex > 0 ? `${daysLeft} يوم` : '-';
+            let msLeftVip = Math.max(0, (c.lastPurchaseTime + 75 * 86400000) - now);
+            let totalHoursVip = Math.floor(msLeftVip / 3600000);
+            let vipTimeStr;
+            if (msLeftVip === 0) {
+                vipTimeStr = '0 يوم';
+            } else if (totalHoursVip < 24) {
+                vipTimeStr = totalHoursVip === 0 ? 'أقل من ساعة' : `${totalHoursVip} ساعة`;
+            } else {
+                vipTimeStr = `${Math.floor(totalHoursVip / 24)} يوم`;
+            }
+            timeText = c.rankIndex > 0 ? vipTimeStr : '-';
             rankTd = `<td style="text-align:center; font-weight:bold; color:${rank.color}">${rank.name}</td>`;
             timeTd = `<td style="text-align:center;">${timeText}</td>`;
         } else {
@@ -2773,14 +2904,15 @@ function openCustomerDetails(phone, name) {
     } else {
         html += `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;">`;
         activeSubs.forEach(p => {
-            let daysLeft = Math.ceil((Number(p.expiry) - now) / 86400000);
+            let msLeftSub = Number(p.expiry) - now;
+            let timeStrSub = _formatTimeLeft(msLeftSub);
             let expDate = new Date(Number(p.expiry));
             let expStr = `${expDate.getFullYear()}-${String(expDate.getMonth()+1).padStart(2,'0')}-${String(expDate.getDate()).padStart(2,'0')}`;
-            let urgent = daysLeft <= 3;
+            let urgent = msLeftSub < 3 * 86400000; // أقل من 3 أيام = عاجل
             html += `<div style="background:var(--bg-input); border:1px solid ${urgent ? 'var(--danger)' : 'var(--border-color)'}; border-radius:12px; padding:14px;">
                 <div style="font-weight:800; font-size:14px; margin-bottom:8px;">${esc(p.sub || '—')}</div>
                 <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;"><i class="far fa-calendar"></i> ينتهي: <span dir="ltr">${expStr}</span></div>
-                <div style="font-size:13px; font-weight:800; color:${urgent ? 'var(--danger)' : 'var(--success)'};"><i class="fas fa-clock"></i> متبقٍ ${daysLeft} يوم</div>
+                <div style="font-size:13px; font-weight:800; color:${urgent ? 'var(--danger)' : 'var(--success)'};"><i class="fas fa-clock"></i> متبقٍ ${timeStrSub || 'منتهي'}</div>
             </div>`;
         });
         html += `</div>`;
@@ -4611,7 +4743,6 @@ function tryAutoLogin() {
         startCardReminderCheck();
         setTimeout(checkCardRemovalReminders, 1200);
         _startChatOnLogin();
-        if (window.loadFinPrivacyForUser) loadFinPrivacyForUser();
     });
 }
 
@@ -4912,7 +5043,6 @@ async function attemptLogin() {
         startCardReminderCheck();
         setTimeout(checkCardRemovalReminders, 1200);
           _startChatOnLogin();
-          if (window.loadFinPrivacyForUser) loadFinPrivacyForUser();
         });
     } else {
         errEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> اسم المستخدم أو كلمة المرور غير صحيحة.';
@@ -4942,8 +5072,8 @@ async function attemptLogin() {
 function checkExpiringOnLogin() {
     let p = safeJSON(store.purchases, []);
     let now = new Date().getTime();
-    let days7 = 1 * 86400000;
-    // نحسب المنتهية + القادمة خلال يوم واحد بدون أي حد زمني للإخفاء
+    let days7 = _getExpiryAlertMs();
+    // نحسب المنتهية + القادمة خلال عدد الأيام المحدد في الإعدادات
     let allAlerts = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && (x.expiry - now) < days7);
     let expiredNow = allAlerts.filter(x => x.expiry <= now);
     let soonList  = allAlerts.filter(x => x.expiry > now);
@@ -4952,8 +5082,8 @@ function checkExpiringOnLogin() {
     }
     if(soonList.length > 0) {
         let soonest = soonList.sort((a,b) => a.expiry - b.expiry)[0];
-        let daysLeft = Math.ceil((soonest.expiry - now) / 86400000);
-        let msg = `يوجد ${soonList.length} اشتراك ينتهي خلال ${daysLeft <= 1 ? 'يوم' : daysLeft + ' أيام'} — اضغط "التنبيهات"`;
+        let soonestTimeStr = _formatTimeLeft(soonest.expiry - now) || 'أقل من ساعة';
+        let msg = `يوجد ${soonList.length} اشتراك ينتهي خلال ${soonestTimeStr} — اضغط "التنبيهات"`;
         setTimeout(() => notify(msg, "warning", 8000), expiredNow.length > 0 ? 11000 : 1500);
     }
 }
@@ -4966,7 +5096,7 @@ function startExpiryPeriodicCheck() {
         if(!currentUser) { clearInterval(_expiryCheckInterval); return; }
         let p = safeJSON(store.purchases, []);
         let now = new Date().getTime();
-        let days7 = 1 * 86400000;
+        let days7 = _getExpiryAlertMs();
         let freshExpired = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp
             && x.expiry <= now && x.expiry > now - 3600000); // انتهت خلال آخر ساعة
         if(freshExpired.length > 0) {
@@ -5921,7 +6051,28 @@ function loadProfitSettings(){
     document.getElementById("setDiscountMax").value = s.discountMax ?? 20;
     document.getElementById("setValidityMin").value = s.validityMin ?? 15;
     document.getElementById("setValidityMax").value = s.validityMax ?? 45;
+    let _alertDaysEl = document.getElementById("setExpiryAlertDays");
+    if (_alertDaysEl) _alertDaysEl.value = s.expiryAlertDays ?? 1;
 }
+
+function saveAlertSettings() {
+    if (currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
+    let days = parseInt(document.getElementById("setExpiryAlertDays").value);
+    if (isNaN(days) || days < 1) return notify("أدخل عدد أيام صحيح (1 أو أكثر)", "error");
+    let sObj = safeJSON(store.settings, {});
+    sObj.expiryAlertDays = days;
+    store.settings = JSON.stringify(sObj); fbSave("settings", sObj);
+    notify("تم حفظ إعدادات التنبيه");
+}
+
+// دالة مساعدة: تُعيد عدد الميلي ثانية بناءً على إعداد عدد أيام التنبيه
+function _getExpiryAlertMs() {
+    let s = safeJSON(store.settings, {});
+    let days = parseInt(s.expiryAlertDays);
+    if (isNaN(days) || days < 1) days = 1;
+    return days * 86400000;
+}
+
 function saveProfitSettings(){
     if(currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
     let sObj = safeJSON(store.settings, {});
@@ -6032,6 +6183,14 @@ function validatePhoneInput(el) {
     let normalized = normalizePhone(v);
     if(/^\+97[012]\d{9}$/.test(normalized)) el.style.borderColor = "var(--success)";
     else el.style.borderColor = "var(--danger)";
+}
+
+// إخفاء تذكير البطاقة إذا اختار المستخدم "بدون مدة"
+function onStDurationChange(sel) {
+    let remBox = document.getElementById("stRemindCardBox");
+    if (!remBox) return;
+    // قيمة "0" = بدون مدة → تذكير البطاقة لا معنى له فيُخفى
+    remBox.style.display = (sel.value === "0") ? "none" : "";
 }
 
 function toggleRemindCardOptions(cb) {
@@ -6340,6 +6499,7 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
         isComp: isComp,
         isPledge: !!selectedPledge,
         usedDiscountObj: usedDiscountObj,
+        purchaseNotes: (document.getElementById("purchaseNotes")?.value.trim()) || "",
         generatedCouponId: null,
             canBeUndone: true
         });
@@ -6441,7 +6601,7 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
             let expTime = new Date().getTime() + (days * 86400000);
 
             generatedCoupon = {
-                id: 'id_' + Date.now().toString(), code: code, customer: customerVal || "عميل", service: cleanName, percentage: pct, expiry: expTime, days: days, maxUses: uses, usedCount: 0, notified: false
+                id: 'id_' + Date.now().toString(), code: code, customer: customerVal || "عميل", phone: customerPhoneVal || "-", service: cleanName, percentage: pct, expiry: expTime, days: days, maxUses: uses, usedCount: 0, notified: false
             };
 
             dList.unshift(generatedCoupon);
@@ -6469,7 +6629,7 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     loadPurchaseStock();
     refreshAll();  notify("تمت العملية بنجاح");
     
-    document.getElementById("paidAmount").value=""; document.getElementById("customer").value=""; document.getElementById("sub").value=""; document.getElementById("customerPhone").value=""; document.getElementById("discountCodeInput").value=""; document.getElementById("isCompensation").checked = false; document.getElementById("customerPhone").style.borderColor = "";
+    document.getElementById("paidAmount").value=""; document.getElementById("customer").value=""; document.getElementById("sub").value=""; document.getElementById("customerPhone").value=""; document.getElementById("discountCodeInput").value=""; document.getElementById("isCompensation").checked = false; document.getElementById("customerPhone").style.borderColor = ""; document.getElementById("purchaseNotes").value = "";
 }
 
 function showCouponModal(coupon, phone, onCloseCallback = null) {
@@ -6506,6 +6666,8 @@ function showCouponModal(coupon, phone, onCloseCallback = null) {
 let tempMC = null;
 function openManualCouponModal() {
     document.getElementById("mcCustomer").value = "";
+    document.getElementById("mcPhone").value = "";
+    document.getElementById("mcPhone").style.borderColor = "";
     document.getElementById("mcPct").value = "";
     document.getElementById("mcDays").value = "";
     document.getElementById("mcUses").value = "1";
@@ -6523,6 +6685,15 @@ function generateManualCoupon() {
     let pct = parseInt(document.getElementById("mcPct").value);
     let days = parseInt(document.getElementById("mcDays").value);
     let uses = parseInt(document.getElementById("mcUses").value) || 1;
+    
+    // التحقق من رقم الجوال مع السماح بالمسافات (تُزال تلقائياً كما في عملية الشراء)
+    let mcPhoneRaw = document.getElementById("mcPhone").value.trim();
+    let mcPhone = "";
+    if (mcPhoneRaw) {
+        mcPhone = normalizePhone(mcPhoneRaw);
+        document.getElementById("mcPhone").value = mcPhone;
+        if (!/^\+97[012]\d{9}$/.test(mcPhone)) return notify("رقم الجوال يجب أن يبدأ بـ +97 ويليه 10 أرقام", "error");
+    }
     
     if(isNaN(pct) || pct <= 0 || pct > 100) return notify("أدخل نسبة الخصم بشكل صحيح", "error");
     if(isNaN(days) || days <= 0) return notify("أدخل مدة الصلاحية بشكل صحيح", "error");
@@ -6546,6 +6717,7 @@ function generateManualCoupon() {
         id: 'id_' + Date.now().toString(),
         code: code,
         customer: cust,
+        phone: mcPhone || "-",
         service: "توليد يدوي",
         percentage: pct,
         expiry: expTime,
@@ -6621,7 +6793,7 @@ function refreshAll(){
     updateDiscountBadge();
     
     // تحديث badge التنبيهات دائماً بغض النظر عن الصفحة المرئية
-    let days3 = 1 * 86400000, nowMs2 = now.getTime();
+    let days3 = _getExpiryAlertMs(), nowMs2 = now.getTime();
     let expiryBadge2 = document.getElementById("expiryBadge");
     if(expiryBadge2) {
         // المنتهية + القادمة خلال يوم واحد — بدون حد زمني للإخفاء
@@ -6655,8 +6827,9 @@ function refreshDiscounts() {
     let isViewer = currentUser && currentUser.role === 'viewer'; 
 
     paginated.forEach(item => {
-        let daysLeft = Math.ceil((item.expiry - now) / 86400000);
-        let timeBadge = daysLeft > 0 ? `<span class="badge badge-success">${daysLeft} يوم</span>` : `<span class="badge badge-danger">منتهي</span>`;
+        let msLeft = item.expiry - now;
+        let timeStr = _formatTimeLeft(msLeft);
+        let timeBadge = timeStr ? `<span class="badge badge-success">${timeStr}</span>` : `<span class="badge badge-danger">منتهي</span>`;
         
         let delBtn = isAdmin ? `<button class="btn btn-danger" style="padding:5px 10px" onclick="deleteSingleDiscount('${item.id}')"><i class="fas fa-trash-alt"></i></button>` : '-';
         let displayCode = isViewer ? '*********' : item.code;
@@ -6664,16 +6837,18 @@ function refreshDiscounts() {
         let usageStr = `${item.usedCount || 0}/${item.maxUses || 1}`;
         
         let isEmp = currentUser && currentUser.role === 'employee';
+        let phoneDisp = isViewer ? maskPhone(item.phone || '-') : (item.phone || '-');
         rows += `<tr>
             <td style="font-weight:bold; color:var(--primary); letter-spacing:1px; text-align:center;">${displayCode}</td>
             <td style="text-align:center;">${esc(item.customer)}</td>
+            <td style="text-align:center;" dir="ltr">${esc(phoneDisp)}</td>
             <td style="text-align:center; font-weight:bold;">${item.percentage}%</td>
             <td class="eng-num" style="font-weight:bold; text-align:center;">${usageStr}</td>
             <td style="text-align:center;">${timeBadge}</td>
             ${isEmp ? '' : `<td style="text-align:center;">${delBtn}</td>`}
         </tr>`;
     });
-    tbody.innerHTML = rows || `<tr><td colspan='6' style='text-align:center; padding:20px; color:var(--text-muted)'>لا توجد أكواد خصم</td></tr>`;
+    tbody.innerHTML = rows || `<tr><td colspan='7' style='text-align:center; padding:20px; color:var(--text-muted)'>لا توجد أكواد خصم</td></tr>`;
 }
 
 async function deleteSingleDiscount(id) {
@@ -6708,7 +6883,7 @@ function refreshExpiring() {
     let p = safeJSON(store.purchases, []);
     let body = document.getElementById("expiringBody"); 
     if(!body) return;
-    let now = new Date().getTime(), days7 = 1 * 86400000;
+    let now = new Date().getTime(), days7 = _getExpiryAlertMs();
     
     // نُظهر: المنتهية + يلي باقيلها يوم واحد أو أقل — بدون أي حد زمني للإخفاء التلقائي
     let filtered = p.map((d, i) => ({ d, i })).filter(x => 
@@ -6729,8 +6904,13 @@ function refreshExpiring() {
     let greeting = currentHour < 12 ? 'صباح الخير' : 'مساء الخير';
 
     paginated.forEach(x => {
-        let item = x.d, daysLeft = Math.ceil((item.expiry - now) / 86400000);
-        let status = daysLeft <= 0 ? 'منتهي' : 'يوم';
+        let item = x.d;
+        let msLeft = item.expiry - now;
+        let timeStr = _formatTimeLeft(msLeft);
+        let isExpiredItem = !timeStr;
+        let statusBadge = isExpiredItem
+            ? `<span class="badge badge-danger">منتهي</span>`
+            : `<span class="badge badge-warning">${timeStr}</span>`;
         let cleanPhone = (item.phone||'').replace(/\D/g, '');
         
         let expiryPhrase = 'قرّب ينتهي';
@@ -6741,7 +6921,7 @@ function refreshExpiring() {
         let btnHTML = isViewer ? '' : `<a href="${wa}" target="_blank" onclick="markAsReminded('${item.id}')" class="btn btn-whatsapp"><i class="fab fa-whatsapp"></i> تذكير</a>`;
         let phoneDisplay = isRestricted ? '----' : esc(item.phone);
         let serviceDisplay = isRestricted ? '----' : `<b>${esc(item.sub)}</b>`;
-        rows += `<tr class="${item.reminded?'reminded':''}"><td>${serviceDisplay}</td><td>${esc(item.customer)}</td><td>${phoneDisplay}</td><td>${new Date(item.expiry).toLocaleDateString('ar-EG')}</td><td><span class="badge ${daysLeft<=0?'badge-danger':'badge-warning'}">${status}</span></td><td>${btnHTML}</td></tr>`;
+        rows += `<tr class="${item.reminded?'reminded':''}"><td>${serviceDisplay}</td><td>${esc(item.customer)}</td><td>${phoneDisplay}</td><td>${new Date(item.expiry).toLocaleDateString('ar-EG')}</td><td>${statusBadge}</td><td>${btnHTML}</td></tr>`;
     });
     body.innerHTML = rows || "<tr><td colspan='6' style='text-align:center; padding:30px; color:var(--text-muted)'>لا توجد تنبيهات</td></tr>";
     
@@ -6929,7 +7109,8 @@ function refreshHistory(){
         let durStr = (parsedDur === 0) ? "بدون مدة" : (isNaN(parsedDur) ? "-" : parsedDur + " شهر");
         let durBadge = (parsedDur === 0) ? "badge-success" : "badge-warning";
         
-        rows+=`<tr onclick="openEditHistoryModal('${item.id}')" style="cursor:pointer;" title="انقر لتعديل هذا السجل"><td>${item.date}</td><td style="${colorStyle}"><b>${esc(item.customer)}</b></td><td style="${colorStyle}">${phoneD}</td><td>${subD}</td><td><span class="badge ${durBadge}">${durStr}</span></td><td style="color:var(--success)">${paidD}</td>${isEmployeeRole ? '' : `<td style="color:var(--danger)">${costD}</td><td>${profitD}</td>`}</tr>`;
+        let rowTitle = item.purchaseNotes ? `الملاحظات: ${item.purchaseNotes.replace(/"/g, '&quot;')}` : 'لا يوجد ملاحظات';
+        rows+=`<tr onclick="openEditHistoryModal('${item.id}')" style="cursor:pointer;" title="${rowTitle}"><td>${item.date}</td><td style="${colorStyle}"><b>${esc(item.customer)}</b></td><td style="${colorStyle}">${phoneD}</td><td>${subD}</td><td><span class="badge ${durBadge}">${durStr}</span></td><td style="color:var(--success)">${paidD}</td>${isEmployeeRole ? '' : `<td style="color:var(--danger)">${costD}</td><td>${profitD}</td>`}</tr>`;
     });
     document.getElementById("historyBody").innerHTML = rows || `<tr><td colspan='8' style='text-align:center; padding:20px; color:var(--text-muted)'>لا توجد بيانات</td></tr>`;
 }
@@ -8770,6 +8951,9 @@ function openAddStockModal() {
     document.getElementById("stProfiles").value = "0";
     document.getElementById("stVendor").value = "";
     ["stEmail","stPass","stNotes"].forEach(id => document.getElementById(id).value = "");
+    // إعادة ارتفاع حقل الملاحظات للحجم الافتراضي (يمنع بقاء الاتساع من اشتراك سبق عرضه)
+    const _stNotesReset = document.getElementById("stNotes");
+    if (_stNotesReset) _stNotesReset.style.height = "80px";
     document.getElementById("stCostCurrency").value = "";
     document.getElementById("stDuration").value = "";
     document.getElementById("stPurpose").value = "sale";
@@ -9114,12 +9298,13 @@ function refreshStock() {
             let purchaseDate = new Date(item.timestamp);
             let expiryDate = _addMonths30(purchaseDate, parsedDuration);
             
-            let daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-            if (daysLeft <= 0) {
+            let msLeft = expiryDate.getTime() - new Date().getTime();
+            let timeStr = _formatTimeLeft(msLeft);
+            if (!timeStr) {
                 isExpired = true;
                 timeBadge = `<span class="badge badge-danger">منتهي</span>`;
             } else {
-                timeBadge = `<span class="badge badge-warning">${daysLeft} يوم</span>`;
+                timeBadge = `<span class="badge badge-warning">${timeStr}</span>`;
             }
         }
 
@@ -11351,29 +11536,55 @@ function _initChatKeyboardFix() {
     }
 }
 
-const CHAT_MAX_MESSAGES = 300;
-let _chatListener = null;
-let _chatUnreadCount = 0;
-let _chatIsOpen = false;
-let _chatLastReadTs = 0;
-let _chatInitialized = false;
-let _chatAudioCtx = null;
-let _chatMessages = []; // cache محلي
+/* ════════════════════════════════════════════════════════════════
+   نظام الدردشة الجماعية المتقدّم (Team Chat v2)
+   • تحميل 100 رسالة، ومع كل تمرير لأعلى يحمّل 100 إضافية (ترقيم)
+   • لا يحذف الرسائل تلقائياً نهائياً
+   • إيصالات القراءة (مين شاف) + مؤشر الكتابة (مين يكتب الآن)
+   • صوت تنبيه عند وصول رسالة والتاب غير مفتوح + عداد بعنوان التاب
+   • ترتيب الرسائل حسب توقيت السيرفر (مين وصل فايربيس أولاً)
+   • فاصل واضح للرسائل غير المقروءة
+   • 5000 حرف لكل رسالة
+   • يُفعَّل/يُلغى من الإعدادات (افتراضياً ملغي، ويُعاد ضبطه كل رفرش)
+   ════════════════════════════════════════════════════════════════ */
 
-// ── دالة إنشاء صوت الإشعار ─────────────────────────────────
+const CHAT_PAGE_SIZE  = 100;    // عدد الرسائل في كل دفعة
+const CHAT_MAX_CHARS  = 5000;   // أقصى عدد حروف للرسالة
+const CHAT_TYPING_TTL = 4000;   // مدة اعتبار "يكتب الآن" (ms)
+
+let _chatFeatureEnabled = false;   // مفعّل؟ (لا يُحفظ — يُعاد ضبطه كل رفرش)
+let _chatListener       = null;    // مستمع الرسائل الحية
+let _chatReadsListener  = null;    // مستمع إيصالات القراءة
+let _chatTypingListener = null;    // مستمع مؤشر الكتابة
+let _chatMsgMap   = new Map();     // كل الرسائل المحمّلة (id → msg) — لا تُحذف
+let _chatOldestDoc = null;         // أقدم DocumentSnapshot محمّل (مؤشر الترقيم)
+let _chatHasMoreOlder = true;      // هل يوجد رسائل أقدم؟
+let _chatLoadingOlder = false;     // قيد تحميل دفعة أقدم؟
+let _chatFirstSnapshot = true;     // أول لقطة (لمنع الصوت عند أول تحميل)
+let _chatIsOpen = false;           // صفحة الدردشة مفتوحة؟
+let _chatUnreadCount = 0;          // عدد غير المقروء
+let _chatLastReadMs = 0;           // آخر توقيت قرأه المستخدم (ms)
+let _chatUnreadAnchorMs = 0;       // مرجع الفاصل (يثبت أثناء فتح الدردشة)
+let _chatUnreadFrozen = 0;         // عدد غير المقروء وقت الفتح (يثبت للعرض)
+let _chatReads  = {};              // إيصالات القراءة {userId: {username, lastReadMs}}
+let _chatTyping = {};              // من يكتب الآن {userId: {username, ts}}
+let _chatAudioCtx = null;
+let _chatTypingStopTimer = null;
+let _chatLastTypingWrite = 0;
+let _chatTitleBase = null;
+let _chatNearBottom = true;        // هل المستخدم قرب الأسفل؟
+let _chatTypingInterval = null;    // مؤقّت تحديث مؤشر الكتابة
+
+// ── صوت التنبيه ─────────────────────────────────────────────
 function _playChatNotifSound() {
     try {
-        if (!_chatAudioCtx) {
-            _chatAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
+        if (!_chatAudioCtx) _chatAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const ctx = _chatAudioCtx;
-        // نغمة تنبيه لطيفة (ثلاث نبضات)
+        if (ctx.state === 'suspended') ctx.resume();
         const notes = [880, 1046, 1318];
         notes.forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
+            const osc = ctx.createOscillator(), gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
             osc.type = 'sine';
             osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
             gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.12);
@@ -11382,120 +11593,153 @@ function _playChatNotifSound() {
             osc.start(ctx.currentTime + i * 0.12);
             osc.stop(ctx.currentTime + i * 0.12 + 0.2);
         });
-    } catch(e) {}
+    } catch (e) {}
 }
 
-// ── الحصول على لون المستخدم بناءً على اسمه ──────────────────
+// ── أدوات مساعدة ────────────────────────────────────────────
+function _chatEffTs(msg) {
+    if (msg.ts && typeof msg.ts.toMillis === 'function') return msg.ts.toMillis();
+    if (typeof msg.ts === 'number') return msg.ts;
+    return msg.clientTs || 0;
+}
+
 function _getChatUserColor(username) {
-    const colors = [
-        '#6366f1','#8b5cf6','#ec4899','#f59e0b',
-        '#10b981','#3b82f6','#ef4444','#14b8a6',
-        '#f97316','#84cc16','#06b6d4','#a855f7'
-    ];
+    const colors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6',
+                    '#ef4444','#14b8a6','#f97316','#84cc16','#06b6d4','#a855f7'];
     let hash = 0;
     for (let c of (username || 'U')) hash = (hash * 31 + c.charCodeAt(0)) & 0xffffffff;
     return colors[Math.abs(hash) % colors.length];
 }
 
-// ── أول حرف من الاسم (Avatar) ────────────────────────────────
-function _getChatInitial(username) {
-    return (username || '؟')[0].toUpperCase();
-}
+function _getChatInitial(username) { return (username || '؟')[0].toUpperCase(); }
 
-// ── تنسيق التوقيت (يدعم serverTimestamp + clientTs احتياطياً) ──────
 function _chatFormatTime(ts, clientTs) {
-    // استخدام clientTs إذا كان ts لا يزال null (انتظار السيرفر)
-    const effectiveTs = clientTs 
-        || (ts && typeof ts.toMillis === 'function' ? ts.toMillis() : ts) 
-        || 0;
-    if (!effectiveTs) return '';
-    const d = new Date(effectiveTs);
-    const now = new Date();
+    const eff = (ts && typeof ts.toMillis === 'function' ? ts.toMillis() : ts) || clientTs || 0;
+    if (!eff) return '';
+    const d = new Date(eff), now = new Date();
     const isToday = d.toDateString() === now.toDateString();
-    const h = String(d.getHours()).padStart(2,'0');
-    const m = String(d.getMinutes()).padStart(2,'0');
+    const h = String(d.getHours()).padStart(2,'0'), m = String(d.getMinutes()).padStart(2,'0');
     if (isToday) return `${h}:${m}`;
-    const day = String(d.getDate()).padStart(2,'0');
-    const mon = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0'), mon = String(d.getMonth()+1).padStart(2,'0');
     return `${day}/${mon} ${h}:${m}`;
 }
 
-// ── تنسيق تاريخ الفاصل بين الأيام ───────────────────────────
-function _chatFormatDateDivider(ts) {
-    const effectiveTs = ts && typeof ts.toMillis === 'function' ? ts.toMillis() : (ts || 0);
-    const d = new Date(effectiveTs);
-    const now = new Date();
-    const isToday = d.toDateString() === now.toDateString();
-    const yesterday = new Date(now); yesterday.setDate(now.getDate()-1);
-    const isYesterday = d.toDateString() === yesterday.toDateString();
-    if (isToday) return 'اليوم';
-    if (isYesterday) return 'أمس';
+function _chatFormatDateDivider(eff) {
+    const d = new Date(eff || 0), now = new Date();
+    if (d.toDateString() === now.toDateString()) return 'اليوم';
+    const y = new Date(now); y.setDate(now.getDate()-1);
+    if (d.toDateString() === y.toDateString()) return 'أمس';
     const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// ── تحديث عداد الرسائل غير المقروءة ─────────────────────────
-function _updateChatBadge(count) {
-    const badge = document.getElementById('chatUnreadBadge');
-    if (!badge) return;
-    if (count > 0) {
-        badge.textContent = count > 99 ? '99+' : String(count);
-        badge.style.display = 'inline-block';
-        // تأثير bounce على الزر
-        const btn = document.getElementById('btnTeamChat');
-        if (btn) { btn.classList.add('chat-new-notif'); setTimeout(() => btn.classList.remove('chat-new-notif'), 400); }
-    } else {
-        badge.style.display = 'none';
-    }
+// ── عنوان التاب وعداد غير المقروء ───────────────────────────
+function _chatUpdateTitle() {
+    if (_chatTitleBase === null) _chatTitleBase = document.title;
+    if (_chatUnreadCount > 0) document.title = `(${_chatUnreadCount > 99 ? '99+' : _chatUnreadCount}) ${_chatTitleBase}`;
+    else document.title = _chatTitleBase;
 }
 
-// ── رسم رسالة واحدة ──────────────────────────────────────────
-function _renderChatMsg(msg, showDateDivider) {
+function _updateChatBadge(count) {
+    const badge = document.getElementById('chatUnreadBadge');
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : String(count);
+            badge.style.display = 'inline-block';
+            const btn = document.getElementById('btnTeamChat');
+            if (btn) { btn.classList.add('chat-new-notif'); setTimeout(() => btn.classList.remove('chat-new-notif'), 400); }
+        } else badge.style.display = 'none';
+    }
+    _chatUpdateTitle();
+}
+
+// ── حساب قُرّاء رسالة معيّنة (لإيصالات القراءة) ──────────────
+function _chatReadersOf(msg) {
+    const eff = _chatEffTs(msg);
+    if (!eff) return [];
+    const me = currentUser && currentUser.id;
+    return Object.values(_chatReads)
+        .filter(r => r.userId !== me && (r.lastReadMs || 0) >= eff)
+        .map(r => r.username);
+}
+
+// ── رسم رسالة واحدة ─────────────────────────────────────────
+function _renderChatMsg(msg, opts) {
     if (!currentUser) return '';
+    opts = opts || {};
     const isMe = msg.userId === currentUser.id;
     const color = _getChatUserColor(msg.username);
     const initial = _getChatInitial(msg.username);
-    const roleLabel = msg.role === 'admin' ? 'أدمن' : msg.role === 'employee' ? 'موظف' : 'مشاهد';
-    const isAdmin = currentUser && currentUser.role === 'admin';
+    const roleLabel = msg.role === 'admin' ? 'أدمن' : msg.role === 'employee' ? 'موظف'
+                    : msg.role === 'viewer_plus' ? 'مشاهد+' : 'مشاهد';
+    const isAdmin = currentUser.role === 'admin';
 
     const deleteBtn = isAdmin
-        ? `<button class="chat-del-btn" onclick="deleteChatMsg('${msg.id}')" title="حذف"><i class="fas fa-trash"></i></button>`
-        : '';
+        ? `<button class="chat-del-btn" onclick="deleteChatMsg('${msg.id}')" title="حذف"><i class="fas fa-trash"></i></button>` : '';
 
-    let dividerHtml = '';
-    if (showDateDivider) {
-        const divTs = msg._sortTs || msg.clientTs || msg.ts;
-        dividerHtml = `<div class="chat-date-divider"><span>${_chatFormatDateDivider(divTs)}</span></div>`;
+    // إيصالات القراءة لرسائلي
+    let ticks = '', seenLine = '';
+    if (isMe) {
+        const readers = _chatReadersOf(msg);
+        const seen = readers.length > 0;
+        ticks = `<span class="chat-read-ticks ${seen ? 'seen' : ''}">${seen ? '<i class="fas fa-check-double"></i>' : '<i class="fas fa-check"></i>'}</span>`;
+        if (opts.isLastMine && seen) {
+            let names;
+            const others = Object.values(_chatReads).filter(r => r.userId !== currentUser.id);
+            if (readers.length >= others.length && others.length > 1) names = 'الجميع';
+            else names = readers.slice(0, 3).map(esc).join('، ') + (readers.length > 3 ? ` و${readers.length-3} آخرين` : '');
+            seenLine = `<div class="chat-seen-line"><i class="fas fa-eye"></i> قرأها ${names}</div>`;
+        }
     }
 
-    return `${dividerHtml}
-    <div class="chat-msg-wrap ${isMe ? 'mine' : ''} ${msg.role === 'admin' ? 'chat-msg-admin' : ''}" data-msg-id="${msg.id}">
-        <div class="chat-avatar" style="background:${isMe ? 'linear-gradient(135deg,var(--primary),#a855f7)' : color};">${initial}</div>
+    let dividers = '';
+    if (opts.dateDivider) dividers += `<div class="chat-date-divider"><span>${_chatFormatDateDivider(opts.dateDivider)}</span></div>`;
+    if (opts.unreadDivider) dividers += `<div class="chat-unread-divider"><span>${opts.unreadCount} رسالة غير مقروءة <i class="fas fa-arrow-down" style="font-size:9px;"></i></span></div>`;
+
+    const senderHtml = (isMe || opts.grouped) ? '' : `
+        <div class="chat-sender">
+            <span class="chat-sender-name" style="color:${color};">${esc(msg.username)}</span>
+            <span class="chat-role-badge">${roleLabel}</span>
+        </div>`;
+
+    return `${dividers}
+    <div class="chat-msg-wrap ${isMe?'mine':''} ${msg.role==='admin'?'chat-msg-admin':''} ${opts.grouped?'grouped':'group-start'} ${opts.fresh?'fresh':''}" data-msg-id="${msg.id}">
+        <div class="chat-avatar" style="background:${isMe?'linear-gradient(135deg,var(--primary),#a855f7)':color};">${initial}</div>
         <div class="chat-bubble-col">
             <div class="chat-bubble">
-                ${isMe ? '' : `
-                <div class="chat-sender">
-                    <span class="chat-sender-name">${esc(msg.username)}</span>
-                    <span class="chat-role-badge">${roleLabel}</span>
-                </div>
-                `}
-                <div style="margin-bottom: 2px; word-break: break-word; white-space: pre-wrap;">${esc(msg.text).replace(/\n/g,'<br>')}</div>
+                ${senderHtml}
+                <div style="margin-bottom:2px; word-break:break-word; white-space:pre-wrap;">${esc(msg.text).replace(/\n/g,'<br>')}</div>
                 <div class="chat-meta">
-                    <span>${_chatFormatTime(msg.ts, msg.clientTs)}</span>
+                    <span>${_chatFormatTime(msg.ts, msg.clientTs)}</span>${ticks}
                 </div>
             </div>
+            ${seenLine}
         </div>
         ${deleteBtn}
     </div>`;
 }
 
+// ── ترتيب كل الرسائل ────────────────────────────────────────
+function _chatSortedMessages() {
+    const arr = Array.from(_chatMsgMap.values());
+    arr.sort((a, b) => {
+        const ta = _chatEffTs(a), tb = _chatEffTs(b);
+        if (ta !== tb) return ta - tb;
+        return (a.clientTs || 0) - (b.clientTs || 0);
+    });
+    return arr;
+}
+
 // ── رسم كل الرسائل ──────────────────────────────────────────
-function _renderAllMessages(msgs, scrollToBottom) {
+function _renderAllMessages(scrollToBottom) {
     const container = document.getElementById('chatMessagesContainer');
     if (!container) return;
+    const msgs = _chatSortedMessages();
+    const loadOlderEl = document.getElementById('chatLoadOlder');
+    const olderHtml = loadOlderEl ? loadOlderEl.outerHTML : '';
 
     if (msgs.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+        container.innerHTML = olderHtml + `<div style="text-align:center; padding:60px 20px; color:var(--text-muted); margin:auto;">
             <div style="font-size:48px; margin-bottom:16px; opacity:0.3;"><i class="fas fa-comments"></i></div>
             <div style="font-size:15px; font-weight:700;">لا توجد رسائل بعد</div>
             <div style="font-size:13px; margin-top:8px; opacity:0.7;">كن أول من يرسل رسالة للفريق!</div>
@@ -11503,271 +11747,465 @@ function _renderAllMessages(msgs, scrollToBottom) {
         return;
     }
 
+    // موضع أول رسالة غير مقروءة (للفاصل)
+    let firstUnreadIdx = -1, unreadTotal = 0;
+    if (_chatUnreadAnchorMs > 0) {
+        for (let i = 0; i < msgs.length; i++) {
+            if (_chatEffTs(msgs[i]) > _chatUnreadAnchorMs && msgs[i].userId !== currentUser.id) {
+                if (firstUnreadIdx === -1) firstUnreadIdx = i;
+                unreadTotal++;
+            }
+        }
+    }
+
+    // فهرس آخر رسالة لي (لسطر "قرأها")
+    let lastMineIdx = -1;
+    for (let i = msgs.length - 1; i >= 0; i--) { if (msgs[i].userId === currentUser.id) { lastMineIdx = i; break; } }
+
     let html = '';
     let lastDateStr = '';
     msgs.forEach((msg, idx) => {
-        // استخدام _sortTs (الـ timestamp الفعلي) لتحديد الفاصل اليومي
-        const effectiveTs = msg._sortTs || msg.clientTs 
-            || (msg.ts && typeof msg.ts.toMillis === 'function' ? msg.ts.toMillis() : msg.ts) 
-            || 0;
-        const msgDate = new Date(effectiveTs).toDateString();
-        const showDivider = msgDate !== lastDateStr;
-        if (showDivider) lastDateStr = msgDate;
-        html += _renderChatMsg(msg, showDivider);
+        const eff = _chatEffTs(msg);
+        const dateStr = new Date(eff).toDateString();
+        const dateDivider = dateStr !== lastDateStr ? eff : 0;
+        if (dateDivider) lastDateStr = dateStr;
+        const prev = msgs[idx-1];
+        const grouped = prev && prev.userId === msg.userId && !dateDivider
+                        && (idx !== firstUnreadIdx) && (eff - _chatEffTs(prev) < 5*60*1000);
+        html += _renderChatMsg(msg, {
+            dateDivider,
+            unreadDivider: idx === firstUnreadIdx,
+            unreadCount: _chatUnreadFrozen || unreadTotal,
+            isLastMine: idx === lastMineIdx,
+            grouped
+        });
     });
 
-    const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 60;
-    container.innerHTML = html;
+    const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 80;
+    container.innerHTML = olderHtml + html;
 
-    if (scrollToBottom || wasAtBottom) {
-        container.scrollTop = container.scrollHeight;
+    if (scrollToBottom || wasAtBottom) _chatScrollToBottom(false);
+}
+
+// ── النزول لأسفل ────────────────────────────────────────────
+function _chatScrollToBottom(smooth) {
+    const c = document.getElementById('chatMessagesContainer');
+    if (!c) return;
+    if (smooth) c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' });
+    else c.scrollTop = c.scrollHeight;
+    _chatNearBottom = true;
+    _chatUpdateScrollBtn(0);
+}
+
+function _chatUpdateScrollBtn(newCount) {
+    const btn = document.getElementById('chatScrollDownBtn');
+    const badge = document.getElementById('chatScrollDownBadge');
+    if (!btn) return;
+    if (_chatNearBottom) { btn.style.display = 'none'; }
+    else {
+        btn.style.display = 'flex';
+        if (badge) {
+            if (newCount > 0) { badge.textContent = newCount > 99 ? '99+' : newCount; badge.style.display = 'flex'; }
+            else badge.style.display = 'none';
+        }
     }
 }
 
-// ── تهيئة مستمع الدردشة من Firestore ────────────────────────
+// ── دمج وثيقة في الخريطة ────────────────────────────────────
+function _chatMergeDoc(id, data) {
+    const eff = _chatEffTs(data);
+    _chatMsgMap.set(id, { id, ...data, _eff: eff });
+}
+
+// ── تهيئة مستمع الرسائل الحية ───────────────────────────────
 function _initChatListener() {
     if (_chatListener || !db || !fbDocRef) return;
-
     const chatRef = fbDocRef.collection('teamChat');
 
-    _chatListener = chatRef
-        .orderBy('ts', 'asc')
-        .limitToLast(CHAT_MAX_MESSAGES)
-        .onSnapshot(snapshot => {
-            // بناء قائمة كاملة مع حل مشكلة ترتيب الرسائل المتزامنة
-            let msgs = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                // حساب الـ timestamp الفعلي للترتيب (serverTimestamp أو clientTs احتياطياً)
-                const effectiveTs = data.ts 
-                    ? (typeof data.ts.toMillis === 'function' ? data.ts.toMillis() : data.ts)
-                    : (data.clientTs || 0);
-                msgs.push({ id: doc.id, ...data, _sortTs: effectiveTs });
-            });
-            // ترتيب نهائي بالـ timestamp الفعلي لضمان الترتيب الصحيح
-            msgs.sort((a, b) => a._sortTs - b._sortTs);
-            _chatMessages = msgs;
+    _chatListener = chatRef.orderBy('ts').limitToLast(CHAT_PAGE_SIZE).onSnapshot(snap => {
+        const isFirst = _chatFirstSnapshot;
+        let incoming = 0;
 
-            // حساب غير مقروء
-            if (!_chatIsOpen) {
-                const newMsgs = msgs.filter(m => m.ts > _chatLastReadTs && m.userId !== (currentUser?.id));
-                const newCount = newMsgs.length;
-                if (newCount > _chatUnreadCount) {
-                    // رسائل جديدة — شغّل صوت التنبيه
-                    _playChatNotifSound();
-                }
-                _chatUnreadCount = newCount;
+        snap.docChanges().forEach(ch => {
+            if (ch.type === 'added' || ch.type === 'modified') {
+                const d = ch.doc.data();
+                _chatMergeDoc(ch.doc.id, d);
+                if (ch.type === 'added' && !isFirst && d.userId !== (currentUser && currentUser.id)) incoming++;
+            }
+            // نتجاهل 'removed' (انزلاق نافذة الـ 100) — الرسائل تبقى محفوظة محلياً
+        });
+
+        // ضبط مؤشر الترقيم من أول لقطة فقط
+        if (isFirst && snap.docs.length > 0) {
+            _chatOldestDoc = snap.docs[0];
+            _chatHasMoreOlder = snap.docs.length >= CHAT_PAGE_SIZE;
+        }
+        _chatFirstSnapshot = false;
+
+        // إخفاء شاشة التحميل
+        const loadDiv = document.getElementById('chatLoadingMsg');
+        if (loadDiv) loadDiv.style.display = 'none';
+
+        // تنبيهات الرسائل الواردة
+        if (incoming > 0) {
+            const tabHidden = document.hidden;
+            if (!_chatIsOpen || tabHidden) {
+                _chatUnreadCount += incoming;
                 _updateChatBadge(_chatUnreadCount);
             }
+            if (!_chatIsOpen || tabHidden || !_chatNearBottom) _playChatNotifSound();
+            if (_chatIsOpen && !_chatNearBottom) _chatUpdateScrollBtn(_chatUnreadCount || incoming);
+        }
 
-            // إعادة الرسم إذا كانت الصفحة مفتوحة
-            if (_chatIsOpen) {
-                _renderAllMessages(msgs, false);
+        if (_chatIsOpen) {
+            _renderAllMessages(false);
+            if (!document.hidden && _chatNearBottom) _chatMarkRead();
+        }
+
+        const dot = document.getElementById('chatSyncDot');
+        if (dot) { dot.style.background = '#4ade80'; dot.style.boxShadow = '0 0 8px rgba(74,222,128,0.6)'; }
+    }, err => {
+        console.error('Chat listener error:', err);
+        const dot = document.getElementById('chatSyncDot');
+        if (dot) { dot.style.background = '#ef4444'; dot.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)'; }
+    });
+
+    _initChatReadsListener();
+    _initChatTypingListener();
+}
+
+// ── تحميل دفعة رسائل أقدم (100) ─────────────────────────────
+async function _loadOlderMessages() {
+    if (_chatLoadingOlder || !_chatHasMoreOlder || !_chatOldestDoc || !db || !fbDocRef) return;
+    _chatLoadingOlder = true;
+    const indicator = document.getElementById('chatLoadOlder');
+    if (indicator) indicator.style.display = 'block';
+
+    const container = document.getElementById('chatMessagesContainer');
+    const prevHeight = container ? container.scrollHeight : 0;
+    const prevTop = container ? container.scrollTop : 0;
+
+    try {
+        const snap = await fbDocRef.collection('teamChat')
+            .orderBy('ts').endBefore(_chatOldestDoc).limitToLast(CHAT_PAGE_SIZE).get();
+        if (snap.empty) {
+            _chatHasMoreOlder = false;
+        } else {
+            snap.forEach(doc => _chatMergeDoc(doc.id, doc.data()));
+            _chatOldestDoc = snap.docs[0];
+            _chatHasMoreOlder = snap.docs.length >= CHAT_PAGE_SIZE;
+            _renderAllMessages(false);
+            // الحفاظ على موضع التمرير بعد إضافة رسائل في الأعلى
+            if (container) {
+                const newHeight = container.scrollHeight;
+                container.scrollTop = prevTop + (newHeight - prevHeight);
             }
+        }
+    } catch (e) {
+        console.error('loadOlder error:', e);
+    }
+    if (indicator) indicator.style.display = 'none';
+    _chatLoadingOlder = false;
+}
 
-            // تحديث مؤشر الاتصال
-            const dot = document.getElementById('chatSyncDot');
-            if (dot) { dot.style.background = '#4ade80'; dot.style.boxShadow = '0 0 8px rgba(74,222,128,0.6)'; }
-        }, err => {
-            console.error('Chat listener error:', err);
-            const dot = document.getElementById('chatSyncDot');
-            if (dot) { dot.style.background = '#ef4444'; dot.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)'; }
-        });
+// ── تسجيل القراءة (إيصالات) ─────────────────────────────────
+function _chatMarkRead() {
+    const msgs = _chatSortedMessages();
+    if (msgs.length === 0) return;
+    const latest = _chatEffTs(msgs[msgs.length - 1]);
+    if (latest <= _chatLastReadMs) return;
+    _chatLastReadMs = latest;
+    if (currentUser) localStorage.setItem('_chatLastRead_' + currentUser.id, String(_chatLastReadMs));
+    _chatUnreadCount = 0;
+    _updateChatBadge(0);
+    // كتابة الإيصال في فايربيس
+    if (db && fbDocRef && currentUser && !isDemoMode) {
+        fbDocRef.collection('teamChatReads').doc(currentUser.id).set({
+            userId: currentUser.id,
+            username: currentUser.username,
+            role: currentUser.role,
+            lastReadMs: _chatLastReadMs,
+            ts: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(()=>{});
+    }
+}
+
+// ── مستمع إيصالات القراءة ───────────────────────────────────
+function _initChatReadsListener() {
+    if (_chatReadsListener || !db || !fbDocRef) return;
+    _chatReadsListener = fbDocRef.collection('teamChatReads').onSnapshot(snap => {
+        _chatReads = {};
+        snap.forEach(doc => { const d = doc.data(); if (d && d.userId) _chatReads[d.userId] = d; });
+        if (_chatIsOpen) _renderAllMessages(false);
+    }, ()=>{});
+}
+
+// ── مؤشر الكتابة: إعلام الآخرين أنني أكتب ───────────────────
+function _chatNotifyTyping() {
+    if (!_chatFeatureEnabled || isDemoMode || !db || !fbDocRef || !currentUser) return;
+    const now = Date.now();
+    if (now - _chatLastTypingWrite > 1500) {
+        _chatLastTypingWrite = now;
+        fbDocRef.collection('teamChatTyping').doc(currentUser.id).set({
+            userId: currentUser.id, username: currentUser.username, ts: now
+        }).catch(()=>{});
+    }
+    clearTimeout(_chatTypingStopTimer);
+    _chatTypingStopTimer = setTimeout(_chatStopTyping, 3000);
+}
+
+function _chatStopTyping() {
+    clearTimeout(_chatTypingStopTimer);
+    if (isDemoMode || !db || !fbDocRef || !currentUser) return;
+    _chatLastTypingWrite = 0;
+    fbDocRef.collection('teamChatTyping').doc(currentUser.id).set({
+        userId: currentUser.id, username: currentUser.username, ts: 0
+    }).catch(()=>{});
+}
+
+// ── مستمع مؤشر الكتابة ──────────────────────────────────────
+function _initChatTypingListener() {
+    if (_chatTypingListener || !db || !fbDocRef) return;
+    _chatTypingListener = fbDocRef.collection('teamChatTyping').onSnapshot(snap => {
+        _chatTyping = {};
+        snap.forEach(doc => { const d = doc.data(); if (d && d.userId) _chatTyping[d.userId] = d; });
+        _chatRenderTyping();
+    }, ()=>{});
+    if (!_chatTypingInterval) _chatTypingInterval = setInterval(_chatRenderTyping, 2000); // تحديث دوري لإخفاء المنتهي
+}
+
+function _chatRenderTyping() {
+    const bar = document.getElementById('chatTypingBar');
+    const txt = document.getElementById('chatTypingText');
+    if (!bar || !txt || !currentUser) return;
+    const now = Date.now();
+    const typers = Object.values(_chatTyping)
+        .filter(t => t.userId !== currentUser.id && t.ts && (now - t.ts) < CHAT_TYPING_TTL)
+        .map(t => t.username);
+    if (typers.length === 0 || !_chatIsOpen) { bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+    if (typers.length === 1) txt.textContent = `${typers[0]} يكتب الآن...`;
+    else if (typers.length === 2) txt.textContent = `${typers[0]} و${typers[1]} يكتبان...`;
+    else txt.textContent = `${typers.length} أشخاص يكتبون...`;
 }
 
 // ── فتح صفحة الدردشة ─────────────────────────────────────────
 function openTeamChat() {
+    if (!_chatFeatureEnabled) { showPage('purchase', document.getElementById('btnPurchase')); return; }
     _chatIsOpen = true;
-    _chatUnreadCount = 0;
-    _chatLastReadTs = Date.now();
-    _updateChatBadge(0);
+    _chatNearBottom = true;
+    _chatUnreadAnchorMs = _chatLastReadMs; // ثبّت مرجع الفاصل قبل التحديث
+    _chatUnreadFrozen = _chatSortedMessages().filter(m => _chatEffTs(m) > _chatUnreadAnchorMs && m.userId !== currentUser.id).length;
 
-    // تحديث نص التلميح حسب الجهاز
     const hintEl = document.getElementById('chatHintText');
-    if (hintEl) {
-        hintEl.textContent = _isMobile()
-            ? 'اضغط زر الإرسال ←'
-            : 'Enter للإرسال · Shift+Enter لسطر جديد';
-    }
+    if (hintEl) hintEl.textContent = _isMobile() ? 'اضغط زر الإرسال ←' : 'Enter للإرسال · Shift+Enter لسطر جديد';
 
-    // احفظ آخر وقت قراءة في localStorage
-    if (currentUser) {
-        localStorage.setItem('_chatLastRead_' + currentUser.id, String(_chatLastReadTs));
-    }
-
-    // إصلاح ارتفاع الشات على الجوال عند ظهور الكيبورد
     _initChatKeyboardFix();
+    _chatAttachScrollHandler();
 
-    if (!_chatInitialized) {
-        _chatInitialized = true;
-        if (!isDemoMode && db && fbDocRef) {
-            _initChatListener();
-        } else if (isDemoMode) {
-            _chatMessages = [];
-            const loadDiv = document.getElementById('chatLoadingMsg');
-            if (loadDiv) loadDiv.style.display = 'none';
-            _renderAllMessages([], true);
-            return;
-        }
+    if (isDemoMode) {
+        const loadDiv = document.getElementById('chatLoadingMsg');
+        if (loadDiv) loadDiv.style.display = 'none';
+        _renderAllMessages(true);
+        return;
     }
 
-    // إخفاء رسالة التحميل وعرض الرسائل
+    if (!_chatListener && db && fbDocRef) _initChatListener();
+
     setTimeout(() => {
         const loadDiv = document.getElementById('chatLoadingMsg');
         if (loadDiv) loadDiv.style.display = 'none';
-        _renderAllMessages(_chatMessages, true);
-        // focus على خانة الكتابة (فقط على الحاسوب لتجنب فتح الكيبورد تلقائياً على الجوال)
-        if (!_isMobile()) {
-            const input = document.getElementById('chatInput');
-            if (input) setTimeout(() => input.focus(), 200);
-        }
-    }, 300);
+        _renderAllMessages(true);
+        _chatMarkRead();
+        if (!_isMobile()) { const inp = document.getElementById('chatInput'); if (inp) setTimeout(()=>inp.focus(), 200); }
+    }, 250);
 }
 
-// ── إرسال رسالة جديدة ─────────────────────────────────────────
+// ── ربط مستمع التمرير (تحميل أقدم + زر النزول) ──────────────
+let _chatScrollAttached = false;
+function _chatAttachScrollHandler() {
+    if (_chatScrollAttached) return;
+    const c = document.getElementById('chatMessagesContainer');
+    if (!c) return;
+    _chatScrollAttached = true;
+    c.addEventListener('scroll', () => {
+        // تحميل الأقدم عند الاقتراب من الأعلى
+        if (c.scrollTop < 120) _loadOlderMessages();
+        // حالة القرب من الأسفل
+        const near = c.scrollHeight - c.scrollTop - c.clientHeight < 120;
+        _chatNearBottom = near;
+        _chatUpdateScrollBtn(0);
+        if (near && _chatIsOpen && !document.hidden) _chatMarkRead();
+    }, { passive: true });
+}
+
+// ── إرسال رسالة ─────────────────────────────────────────────
 async function sendChatMessage() {
     if (!currentUser) return;
     const input = document.getElementById('chatInput');
     if (!input) return;
-    const text = input.value.trim();
+    let text = input.value.trim();
     if (!text) return;
+    if (text.length > CHAT_MAX_CHARS) text = text.slice(0, CHAT_MAX_CHARS);
 
-    if (isDemoMode) {
-        notify("الدردشة غير متاحة في الوضع التجريبي", "warning");
-        return;
-    }
+    if (isDemoMode) { notify("الدردشة غير متاحة في الوضع التجريبي", "warning"); return; }
+    if (!db || !fbDocRef) { notify("لا يوجد اتصال بقاعدة البيانات", "error"); return; }
 
-    if (!db || !fbDocRef) {
-        notify("لا يوجد اتصال بقاعدة البيانات", "error");
-        return;
-    }
-
-    // تعطيل الزر مؤقتاً
     const btn = document.getElementById('btnSendChat');
     if (btn) btn.style.opacity = '0.5';
 
     const msg = {
-        text: text,
+        text,
         username: currentUser.username,
         userId: currentUser.id,
         role: currentUser.role,
-        ts: firebase.firestore.FieldValue.serverTimestamp(), // توقيت السيرفر لضمان الترتيب الصحيح
-        clientTs: Date.now()  // للعرض الفوري قبل التزامن مع السيرفر
+        ts: firebase.firestore.FieldValue.serverTimestamp(), // ترتيب حسب وصول السيرفر
+        clientTs: Date.now()                                 // للعرض الفوري قبل التزامن
     };
 
     input.value = '';
     chatAutoResize(input);
-    document.getElementById('chatCharCount').textContent = '0/1000';
+    _chatStopTyping();
+    _chatNearBottom = true;
 
     try {
-        const chatRef = fbDocRef.collection('teamChat');
-        await chatRef.add(msg);
-
-        // تنظيف: احذف الرسائل الأقدم من 300
-        const allSnap = await chatRef.orderBy('ts', 'asc').get();
-        if (allSnap.size > CHAT_MAX_MESSAGES) {
-            const toDelete = allSnap.docs.slice(0, allSnap.size - CHAT_MAX_MESSAGES);
-            const batch = db.batch();
-            toDelete.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-        }
-    } catch(e) {
+        await fbDocRef.collection('teamChat').add(msg);
+        // لا حذف نهائياً — الرسائل تبقى محفوظة بالكامل
+        _chatScrollToBottom(true);
+    } catch (e) {
         notify("خطأ في الإرسال: " + e.message, "error");
+        input.value = msg.text; // إعادة النص عند الفشل
     }
-
     if (btn) btn.style.opacity = '1';
 }
 
-// ── حذف رسالة (للأدمن) ──────────────────────────────────────
+// ── حذف رسالة (للأدمن فقط — يدوي) ───────────────────────────
 async function deleteChatMsg(msgId) {
     if (!currentUser || currentUser.role !== 'admin') return;
     if (!db || !fbDocRef) return;
     try {
         await fbDocRef.collection('teamChat').doc(msgId).delete();
-    } catch(e) {
-        notify("خطأ في الحذف: " + e.message, "error");
-    }
+        _chatMsgMap.delete(msgId);
+        if (_chatIsOpen) _renderAllMessages(false);
+    } catch (e) { notify("خطأ في الحذف: " + e.message, "error"); }
 }
 
-// ── مسح كل رسائل الدردشة (للأدمن فقط) ──────────────────────
+// ── مسح كل الرسائل (للأدمن فقط — يدوي) ──────────────────────
 async function clearAllChatMessages() {
     if (!currentUser || currentUser.role !== 'admin') return;
-    const ok = await showConfirm(
-        "مسح الدردشة", 
-        "هل أنت متأكد من حذف جميع رسائل الدردشة نهائياً؟", 
-        "مسح الكل", "إلغاء", 
-        '<i class="fas fa-trash-alt"></i>'
-    );
-    if (!ok) return;
-    if (!db || !fbDocRef) return;
+    const ok = await showConfirm("مسح الدردشة", "هل أنت متأكد من حذف جميع رسائل الدردشة نهائياً؟",
+        "مسح الكل", "إلغاء", '<i class="fas fa-trash-alt"></i>');
+    if (!ok || !db || !fbDocRef) return;
     try {
         const snap = await fbDocRef.collection('teamChat').get();
         const batch = db.batch();
         snap.docs.forEach(doc => batch.delete(doc.ref));
         await batch.commit();
+        _chatMsgMap.clear();
+        if (_chatIsOpen) _renderAllMessages(true);
         notify("تم مسح جميع رسائل الدردشة");
         logAction("مسح جميع رسائل الدردشة الجماعية", 'danger');
-    } catch(e) {
-        notify("خطأ: " + e.message, "error");
-    }
+    } catch (e) { notify("خطأ: " + e.message, "error"); }
 }
 
-// ── auto-resize للـ textarea ─────────────────────────────────
+// ── auto-resize + عدّاد الحروف ──────────────────────────────
 function chatAutoResize(el) {
     el.style.height = '44px';
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    el.style.height = Math.min(el.scrollHeight, 130) + 'px';
     const count = el.value.length;
     const countEl = document.getElementById('chatCharCount');
     if (countEl) {
-        countEl.textContent = count + '/1000';
-        countEl.style.color = count > 900 ? 'var(--danger)' : count > 700 ? 'var(--accent)' : 'var(--text-muted)';
+        countEl.textContent = count + '/' + CHAT_MAX_CHARS;
+        countEl.style.color = count > CHAT_MAX_CHARS*0.95 ? 'var(--danger)'
+                            : count > CHAT_MAX_CHARS*0.8 ? 'var(--accent)' : 'var(--text-muted)';
     }
 }
 
-// ── تتبع إغلاق صفحة الدردشة ─────────────────────────────────
-// نستخدم MutationObserver لاكتشاف إضافة class "hidden" لصفحة الدردشة
+// ── تتبّع إغلاق صفحة الدردشة ────────────────────────────────
 (function() {
-    let _obs = null;
     function _checkChatVisible() {
         const el = document.getElementById('teamChat');
         if (!el) return;
         const isHidden = el.classList.contains('hidden');
         if (isHidden && _chatIsOpen) {
             _chatIsOpen = false;
-        } else if (!isHidden && !_chatIsOpen) {
+            _chatStopTyping();
+            const bar = document.getElementById('chatTypingBar');
+            if (bar) bar.style.display = 'none';
+        } else if (!isHidden && !_chatIsOpen && _chatFeatureEnabled) {
             _chatIsOpen = true;
-            _chatUnreadCount = 0;
-            _chatLastReadTs = Date.now();
-            _updateChatBadge(0);
         }
     }
     document.addEventListener('DOMContentLoaded', () => {
         const el = document.getElementById('teamChat');
-        if (!el) return;
-        _obs = new MutationObserver(_checkChatVisible);
-        _obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+        if (el) new MutationObserver(_checkChatVisible).observe(el, { attributes: true, attributeFilter: ['class'] });
     });
 })();
 
-// ── تهيئة الدردشة بعد تسجيل الدخول ─────────────────────────
-// ندمجها مع بقية التهيئة عبر استدعاء _initChatListener بعد الاتصال بـ Firebase
-// هذا يحدث تلقائياً عند أول فتح للصفحة، لكن نبدأ المستمع فور الدخول أيضاً
-function _startChatOnLogin() {
-    if (isDemoMode || !db || !fbDocRef) return;
-    // استرجاع آخر وقت قراءة
-    if (currentUser) {
-        const saved = localStorage.getItem('_chatLastRead_' + currentUser.id);
-        _chatLastReadTs = saved ? parseInt(saved) : 0;
+// ── عند العودة لتاب الموقع: علّم القراءة وأزل العداد ─────────
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        if (_chatIsOpen && _chatNearBottom) _chatMarkRead();
+        _chatUpdateTitle();
     }
-    _initChatListener();
+});
+
+// ── تفعيل/إلغاء ميزة الدردشة (من الإعدادات) ─────────────────
+function _enableChatFeature() {
+    _chatFeatureEnabled = true;
+    const btn = document.getElementById('btnTeamChat');
+    if (btn) btn.style.display = '';
+    if (!isDemoMode && db && fbDocRef) _initChatListener();
+    notify("تم تفعيل خانة المحادثات");
 }
 
+function _disableChatFeature() {
+    _chatFeatureEnabled = false;
+    const btn = document.getElementById('btnTeamChat');
+    if (btn) btn.style.display = 'none';
+    // إن كنا داخل صفحة الدردشة، نخرج منها
+    const chatEl = document.getElementById('teamChat');
+    if (chatEl && !chatEl.classList.contains('hidden')) {
+        showPage('purchase', document.getElementById('btnPurchase'));
+    }
+    // فصل المستمعين لتوفير القراءات
+    if (_chatListener) { _chatListener(); _chatListener = null; }
+    if (_chatReadsListener) { _chatReadsListener(); _chatReadsListener = null; }
+    if (_chatTypingListener) { _chatTypingListener(); _chatTypingListener = null; }
+    if (_chatTypingInterval) { clearInterval(_chatTypingInterval); _chatTypingInterval = null; }
+    _chatFirstSnapshot = true;
+    _chatScrollAttached = false;
+    _chatUnreadCount = 0;
+    _updateChatBadge(0);
+    _chatStopTyping();
+}
+
+window.toggleChatFeature = function() {
+    const cb = document.getElementById('chatFeatureToggle');
+    const enabled = cb ? cb.checked : false;
+    if (enabled) _enableChatFeature();
+    else _disableChatFeature();
+};
+
+// ── تهيئة بعد تسجيل الدخول (لا تشغّل المستمع — الميزة ملغاة افتراضياً) ──
+function _startChatOnLogin() {
+    // استرجاع آخر وقت قراءة فقط (لا نبدأ المستمع حتى يفعّل المستخدم الميزة)
+    if (currentUser) {
+        const saved = localStorage.getItem('_chatLastRead_' + currentUser.id);
+        _chatLastReadMs = saved ? parseInt(saved) : 0;
+    }
+    // التأكد أن الزر مخفي والمفتاح غير مفعّل (يُعاد ضبطه كل رفرش)
+    _chatFeatureEnabled = false;
+    const cb = document.getElementById('chatFeatureToggle');
+    if (cb) cb.checked = false;
+    const btn = document.getElementById('btnTeamChat');
+    if (btn) btn.style.display = 'none';
+}
 window.onload = init;
 
 /* ════════════════════════════════════════════════════════════════
    نظام إخفاء الأرقام المالية (زر العين العائم)
    - يمكن تفعيله أو إيقافه من الإعدادات (finPrivacyFeatureToggle)
-   - الإعداد مرتبط بكل مستخدم على حدة عبر currentUser.id
    - افتراضياً: الميزة مُعطَّلة → الأرقام ظاهرة دائماً بدون زر
    - عند التفعيل: يظهر الزر العائم ويبدأ العمل بشكل عادي
    - يشمل تلقائياً أي رقم مالي (يحمل رمز عملة ₪ / $ / £)
@@ -11775,15 +12213,11 @@ window.onload = init;
      أرقام الجوال، التواريخ، نِسَب الخصم) لأنها بلا رمز عملة.
    ════════════════════════════════════════════════════════════════ */
 (function () {
-    let _finEnabled  = false;  // هل الميزة مفعّلة؟
+    let _finEnabled  = false;  // هل الميزة مفعّلة؟ (يُحفظ في localStorage)
     let _finPrivacy  = false;  // حالة الإخفاء/الإظهار الحالية
     let _finApplying = false;  // لمنع تكرار المعالجة
 
-    // مفتاح localStorage مرتبط بـ ID المستخدم الحالي
-    function _lsKey() {
-        return 'finPrivacyEnabled_' + ((window.currentUser && window.currentUser.id) || 'guest');
-    }
-
+    const _LS_KEY    = 'finPrivacyEnabled';
     const _FIN_MASK  = '****';
     const _CUR_RE    = /[₪$£]/;
     const _NUM_RE    = /[+-]?\d[\d.,]*/g;
@@ -11856,6 +12290,7 @@ window.onload = init;
         _updateBtn(document.getElementById('finPrivacyToggle'));
     }
 
+    // إنشاء أو إزالة زر العين بحسب حالة التفعيل
     function _createBtn() {
         if (document.getElementById('finPrivacyToggle')) return;
         const style = document.createElement('style');
@@ -11888,49 +12323,53 @@ window.onload = init;
         if (st) st.remove();
     }
 
+    // تفعيل الميزة كاملةً (إنشاء الزر + بدء المراقبة)
     function _enableFeature() {
         _finEnabled = true;
-        _finPrivacy = false;
+        _finPrivacy = false;  // عند كل تفعيل: الأرقام ظاهرة (المستخدم يختار الإخفاء بنفسه)
         _createBtn();
         _applyAll();
         _obs.observe(document.body, { childList: true, subtree: true, characterData: true });
     }
 
+    // إيقاف الميزة (إزالة الزر + إظهار كل الأرقام)
     function _disableFeature() {
         _finEnabled = false;
         _finPrivacy = false;
-        _applyAll();
+        _applyAll();          // إظهار كل الأرقام المخفية
         _obs.disconnect();
         _removeBtn();
     }
 
-    // تُستدعى من toggle الإعدادات — تحفظ الإعداد بمفتاح المستخدم الحالي
+    // الدالة العامة التي تُستدعى من toggle الإعدادات
     window.toggleFinPrivacyFeature = function () {
         const cb = document.getElementById('finPrivacyFeatureToggle');
         const enabled = cb ? cb.checked : false;
-        localStorage.setItem(_lsKey(), enabled ? '1' : '0');
+        localStorage.setItem(_LS_KEY, enabled ? '1' : '0');
         if (enabled) _enableFeature();
         else _disableFeature();
     };
 
-    // تُستدعى بعد تسجيل الدخول مباشرةً لتحميل إعداد المستخدم الصحيح
-    window.loadFinPrivacyForUser = function () {
-        // أوقف أي حالة سابقة أولاً (لو كان مستخدم آخر مسجّلاً قبله)
-        _disableFeature();
+    // متاح يدوياً للتبديل بين الإخفاء والإظهار
+    window.toggleFinancialPrivacy = toggleFinancialPrivacy;
 
-        const saved = localStorage.getItem(_lsKey());
+    // تهيئة أولية
+    function _initFinPrivacy() {
+        const saved = localStorage.getItem(_LS_KEY);
         _finEnabled = (saved === '1');
 
+        // مزامنة checkbox الإعدادات
         const cb = document.getElementById('finPrivacyFeatureToggle');
         if (cb) cb.checked = _finEnabled;
 
         if (_finEnabled) _enableFeature();
-    };
+        // إذا غير مفعّل: لا نفعل شيئاً — الأرقام ظاهرة بشكل طبيعي
+    }
 
-    window.toggleFinancialPrivacy = toggleFinancialPrivacy;
-
-    // عند أول تحميل الصفحة لا يوجد مستخدم بعد — لا نفعل شيئاً
-    // الإعداد يُحمَّل فور تسجيل الدخول عبر loadFinPrivacyForUser()
+    if (document.readyState === 'loading')
+        document.addEventListener('DOMContentLoaded', _initFinPrivacy);
+    else
+        _initFinPrivacy();
 })();
 </script>
 </body>
