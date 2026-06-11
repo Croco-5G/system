@@ -872,6 +872,17 @@
         .chat-menu-trigger:hover { background:var(--primary); color:#fff; }
         @media (hover: none) { .chat-menu-trigger { display:none; } }
 
+        /* منع تحديد نص الرسالة عند الضغطة المطولة على اللمس */
+        @media (hover: none) {
+            .chat-msg-wrap, .chat-bubble, .chat-text, .chat-sender, .chat-reply-ref, .chat-meta {
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+                -webkit-touch-callout: none;
+            }
+        }
+
         /* The dropdown menu itself (fixed-position popup) */
         .chat-msg-menu {
             position:fixed; z-index:10000; min-width:170px;
@@ -918,8 +929,8 @@
         @keyframes chatSlideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
 
         /* Jump highlight */
-        @keyframes chatHighlight { 0%,100% { background:transparent; } 35% { background:rgba(99,102,241,0.18); } }
-        .chat-msg-wrap.chat-highlight { animation:chatHighlight 0.65s ease 3; border-radius:14px; }
+        @keyframes chatBubbleFlash { 0%,100% { box-shadow:0 0 0 0 rgba(99,102,241,0); } 30% { box-shadow:0 0 0 4px rgba(99,102,241,0.55); } }
+        .chat-bubble.chat-bubble-flash { animation:chatBubbleFlash 0.6s ease 3; }
 
         /* TG countdown line under my bubble */
         .chat-tg-countdown { font-size:10.5px; color:#229ED9; margin-top:3px; display:none; font-style:italic; text-align:left; padding-left:4px; }
@@ -2380,23 +2391,25 @@
                     </button>
                 </div>
             </div>
-            <!-- إخفاء الدردشة للكل (أدمن فقط) -->
-            <div id="chatHideForAllSection" style="display:none; background:var(--bg-card); border:1px solid var(--danger); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div style="width:36px; height:36px; background:rgba(239,68,68,0.1); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--danger); flex-shrink:0;">
-                            <i class="fas fa-eye-slash"></i>
-                        </div>
-                        <div>
-                            <div style="font-weight:700; font-size:14px; color:var(--danger);">إخفاء الدردشة عن الكل</div>
-                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">يُغلق خانة الدردشة عند جميع المستخدمين والأدمن فوراً</div>
+        </div>
+        <!-- إخفاء الدردشة للكل (أدمن فقط) — خارج chat-extra-settings حتى لا يختفي عند تعطيل الدردشة -->
+        <div id="chatHideForAllSection" style="display:none; background:var(--bg-card); border:1px solid var(--danger); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:36px; height:36px; background:rgba(239,68,68,0.1); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--danger); flex-shrink:0;">
+                        <i class="fas fa-eye-slash"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:700; font-size:14px; color:var(--danger);">إخفاء الدردشة عن الكل</div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+                            يُغلق خيار «دردشة الفريق» عند جميع المستخدمين فوراً. فقط الأدمن يستطيع إعادة تفعيله.
                         </div>
                     </div>
-                    <label class="theme-switch" style="width:56px; height:28px; flex-shrink:0;">
-                        <input type="checkbox" id="chatHideForAllToggle" onchange="toggleHideChatForAll()">
-                        <span class="slider"></span>
-                    </label>
                 </div>
+                <label class="theme-switch" style="width:56px; height:28px; flex-shrink:0;">
+                    <input type="checkbox" id="chatHideForAllToggle" onchange="toggleHideChatForAll()">
+                    <span class="slider"></span>
+                </label>
             </div>
         </div>
 
@@ -12213,6 +12226,7 @@ window._toggleMsgMenu = function(ev, msgId) {
     const menu=document.createElement('div');
     menu.id='chatMsgMenu'; menu.className='chat-msg-menu'; menu.dataset.msgId=msgId;
     let items=`<button onclick="_closeMsgMenu();_startReply('${msgId}')"><i class="fas fa-reply"></i> رد</button>`;
+    items+=`<button onclick="_closeMsgMenu();_copyChatMsg('${msgId}')"><i class="fas fa-copy"></i> نسخ</button>`;
     if(isMe){
         items+=`<button onclick="_closeMsgMenu();startEditMsg('${msgId}')"><i class="fas fa-edit"></i> تعديل</button>`;
         items+=`<button onclick="_closeMsgMenu();showMsgInfo('${msgId}')"><i class="fas fa-info-circle"></i> معلومات الرسالة</button>`;
@@ -12241,6 +12255,33 @@ async function _confirmDeleteMsg(msgId){
 }
 window._confirmDeleteMsg=_confirmDeleteMsg;
 
+/* نسخ نص الرسالة إلى الحافظة (مع بديل للمتصفحات القديمة) */
+window._copyChatMsg = async function(msgId){
+    const msg=_chatMsgMap.get(msgId);
+    if(!msg) return;
+    const text=msg.text||'';
+    try {
+        if(navigator.clipboard && navigator.clipboard.writeText){
+            await navigator.clipboard.writeText(text);
+        } else {
+            const ta=document.createElement('textarea');
+            ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+            document.body.appendChild(ta); ta.focus(); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
+        }
+        notify('تم نسخ الرسالة');
+    } catch(e){
+        // بديل أخير
+        try {
+            const ta=document.createElement('textarea');
+            ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+            document.body.appendChild(ta); ta.focus(); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
+            notify('تم نسخ الرسالة');
+        } catch(e2){ notify('تعذّر النسخ','error'); }
+    }
+};
+
 /* Mobile long-press menu (own messages → edit/info/delete; others → reply/hide) */
 function _showMobileMenu(msgId) {
     const msg=_chatMsgMap.get(msgId);
@@ -12249,6 +12290,7 @@ function _showMobileMenu(msgId) {
     const ov=document.createElement('div');
     ov.className='chat-mobile-menu-overlay'; ov.id='chatMobileMenuOv';
     let btns='';
+    btns+=`<button onclick="document.getElementById('chatMobileMenuOv').remove();_copyChatMsg('${msgId}')"><i class="fas fa-copy"></i> نسخ</button>`;
     if(isMe){
         btns+=`<button onclick="document.getElementById('chatMobileMenuOv').remove();startEditMsg('${msgId}')"><i class="fas fa-edit"></i> تعديل</button>`;
         btns+=`<button onclick="document.getElementById('chatMobileMenuOv').remove();showMsgInfo('${msgId}')"><i class="fas fa-info-circle"></i> معلومات الرسالة</button>`;
@@ -12301,27 +12343,45 @@ window.showMsgInfo = function(msgId) {
 
 /* ─── Jump to replied message ────────────────────────────── */
 window._chatJumpToMsg = async function(msgId) {
+    // If the target message is hidden locally, un-hide it so we can show it
+    if(_chatLocalHidden.has(msgId)){
+        _chatLocalHidden.delete(msgId);
+        localStorage.setItem('_chatLocalHidden', JSON.stringify([..._chatLocalHidden]));
+        _renderAllMessages(false);
+    }
     let el=document.querySelector(`.chat-msg-wrap[data-msg-id="${msgId}"]`);
     if(el){_chatHighlightEl(el);return;}
+    // Not loaded yet — keep loading older pages until found (or exhausted)
     const ldg=document.getElementById('chatLoadingMsg');
     if(ldg){ldg.textContent='جاري تحميل الرسائل…';ldg.style.display='block';}
     let found=false, tries=0;
-    while(!found && _chatHasMoreOlder && tries<15){
+    while(!found && _chatHasMoreOlder && tries<25){
         tries++;
         await _loadOlderMessages();
-        await new Promise(r=>setTimeout(r,150));
+        await new Promise(r=>setTimeout(r,120));
         el=document.querySelector(`.chat-msg-wrap[data-msg-id="${msgId}"]`);
-        if(el){_chatHighlightEl(el);found=true;}
+        if(el){found=true;}
     }
     if(ldg){ldg.style.display='none';}
-    if(!found) notify('لم يتم العثور على الرسالة','warning');
+    if(el){ _chatHighlightEl(el); }
+    else notify('لم يتم العثور على الرسالة الأصلية','warning');
 };
 function _chatHighlightEl(el) {
-    el.scrollIntoView({behavior:'smooth',block:'center'});
-    el.classList.remove('chat-highlight');
-    void el.offsetWidth;
-    el.classList.add('chat-highlight');
-    setTimeout(()=>el.classList.remove('chat-highlight'),2000);
+    const container=document.getElementById('chatMessagesContainer');
+    if(container){
+        // Manually center the element within the scrolling container (works with fixed layout)
+        const cRect=container.getBoundingClientRect();
+        const eRect=el.getBoundingClientRect();
+        const offset=(eRect.top - cRect.top) - (container.clientHeight/2) + (el.offsetHeight/2);
+        container.scrollTo({top:container.scrollTop+offset, behavior:'smooth'});
+    } else {
+        el.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    const bubble=el.querySelector('.chat-bubble')||el;
+    bubble.classList.remove('chat-bubble-flash');
+    void bubble.offsetWidth;
+    bubble.classList.add('chat-bubble-flash');
+    setTimeout(()=>bubble.classList.remove('chat-bubble-flash'),1800);
 }
 
 /* ─── Pagination (load older) ────────────────────────────── */
@@ -12352,7 +12412,12 @@ function _chatMarkRead() {
     _chatLastReadMs=Date.now();
     localStorage.setItem('_chatLastRead_'+currentUser.id,_chatLastReadMs);
     fbDocRef.collection('teamChatReads').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,role:currentUser.role,lastReadMs:_chatLastReadMs,ts:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(()=>{});
-    Object.keys(_chatTgPendingTimers).forEach(id=>_tgCancelCountdown(id));
+    // لا نلغي عداد TG للرسائل التي أرسلها المستخدم نفسه —
+    // قراءة المرسِل لرسالته لا تُلغي إشعار التلغرام، فقط قراءة شخص آخر تُلغيه
+    Object.keys(_chatTgPendingTimers).forEach(id=>{
+        const msg=_chatMsgMap.get(id);
+        if(!msg||msg.userId!==currentUser.id) _tgCancelCountdown(id);
+    });
     _updateChatBadge(0);
 }
 function _initChatReadsListener() {
@@ -12442,7 +12507,7 @@ window.toggleTelegramNotif = function() {
     fbDocRef.collection('teamChatTgPrefs').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,role:currentUser.role,enabled:_tgMyPrefs.enabled,showContent:_tgMyPrefs.showContent},{merge:true}).catch(()=>{});
     const opts=document.getElementById('tgNotifOptions');
     if(opts) opts.style.display=_tgMyPrefs.enabled?'block':'none';
-    notify(_tgMyPrefs.enabled ? 'تم تفعيل إشعارات تيليغرام 🔔' : 'تم إيقاف إشعارات تيليغرام');
+    notify(_tgMyPrefs.enabled ? 'تم تفعيل إشعارات تيليغرام' : 'تم إيقاف إشعارات تيليغرام');
 };
 window.toggleTelegramContent = function() {
     const toggle=document.getElementById('tgShowContentToggle');
@@ -12453,12 +12518,12 @@ window.toggleTelegramContent = function() {
 };
 window.sendTelegramTest = async function() {
     const status=document.getElementById('tgStatusLine');
-    if(status) status.textContent='جاري الإرسال…';
+    if(status) status.innerHTML='<i class="fas fa-spinner fa-spin"></i> جاري الإرسال…';
     try {
-        const r=await fetch(`${TG_API}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG_FIXED_CHAT_ID,text:'✅ <b>اختبار ناجح!</b>\nإشعارات دردشة الفريق تعمل بشكل صحيح.',parse_mode:'HTML'})});
+        const r=await fetch(`${TG_API}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG_FIXED_CHAT_ID,text:'<b>اختبار ناجح!</b>\nإشعارات دردشة الفريق تعمل بشكل صحيح.',parse_mode:'HTML'})});
         const d=await r.json();
-        if(status) status.textContent=d.ok?'✅ تم الإرسال بنجاح':'⚠️ خطأ: '+(d.description||'غير معروف');
-    } catch(e){if(status)status.textContent='⚠️ خطأ في الاتصال بالتيليغرام';}
+        if(status) status.innerHTML=d.ok?'<i class="fas fa-check-circle" style="color:var(--success);"></i> تم الإرسال بنجاح':'<i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i> خطأ: '+(d.description||'غير معروف');
+    } catch(e){if(status)status.innerHTML='<i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i> خطأ في الاتصال بالتيليغرام';}
 };
 async function _tgSendNotification(msgObj) {
     const senderPrefs=_tgRecipients[msgObj.userId]||(msgObj.userId===currentUser?.id?_tgMyPrefs:null);
@@ -12466,12 +12531,12 @@ async function _tgSendNotification(msgObj) {
     const safeName=(msgObj.username||'مجهول').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const roleLabel={admin:'أدمن',employee:'موظف',viewer_plus:'مشاهد+'}[msgObj.role]||'مشاهد';
     const time=new Date().toLocaleString('ar',{hour:'2-digit',minute:'2-digit',hour12:true});
-    let text=`💬 <b>رسالة جديدة — دردشة الفريق</b>\n\n👤 <b>${safeName}</b> (${roleLabel})`;
+    let text=`<b>رسالة جديدة — دردشة الفريق</b>\n\n<b>المرسِل:</b> ${safeName} (${roleLabel})`;
     if(senderPrefs.showContent && msgObj.text){
         const preview=msgObj.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').slice(0,300);
-        text+=`\n\n📝 <i>${preview}</i>`;
+        text+=`\n<b>الرسالة:</b> <i>${preview}</i>`;
     }
-    text+=`\n\n⏰ ${time}`;
+    text+=`\n<b>الوقت:</b> ${time}`;
     try {
         await fetch(`${TG_API}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG_FIXED_CHAT_ID,text,parse_mode:'HTML'})});
     } catch(e){}
@@ -12512,6 +12577,8 @@ function _initSystemSettingsListener() {
     _chatSystemListener=fbDocRef.collection('systemSettings').doc('chat').onSnapshot(snap=>{
         const d=snap.exists?(snap.data()||{}):{};
         _chatHiddenForAll=!!d.hiddenForAll;
+        // نخزّن الحالة في localStorage لتطبيقها فوراً عند إعادة التحميل قبل وصول snapshot
+        localStorage.setItem('_chatHiddenForAll', _chatHiddenForAll?'1':'0');
         const adminToggle=document.getElementById('chatHideForAllToggle');
         if(adminToggle) adminToggle.checked=_chatHiddenForAll;
         // Disable the "show chat" feature toggle for everyone
@@ -12602,6 +12669,8 @@ function _chatAttachScrollHandler() {
     const c=document.getElementById('chatMessagesContainer');
     if(!c) return;
     _chatScrollAttachedG=true;
+    // امنع قائمة السياق الافتراضية على الرسائل (تظهر مع الضغطة المطولة على بعض الأجهزة)
+    c.addEventListener('contextmenu',e=>{ if(e.target.closest('.chat-msg-wrap[data-msg-id]')) e.preventDefault(); });
     c.addEventListener('scroll',()=>{
         if(c.scrollTop<140) _loadOlderMessages();
         _chatNearBottom = (c.scrollHeight-c.scrollTop-c.clientHeight) < 140;
@@ -12618,6 +12687,8 @@ function _chatAttachScrollHandler() {
         if(c._lpTimer) clearTimeout(c._lpTimer);
         c._lpTimer=setTimeout(()=>{
             _swipeEl=null;
+            // امسح أي تحديد نص نتج عن الضغطة المطولة
+            try{ const sel=window.getSelection&&window.getSelection(); if(sel&&sel.removeAllRanges) sel.removeAllRanges(); }catch(e){}
             if(navigator.vibrate) try{navigator.vibrate(15);}catch(e){}
             _showMobileMenu(wrap.dataset.msgId);
         },500);
@@ -12801,6 +12872,15 @@ function _startChatOnLogin(){
         _chatLastReadMs=saved?parseInt(saved):0;
         _chatLoadOutbox();
         _startPresenceHeartbeat();
+        // تطبيق إخفاء الدردشة الكلي فوراً من الكاش قبل وصول snapshot من Firestore
+        const cachedHidden=localStorage.getItem('_chatHiddenForAll')==='1';
+        if(cachedHidden){
+            _chatHiddenForAll=true;
+            const featToggle=document.getElementById('chatFeatureToggle');
+            if(featToggle){featToggle.checked=false;featToggle.disabled=true;}
+            const lockNote=document.getElementById('chatHiddenLockNote');
+            if(lockNote) lockNote.style.display='block';
+        }
         _initSystemSettingsListener();
         _initPresenceListener();
         _initTgPrefsListener();
