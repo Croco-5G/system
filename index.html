@@ -1602,6 +1602,12 @@
                 <span id="eh_currency_label" style="font-weight:bold; color:var(--primary); font-size:16px;">₪</span>
             </div>
         </div>
+        <input type="hidden" id="eh_baseTs">
+        <div class="input-group">
+            <label>المدة (بالأشهر) — 0 يعني بدون مدة</label>
+            <input type="number" id="eh_duration" placeholder="عدد الأشهر" min="0" max="120" step="1" oninput="_ehExpiryPreview()">
+            <div id="eh_expiry_preview" style="font-size:12px; color:var(--text-muted); margin-top:6px;"></div>
+        </div>
         <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
             <button class="btn btn-primary" onclick="saveHistoryEdit()"><i class="fas fa-save"></i> حفظ التعديلات</button>
             <button class="btn btn-danger" onclick="deleteHistoryRecord()"><i class="fas fa-trash"></i> حذف الاشتراك</button>
@@ -7455,6 +7461,29 @@ function refreshHistory(){
 }
 function filterHistory() { refreshHistory(); }
 
+/* تاريخ الأساس لسجل مالي (الذي حُسب منه الانتهاء أصلاً) — لإعادة حساب الانتهاء عند تعديل المدة */
+function _historyBaseDate(item) {
+    const oldDur = parseInt(item.duration) || 0;
+    if (oldDur > 0 && item.expiry) return item.expiry - oldDur * 30 * 86400000;
+    if (item.date) { const t = new Date(item.date + 'T00:00:00').getTime(); if (!isNaN(t)) return t; }
+    if (item.id && item.id.indexOf('_') !== -1) { const t = parseInt(item.id.split('_')[1]); if (t) return t; }
+    return Date.now();
+}
+/* معاينة حيّة لتاريخ الانتهاء داخل مودال تعديل السجل المالي */
+function _ehExpiryPreview() {
+    const prev = document.getElementById('eh_expiry_preview');
+    if (!prev) return;
+    const dur = parseInt(document.getElementById('eh_duration').value);
+    const baseTs = parseInt(document.getElementById('eh_baseTs').value) || Date.now();
+    if (isNaN(dur) || dur <= 0) { prev.innerHTML = '<i class="fas fa-infinity"></i> بدون مدة (لا ينتهي)'; return; }
+    const exp = _addMonths30(new Date(baseTs), dur);
+    const dd = String(exp.getDate()).padStart(2,'0');
+    const mm = String(exp.getMonth()+1).padStart(2,'0');
+    const yy = exp.getFullYear();
+    const expired = exp.getTime() < Date.now();
+    prev.innerHTML = '<i class="fas fa-calendar-check"></i> ينتهي في ' + dd + '/' + mm + '/' + yy +
+        (expired ? ' <span style="color:var(--danger)">(منتهٍ بالفعل)</span>' : '');
+}
 function openEditHistoryModal(id) {
     if(currentUser && currentUser.role === 'viewer') return notify("ليس لديك صلاحية", "error");
     let purchases = safeJSON(store.purchases, []);
@@ -7471,6 +7500,9 @@ function openEditHistoryModal(id) {
     document.getElementById("eh_paid").value = paidVal;
     document.getElementById("eh_currency").value = paidCur;
     document.getElementById("eh_currency_label").innerText = paidCur;
+    document.getElementById("eh_duration").value = (parseInt(item.duration) || 0);
+    document.getElementById("eh_baseTs").value = _historyBaseDate(item);
+    _ehExpiryPreview();
     
     document.getElementById("editHistoryModal").classList.remove("hidden");
 }
@@ -7486,9 +7518,12 @@ async function saveHistoryEdit() {
     let newPhone = document.getElementById("eh_phone").value.trim();
     let newPaid = parseFloat(document.getElementById("eh_paid").value);
     let currency = document.getElementById("eh_currency").value;
+    let newDur = parseInt(document.getElementById("eh_duration").value);
+    let baseTs = parseInt(document.getElementById("eh_baseTs").value) || Date.now();
     
     if(isNaN(newPaid) || newPaid < 0) return notify("يرجى إدخال مبلغ صحيح", "error");
     if(!newSub || !newCustomer) return notify("الخدمة واسم العميل حقول مطلوبة", "error");
+    if(isNaN(newDur) || newDur < 0 || newDur > 120) return notify("المدة يجب أن تكون رقماً بين 0 و120 شهراً", "error");
 
     let purchases = safeJSON(store.purchases, []);
     let idx = purchases.findIndex(x => x.id === id);
@@ -7501,6 +7536,15 @@ async function saveHistoryEdit() {
     purchases[idx].customer = newCustomer;
     purchases[idx].phone = newPhone;
     purchases[idx].paid = newPaid + currency;
+    // تعديل المدة فعلياً: تحديث المدة وإعادة حساب تاريخ الانتهاء من نفس تاريخ الأساس الأصلي
+    const _oldDur = parseInt(purchases[idx].duration) || 0;
+    purchases[idx].duration = newDur;
+    purchases[idx].expiry = newDur > 0 ? _addMonths30(new Date(baseTs), newDur).getTime() : null;
+    // إن تغيّرت المدة وصار الانتهاء في المستقبل، أعد تفعيل تنبيهات الانتهاء (تبدأ من جديد)
+    if(newDur !== _oldDur && purchases[idx].expiry && purchases[idx].expiry > Date.now()){
+        purchases[idx].reminded = false;
+        purchases[idx].expiryDismissed = false;
+    }
     
     store.purchases = JSON.stringify(purchases);
     fbSave("purchases", purchases);
@@ -7536,7 +7580,8 @@ async function saveHistoryEdit() {
         }
     }
 
-    logAction(`تعديل سجل مالي: ${newSub} للعميل ${newCustomer}`, 'financial', { type: 'edit_history', id: id });
+    const _durMsg = (newDur !== _oldDur) ? ` (المدة: ${_oldDur || 'بدون'} ← ${newDur || 'بدون'} شهر)` : '';
+    logAction(`تعديل سجل مالي: ${newSub} للعميل ${newCustomer}${_durMsg}`, 'financial', { type: 'edit_history', id: id });
     refreshAll();
     closeEditHistoryModal();
     notify("تم حفظ التعديلات بنجاح");
@@ -11925,6 +11970,11 @@ let _chatAudioCtx         = null;
 let _chatSoundMuted       = localStorage.getItem('_chatSoundMuted') === '1';
 let _chatTypingStopTimer  = null;
 let _chatLastTypingWrite  = 0;
+let _chatTypingPendingText = null;   // آخر نص في حقل الكتابة بانتظار البث
+let _chatTypingTimer      = null;    // مؤقّت خنق البث (حافة أمامية + خلفية)
+let _chatTypingLastSent   = '';      // آخر نص تم بثّه فعلاً
+let _chatCanHover         = false;   // هل الجهاز يدعم التأشير بالماوس (سطح مكتب)
+let _chatTypingPreviewUid = null;    // مستخدم المعاينة المفتوحة حالياً
 let _chatTitleBase        = null;
 let _chatTypingInterval   = null;
 let _chatInactivityTimer  = null;
@@ -12626,19 +12676,42 @@ function _initChatReadsListener() {
 }
 
 /* ─── Typing ─────────────────────────────────────────────── */
+// بثّ فعليّ لحالة الكتابة + النص الحالي (للمعاينة الحيّة عند التأشير على سطح المكتب)
+function _chatTypingFlush() {
+    if(!currentUser||!db||!fbDocRef||isDemoMode){ _chatTypingTimer=null; return; }
+    const t = _chatTypingPendingText;
+    if(t == null){ _chatTypingTimer = null; return; }
+    if(!t.trim()){ _chatTypingTimer = null; _chatStopTyping(); return; }
+    _chatTypingLastSent = t;
+    _chatLastTypingWrite = Date.now();
+    fbDocRef.collection('teamChatTyping').doc(currentUser.id).set({
+        userId:currentUser.id, username:currentUser.username,
+        ts:firebase.firestore.FieldValue.serverTimestamp(), stopped:false,
+        text: t.slice(0,500)   // معاينة حيّة لما يكتبه
+    },{merge:true}).catch(()=>{});
+    if(_chatTypingStopTimer) clearTimeout(_chatTypingStopTimer);
+    _chatTypingStopTimer = setTimeout(_chatStopTyping, 3000);
+    // الحافة الخلفية: أرسل آخر قيمة عند انتهاء نافذة الخنق إن تغيّرت
+    _chatTypingTimer = setTimeout(() => {
+        _chatTypingTimer = null;
+        if(_chatTypingPendingText != null && _chatTypingPendingText !== _chatTypingLastSent) _chatTypingFlush();
+    }, 500);
+}
 function _chatNotifyTyping() {
     if(!currentUser||!db||!fbDocRef||isDemoMode) return;
-    const now=Date.now();
-    if(now-_chatLastTypingWrite<1500) return;
-    _chatLastTypingWrite=now;
-    fbDocRef.collection('teamChatTyping').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,ts:firebase.firestore.FieldValue.serverTimestamp(),stopped:false},{merge:true}).catch(()=>{});
-    if(_chatTypingStopTimer) clearTimeout(_chatTypingStopTimer);
-    _chatTypingStopTimer=setTimeout(_chatStopTyping,3000);
+    const inp = document.getElementById('chatInput');
+    const txt = inp ? inp.value : '';
+    if(!txt.trim()){ _chatStopTyping(); return; }   // الحقل فارغ = توقّف عن الكتابة
+    _chatTypingPendingText = txt;
+    if(_chatTypingTimer) return;       // ضمن نافذة الخنق؛ سيُرسل عند انتهائها
+    _chatTypingFlush();                // الحافة الأمامية: أرسل فوراً
 }
 function _chatStopTyping() {
+    if(_chatTypingTimer){ clearTimeout(_chatTypingTimer); _chatTypingTimer = null; }
+    _chatTypingPendingText = null; _chatTypingLastSent = '';
     if(!currentUser||!db||!fbDocRef||isDemoMode) return;
     _chatLastTypingWrite=0;
-    fbDocRef.collection('teamChatTyping').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,ts:firebase.firestore.FieldValue.serverTimestamp(),stopped:true},{merge:true}).catch(()=>{});
+    fbDocRef.collection('teamChatTyping').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,ts:firebase.firestore.FieldValue.serverTimestamp(),stopped:true,text:''},{merge:true}).catch(()=>{});
 }
 function _initChatTypingListener() {
     if(_chatTypingListener||!db||!fbDocRef) return;
@@ -12660,6 +12733,7 @@ function _initChatTypingListener() {
     },1000);
 }
 function _chatRenderTyping() {
+    _initChatTypingPreview();
     const bar=document.getElementById('chatTypingBar');
     const textEl=document.getElementById('chatTypingText');
     if(!bar||!textEl) return;
@@ -12670,8 +12744,23 @@ function _chatRenderTyping() {
     const wasVisible = bar.style.display!=='none';
     const nowVisible = typers.length>0;
     if(nowVisible){
-        const names=typers.map(t=>esc(t.username)).join(' و');
-        textEl.innerHTML=`<b>${names}</b> ${typers.length===1?'يكتب':'يكتبون'}…`;
+        const verb = typers.length===1?'يكتب':'يكتبون';
+        // أعد بناء الأسماء فقط عند تغيّر مجموعة الكاتبين (يتفادى وميض التأشير أثناء تحديث النص)
+        const sig = typers.map(t=>t.userId+':'+t.username).join('|') + '|' + verb;
+        if(textEl._typingSig !== sig){
+            textEl._typingSig = sig;
+            const names = typers.map(t=>{
+                if(_chatCanHover){
+                    return `<b><span class="chat-typer" data-uid="${esc(t.userId)}" style="pointer-events:auto; cursor:help; text-decoration:underline dotted; text-underline-offset:3px;">${esc(t.username)}</span></b>`;
+                }
+                return `<b>${esc(t.username)}</b>`;
+            }).join(' و ');
+            textEl.innerHTML = `${names} ${verb}…`;
+        }
+        _chatTypingPreviewRefresh();   // حدّث المعاينة الحيّة إن كانت مفتوحة
+    } else {
+        textEl._typingSig = '';
+        _chatTypingPreviewHide();
     }
     if(nowVisible===wasVisible){ return; }   // لا تغيّر في الظهور → لا نلمس السكرول
     // التقط حالة "ملاصق للأسفل تماماً" قبل تغيّر المساحة
@@ -12682,6 +12771,79 @@ function _chatRenderTyping() {
     if(atBottom && !_chatJumping){
         requestAnimationFrame(()=>{ _chatScrollToBottom(false); });
     }
+}
+
+/* ── معاينة حيّة لما يكتبه الزميل عند التأشير على اسمه (أجهزة سطح المكتب فقط) ── */
+function _initChatTypingPreview() {
+    _chatCanHover = !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+    const textEl = document.getElementById('chatTypingText');
+    if(!textEl || textEl._cpvBound) return;
+    textEl._cpvBound = true;
+    if(!document.getElementById('chatTyperStyle')){
+        const st=document.createElement('style'); st.id='chatTyperStyle';
+        st.textContent='.chat-typer{transition:color .15s;} .chat-typer:hover{color:var(--primary);}';
+        document.head.appendChild(st);
+    }
+    textEl.addEventListener('mouseover', (e)=>{
+        const sp = e.target.closest && e.target.closest('.chat-typer');
+        if(sp && sp.dataset.uid) _chatTypingPreviewShow(sp.dataset.uid);
+    });
+    textEl.addEventListener('mouseout', (e)=>{
+        const sp = e.target.closest && e.target.closest('.chat-typer');
+        if(!sp) return;
+        const to = e.relatedTarget;
+        if(!to || !to.closest || !to.closest('.chat-typer')) _chatTypingPreviewHide();
+    });
+}
+function _chatTypingPreviewEl() {
+    let pv = document.getElementById('chatTypingPreview');
+    if(!pv){
+        pv = document.createElement('div');
+        pv.id = 'chatTypingPreview';
+        pv.style.cssText = 'position:fixed; z-index:100002; max-width:340px; min-width:130px; background:var(--bg-card); color:var(--text-main); border:1px solid var(--primary); border-radius:12px; padding:9px 12px; font-size:13px; line-height:1.5; box-shadow:0 10px 30px rgba(0,0,0,.32); display:none; pointer-events:none; word-break:break-word; white-space:pre-wrap; direction:rtl; text-align:right;';
+        document.body.appendChild(pv);
+    }
+    return pv;
+}
+function _chatTyperAnchor(uid) {
+    const sel = '.chat-typer[data-uid="' + ((window.CSS&&CSS.escape)?CSS.escape(uid):uid) + '"]';
+    return document.querySelector('#chatTypingText ' + sel);
+}
+function _chatTypingPreviewPosition(pv, anchor) {
+    const r = anchor.getBoundingClientRect();
+    pv.style.visibility='hidden'; pv.style.display='block';
+    const pw = pv.offsetWidth, ph = pv.offsetHeight;
+    let left = r.left + r.width/2 - pw/2;
+    left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+    let top = r.top - ph - 8;
+    if(top < 8) top = r.bottom + 8;
+    pv.style.left = left+'px'; pv.style.top = top+'px';
+    pv.style.visibility='visible';
+}
+function _chatTypingPreviewShow(uid) {
+    if(!_chatCanHover) return;
+    _chatTypingPreviewUid = uid;
+    _chatTypingPreviewEl().style.display='block';
+    _chatTypingPreviewRefresh();
+}
+function _chatTypingPreviewRefresh() {
+    const pv = document.getElementById('chatTypingPreview');
+    if(!pv || pv.style.display==='none' || !_chatTypingPreviewUid) return;
+    const uid = _chatTypingPreviewUid;
+    const t = _chatTyping[uid];
+    const ts = t&&t.ts&&typeof t.ts.toMillis==='function' ? t.ts.toMillis() : (t&&t.ts||0);
+    const active = t && !t.stopped && (Date.now()-ts < CHAT_TYPING_TTL);
+    const anchor = _chatTyperAnchor(uid);
+    if(!active || !anchor){ _chatTypingPreviewHide(); return; }
+    const txt = (t.text||'').toString();
+    pv.innerHTML = '<div style="font-size:11px; color:var(--primary); font-weight:800; margin-bottom:3px;"><i class="fas fa-pen"></i> ' + esc(t.username) + ' يكتب الآن</div>' +
+                   (txt ? esc(txt) : '<span style="color:var(--text-muted)">…</span>');
+    _chatTypingPreviewPosition(pv, anchor);
+}
+function _chatTypingPreviewHide() {
+    _chatTypingPreviewUid = null;
+    const pv = document.getElementById('chatTypingPreview');
+    if(pv) pv.style.display='none';
 }
 
 /* ─── Telegram (send-only) ───────────────────────────────── */
