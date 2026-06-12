@@ -12572,6 +12572,8 @@ function _initChatReadsListener() {
             if(ch.type==='removed') delete _chatReads[ch.doc.id];
             else _chatReads[ch.doc.id]={...ch.doc.data()};
         });
+        // إذا قرأ أحدٌ رسالة لها عدّاد تلجرام شغّال → اقطع العدّاد فوراً وألغِ الإرسال
+        _tgCheckReadsCancel();
         if(_chatIsOpen){
             // التقط حالة "ملاصق للأسفل تماماً" قبل إعادة الرسم
             const atBottom = _chatAtBottom(12);
@@ -12723,9 +12725,9 @@ function _tgEnsureOverlay() {
                     ` stroke-dasharray="${_TG_C}" stroke-dashoffset="0" stroke-linecap="round"` +
                     ` style="transition:stroke-dashoffset 0.92s linear;"/>` +
             `</svg>` +
-            `<span id="tgCountdownNum">3</span>` +
+            `<span id="tgCountdownNum">5</span>` +
         `</div>` +
-        `<div id="tgCountdownLbl">سيُرسل للتيليغرام خلال 3…</div>` +
+        `<div id="tgCountdownLbl">سيُرسل للتيليغرام خلال 5…</div>` +
         `<div id="tgCountdownQueueLbl"></div>`;
     document.body.appendChild(el);
 }
@@ -12736,7 +12738,7 @@ function _tgOverlayUpdate(remaining) {
     const lblEl   = document.getElementById('tgCountdownLbl');
     const ringEl  = document.getElementById('tgRingProg');
     const queueEl = document.getElementById('tgCountdownQueueLbl');
-    const offset  = (_TG_C * (1 - remaining / 3)).toFixed(2);
+    const offset  = (_TG_C * (1 - remaining / 5)).toFixed(2);
 
     if (numEl)  numEl.textContent  = remaining;
     if (lblEl)  lblEl.textContent  = `سيُرسل للتيليغرام خلال ${remaining}…`;
@@ -12767,20 +12769,30 @@ function _tgOverlayHide() {
     if (ov) ov.style.display = 'none';
 }
 
-/* تشغيل العداد للرسالة الحالية */
+/* تشغيل العداد للرسالة الحالية — 5 ثوانٍ، يبقى ظاهراً بلا وميض، وينقطع فوراً إذا قرأ أحدٌ الرسالة */
 function _tgRunCountdown(msgId) {
     _tgEnsureOverlay();
-    let phase = 0;
+    let remaining = 5;
+    // أظهر العداد مرة واحدة فقط في البداية (أنيميشن الدخول يعمل مرة واحدة، لا كل ثانية)
+    _tgOverlayShow(remaining);
 
     const timer = setInterval(async () => {
-        phase++;
-        const remaining = 4 - phase; // 1→3, 2→2, 3→1
-
-        if (phase >= 1 && phase <= 3) {
-            _tgOverlayShow(remaining);
+        // إذا قرأ أيُّ شخصٍ الرسالة أثناء العدّ → اقطع العدّاد وألغِ الإرسال فوراً
+        const cur = _chatMsgMap.get(msgId);
+        if (cur && _chatReadersOf(cur).length) {
+            clearInterval(timer);
+            delete _chatTgPendingTimers[msgId];
+            _tgActiveMsgId = null;
+            _tgOverlayHide();
+            _tgNextInQueue();
+            return;
         }
 
-        if (phase >= 4) {
+        remaining--;
+        if (remaining >= 1) {
+            // تحديث الرقم والقوس فقط — بدون إعادة تشغيل الأنيميشن (يبقى ظاهراً ثابتاً)
+            _tgOverlayUpdate(remaining);
+        } else {
             clearInterval(timer);
             delete _chatTgPendingTimers[msgId];
             _tgActiveMsgId = null;
@@ -12797,6 +12809,17 @@ function _tgRunCountdown(msgId) {
     }, 1000);
 
     _chatTgPendingTimers[msgId] = timer;
+}
+
+/* ألغِ عدّاد أي رسالة (نشطة أو في الطابور) قرأها شخصٌ آخر — يُستدعى من مستمع القراءات */
+function _tgCheckReadsCancel() {
+    const ids = [];
+    if (_tgActiveMsgId) ids.push(_tgActiveMsgId);
+    _tgQueue.forEach(id => ids.push(id));
+    ids.forEach(id => {
+        const m = _chatMsgMap.get(id);
+        if (m && _chatReadersOf(m).length) _tgCancelCountdown(id);
+    });
 }
 
 /* معالجة الطابور */
