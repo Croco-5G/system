@@ -12479,6 +12479,35 @@ window.showMsgInfo = function(msgId) {
 };
 
 /* ─── Jump to replied message ────────────────────────────── */
+/* مؤشر على الشاشة أثناء البحث عن رسالة بعيدة (تحميل الرسائل القديمة حتى نجدها) */
+function _chatJumpSearchOverlay(show, info) {
+    let ov = document.getElementById('chatJumpSearchOv');
+    if (show) {
+        if (!document.getElementById('chatJumpSearchStyle')) {
+            const st = document.createElement('style');
+            st.id = 'chatJumpSearchStyle';
+            st.textContent =
+                '#chatJumpSearchOv{position:fixed;inset:0;z-index:100001;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,0.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}' +
+                '#chatJumpSearchOv .cjs-box{display:flex;flex-direction:column;align-items:center;gap:14px;background:var(--bg-card);color:var(--text-main);border:1px solid var(--border-color);border-radius:18px;padding:26px 32px;box-shadow:0 18px 50px rgba(0,0,0,.35);animation:cjsIn .2s ease;max-width:80vw;text-align:center;}' +
+                '#chatJumpSearchOv .cjs-spinner{width:40px;height:40px;border:3px solid rgba(99,102,241,0.25);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;}' +
+                '#chatJumpSearchOv .cjs-text{font-size:14px;font-weight:800;}' +
+                '#chatJumpSearchOv .cjs-sub{font-size:12px;font-weight:600;color:var(--text-muted);}' +
+                '@keyframes cjsIn{from{opacity:0;transform:scale(0.9);}to{opacity:1;transform:scale(1);}}';
+            document.head.appendChild(st);
+        }
+        if (!ov) {
+            ov = document.createElement('div');
+            ov.id = 'chatJumpSearchOv';
+            ov.innerHTML = '<div class="cjs-box"><div class="cjs-spinner"></div><div class="cjs-text">جاري البحث عن الرسالة…</div><div class="cjs-sub" id="chatJumpSearchSub"></div></div>';
+            document.body.appendChild(ov);
+        }
+        const sub = document.getElementById('chatJumpSearchSub');
+        if (sub) sub.textContent = info || 'نحمّل الرسائل القديمة…';
+        ov.style.display = 'flex';
+    } else if (ov) {
+        ov.style.display = 'none';
+    }
+}
 window._chatJumpToMsg = async function(msgId) {
     // فعّل حارس الانتقال: يمنع تحميل الأقدم والسكرول التلقائي من إفساد الحركة
     _chatJumping = true;
@@ -12492,20 +12521,26 @@ window._chatJumpToMsg = async function(msgId) {
     }
     let el=document.querySelector(`.chat-msg-wrap[data-msg-id="${msgId}"]`);
     if(el){_chatHighlightEl(el);return;}
-    // Not loaded yet — keep loading older pages until found (or exhausted)
-    const ldg=document.getElementById('chatLoadingMsg');
-    if(ldg){ldg.textContent='جاري تحميل الرسائل…';ldg.style.display='block';}
-    let found=false, tries=0;
-    while(!found && _chatHasMoreOlder && tries<25){
-        tries++;
-        await _loadOlderMessages();
-        await new Promise(r=>setTimeout(r,120));
-        el=document.querySelector(`.chat-msg-wrap[data-msg-id="${msgId}"]`);
-        if(el){found=true;}
+    // غير محمّلة بعد — حمّل كل الرسائل القديمة حتى نجدها (أو حتى ننتهي من تحميل الكل)
+    _chatJumpSearchOverlay(true);                 // مؤشر «جاري البحث عن الرسالة…»
+    clearTimeout(_chatJumpClearTimer);            // أبقِ حارس الانتقال فعّالاً طوال البحث مهما طال
+    _chatJumping = true;
+    let found=false, loaded=0;
+    const _SAFE_CAP = 1000;                        // أمان فقط (1000×حجم الصفحة) لمنع أي حلقة لا نهائية
+    try {
+        while(!found && _chatHasMoreOlder && loaded<_SAFE_CAP){
+            loaded++;
+            _chatJumpSearchOverlay(true, `نحمّل الرسائل القديمة… (${loaded * CHAT_PAGE_SIZE}+)`);
+            await _loadOlderMessages();
+            await new Promise(r=>setTimeout(r,80));
+            el=document.querySelector(`.chat-msg-wrap[data-msg-id="${msgId}"]`);
+            if(el){ found=true; }
+        }
+    } finally {
+        _chatJumpSearchOverlay(false);             // أخفِ المؤشر دائماً (نجاح أو فشل)
     }
-    if(ldg){ldg.style.display='none';}
     if(el){ _chatHighlightEl(el); }
-    else { _chatJumping=false; notify('لم يتم العثور على الرسالة الأصلية','warning'); }
+    else { _chatJumping=false; notify('لم يتم العثور على الرسالة الأصلية (ربما حُذِفت)','warning'); }
 };
 function _chatHighlightEl(el) {
     const container=document.getElementById('chatMessagesContainer');
@@ -12554,7 +12589,12 @@ async function _loadOlderMessages() {
 /* ─── Read receipts ──────────────────────────────────────── */
 function _chatMarkRead() {
     if(!currentUser||!db||!fbDocRef||isDemoMode) return;
-    _chatLastReadMs=Date.now();
+    // اضبط lastReadMs ليغطّي أحدث رسالة فعلياً (وليس مجرّد Date.now()).
+    // هذا يتفادى فروق ساعات الأجهزة التي قد تجعل قراءتنا لا تُحتسب على جهاز المرسِل،
+    // فيُرسل رسالته للتلجرام رغم أننا رأيناها في الشات.
+    let _latestEff=0;
+    _chatMsgMap.forEach(m=>{ const e=_chatEffTs(m); if(e>_latestEff) _latestEff=e; });
+    _chatLastReadMs=Math.max(Date.now(), _latestEff);
     localStorage.setItem('_chatLastRead_'+currentUser.id,_chatLastReadMs);
     fbDocRef.collection('teamChatReads').doc(currentUser.id).set({userId:currentUser.id,username:currentUser.username,role:currentUser.role,lastReadMs:_chatLastReadMs,ts:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(()=>{});
     // لا نلغي عداد TG للرسائل التي أرسلها المستخدم نفسه —
@@ -12769,8 +12809,29 @@ function _tgOverlayHide() {
     if (ov) ov.style.display = 'none';
 }
 
-/* تشغيل العداد للرسالة الحالية — 5 ثوانٍ، يبقى ظاهراً بلا وميض، وينقطع فوراً إذا قرأ أحدٌ الرسالة */
+/* مرحلة صامتة: ثانيتان بلا عدّاد ظاهر قبل بدء العدّ. إن قُرئت الرسالة خلالها → إلغاء بلا تلجرام */
 function _tgRunCountdown(msgId) {
+    let silent = 2;
+    const silentTimer = setInterval(() => {
+        const cur = _chatMsgMap.get(msgId);
+        if (cur && _chatReadersOf(cur).length) {
+            clearInterval(silentTimer);
+            delete _chatTgPendingTimers[msgId];
+            _tgActiveMsgId = null;
+            _tgNextInQueue();
+            return;
+        }
+        silent--;
+        if (silent <= 0) {
+            clearInterval(silentTimer);
+            _tgRunVisibleCountdown(msgId); // ابدأ العدّ المرئي (5 ثوانٍ)
+        }
+    }, 1000);
+    _chatTgPendingTimers[msgId] = silentTimer;
+}
+
+/* العدّ المرئي — 5 ثوانٍ، يبقى ظاهراً بلا وميض، وينقطع فوراً إذا قرأ أحدٌ الرسالة */
+function _tgRunVisibleCountdown(msgId) {
     _tgEnsureOverlay();
     let remaining = 5;
     // أظهر العداد مرة واحدة فقط في البداية (أنيميشن الدخول يعمل مرة واحدة، لا كل ثانية)
@@ -12935,7 +12996,8 @@ function _initChatListener() {
                 if(ch.type==='added' && !existed){
                     if(data.userId!==currentUser?.id){
                         incomingCount++;
-                        _playChatNotifSound();
+                        // لا تُشغّل صوت الإشعار إذا كنت داخل الشات فعلاً وعند الأسفل (أنت تراها الآن)
+                        if(!(_chatIsOpen && !document.hidden && _chatNearBottom)) _playChatNotifSound();
                     } else {
                         // my own message landed → clear from outbox, start TG countdown
                         _chatOutbox=_chatOutbox.filter(m=>m._localId!==d.id);
