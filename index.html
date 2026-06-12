@@ -12901,6 +12901,8 @@ function _chatAttachScrollHandler() {
     // امنع قائمة السياق الافتراضية على الرسائل (تظهر مع الضغطة المطولة على بعض الأجهزة)
     c.addEventListener('contextmenu',e=>{ if(e.target.closest('.chat-msg-wrap[data-msg-id]')) e.preventDefault(); });
     c.addEventListener('scroll',()=>{
+        // أي سكرول فعلي يلغي الضغطة المطولة فوراً (النية كانت تصفّح لا فتح قائمة)
+        if(c._lpTimer){ clearTimeout(c._lpTimer); c._lpTimer=null; }
         if(c.scrollTop<140) _loadOlderMessages();
         _chatNearBottom = (c.scrollHeight-c.scrollTop-c.clientHeight) < 140;
         _chatUpdateScrollBtn(0);
@@ -12908,13 +12910,23 @@ function _chatAttachScrollHandler() {
     },{passive:true});
 
     // Touch: swipe-right to reply + long-press for menu
+    // ─ ثوابت ضبط الإيماءة ─
+    const LP_MOVE_TOL = 10;  // px: أي حركة أكبر من هذا تُلغي الضغطة المطولة (النية سكرول)
+    const DIR_LOCK    = 10;  // px: العتبة التي عندها نقفل اتجاه الإيماءة (أفقي/عمودي)
     c.addEventListener('touchstart',e=>{
         const wrap=e.target.closest('.chat-msg-wrap[data-msg-id]');
         if(!wrap){_swipeEl=null;_swipeMsgId=null;return;}
         _swipeStartX=e.touches[0].clientX; _swipeStartY=e.touches[0].clientY;
         _swipeMsgId=wrap.dataset.msgId; _swipeEl=wrap; _swipeActive=false;
+        c._dirLock=null;                       // اتجاه الإيماءة بعد القفل: 'h' أفقي | 'v' عمودي
+        c._lpStartScrollTop=c.scrollTop;       // موضع السكرول وقت بدء اللمس (للتحقق لاحقاً)
         if(c._lpTimer) clearTimeout(c._lpTimer);
         c._lpTimer=setTimeout(()=>{
+            c._lpTimer=null;
+            // تحقق أخير: إن تحرّك السكرول خلال فترة الانتظار فهي ليست ضغطة مطولة
+            if(Math.abs(c.scrollTop-c._lpStartScrollTop)>2) return;
+            // إن كان الاتجاه قد قُفل على عمودي (سكرول) فلا تفتح القائمة
+            if(c._dirLock==='v') return;
             _swipeEl=null;
             // امسح أي تحديد نص نتج عن الضغطة المطولة
             try{ const sel=window.getSelection&&window.getSelection(); if(sel&&sel.removeAllRanges) sel.removeAllRanges(); }catch(e){}
@@ -12922,22 +12934,44 @@ function _chatAttachScrollHandler() {
             _showMobileMenu(wrap.dataset.msgId);
         },500);
     },{passive:true});
+    // ملاحظة: passive:false ضروري حتى نتمكن من preventDefault لإيقاف السكرول أثناء السحب
     c.addEventListener('touchmove',e=>{
         if(!_swipeEl){ if(c._lpTimer){clearTimeout(c._lpTimer);c._lpTimer=null;} return; }
         const dx=e.touches[0].clientX-_swipeStartX;
         const dy=e.touches[0].clientY-_swipeStartY;
-        if(Math.abs(dy)>30){ if(c._lpTimer){clearTimeout(c._lpTimer);c._lpTimer=null;} _swipeEl.style.transform=''; _swipeEl=null; return; }
-        if(dx>6){
-            if(c._lpTimer){clearTimeout(c._lpTimer);c._lpTimer=null;}
-            _swipeActive=true;
-            const move=Math.min(dx*0.6,70);
-            _swipeEl.style.transition='none';
-            _swipeEl.style.transform=`translateX(${move}px)`;
-            _swipeEl.classList.toggle('swipe-ready',move>40);
+
+        // (1) أي حركة بسيطة تتجاوز عتبة بسيطة تُلغي الضغطة المطولة فوراً
+        if(c._lpTimer && (Math.abs(dx)>LP_MOVE_TOL || Math.abs(dy)>LP_MOVE_TOL)){
+            clearTimeout(c._lpTimer); c._lpTimer=null;
         }
-    },{passive:true});
+
+        // (2) اقفل اتجاه الإيماءة مرة واحدة فقط عند تجاوز العتبة
+        if(!c._dirLock && (Math.abs(dx)>DIR_LOCK || Math.abs(dy)>DIR_LOCK)){
+            c._dirLock = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+        }
+
+        // (3) اتجاه عمودي → اتركه للسكرول الطبيعي وألغِ السحب نهائياً
+        if(c._dirLock==='v'){
+            if(_swipeEl){ _swipeEl.style.transition='none'; _swipeEl.style.transform=''; }
+            _swipeEl=null;
+            return;
+        }
+
+        // (4) اتجاه أفقي → أوقف السكرول العمودي وفعّل السحب للرد
+        if(c._dirLock==='h'){
+            if(e.cancelable) e.preventDefault();   // ← يقفل السكرول أثناء السحب لليمين
+            if(dx>0){
+                _swipeActive=true;
+                const move=Math.min(dx*0.6,70);
+                _swipeEl.style.transition='none';
+                _swipeEl.style.transform=`translateX(${move}px)`;
+                _swipeEl.classList.toggle('swipe-ready',move>40);
+            }
+        }
+    },{passive:false});
     c.addEventListener('touchend',e=>{
         if(c._lpTimer){clearTimeout(c._lpTimer);c._lpTimer=null;}
+        c._dirLock=null;
         if(!_swipeEl){return;}
         const dx=e.changedTouches[0].clientX-_swipeStartX;
         const el=_swipeEl; const id=_swipeMsgId;
