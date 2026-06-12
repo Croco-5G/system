@@ -11949,6 +11949,7 @@ let _swipeStartX = 0, _swipeStartY = 0, _swipeMsgId = null, _swipeEl = null, _sw
 let _chatScrollAttachedG  = false;
 let _chatJumping          = false;  // أثناء الانتقال لرسالة (الرد): يمنع تحميل الأقدم والسكرول التلقائي من إفساد الحركة
 let _chatJumpClearTimer   = null;
+let _chatNewBelowCount    = 0;      // عدد الرسائل الجديدة التي وصلت بينما المستخدم طالع للأعلى (تظهر على زر السهم)
 
 
 /* ─── Outbox ─────────────────────────────────────────────── */
@@ -12263,12 +12264,19 @@ function _chatAtBottom(tol) {
     if(!c) return false;
     return (c.scrollHeight - c.scrollTop - c.clientHeight) <= (tol||12);
 }
-function _chatUpdateScrollBtn(newCount) {
+function _chatUpdateScrollBtn() {
     const btn=document.getElementById('chatScrollDownBtn');
     const badge=document.getElementById('chatScrollDownBadge');
     if(!btn) return;
+    // عند الوصول قرب الأسفل: المستخدم لحق على الرسائل → صفّر العدّاد وأخفِ الزر
+    if(_chatNearBottom) _chatNewBelowCount=0;
     btn.style.display=_chatNearBottom?'none':'flex';
-    if(badge){ if(newCount>0&&!_chatNearBottom){badge.textContent=newCount;badge.style.display='flex';} else badge.style.display='none'; }
+    if(badge){
+        if(_chatNewBelowCount>0 && !_chatNearBottom){
+            badge.textContent = _chatNewBelowCount>99 ? '99+' : _chatNewBelowCount;
+            badge.style.display='flex';
+        } else badge.style.display='none';
+    }
 }
 
 /* ─── Reply ──────────────────────────────────────────────── */
@@ -12920,8 +12928,10 @@ function _initChatListener() {
                     _chatScrollToBottom(true);
                     if(_chatIsOpen && !document.hidden) _chatMarkRead();
                 } else {
+                    // المستخدم طالع للأعلى → راكم عدد الرسائل الجديدة على زر السهم
+                    _chatNewBelowCount += incomingCount;
                     _updateChatBadge(_chatUnreadCount+incomingCount);
-                    _chatUpdateScrollBtn(incomingCount);
+                    _chatUpdateScrollBtn();
                 }
             }
         },e=>{if(loadDiv){loadDiv.textContent='خطأ في التحميل';loadDiv.style.display='block';}});
@@ -13085,10 +13095,18 @@ window.sendChatMessage = sendChatMessage;
 
 /* ─── Auto-resize textarea ───────────────────────────────── */
 function chatAutoResize(el) {
+    // التقط حالة "ملاصق للأسفل تماماً" قبل تغيّر ارتفاع المربع (نفس منطق القراءة/الكتابة)
+    const wasAtBottom = (typeof _chatAtBottom==='function') ? _chatAtBottom(12) : false;
+    const prevH = el.style.height;
     el.style.height='auto';
     const h=Math.min(el.scrollHeight,130);
     el.style.height=h+'px';
     el.style.overflowY = el.scrollHeight>130 ? 'auto' : 'hidden';
+    // إن تغيّر ارتفاع المربع (سطر جديد) وكنت ملاصقاً للأسفل تماماً → انزل مرة واحدة حتى لا يغطّي المربع آخر رسالة.
+    // إن كنت طالعاً للأعلى أي مقدار محسوس → لا ننزل إطلاقاً.
+    if(el.style.height!==prevH && wasAtBottom && !_chatJumping){
+        requestAnimationFrame(()=>{ _chatScrollToBottom(false); });
+    }
     const count=el.value.length;
     const countEl=document.getElementById('chatCharCount');
     if(countEl){
