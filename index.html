@@ -1031,7 +1031,7 @@
         @media (max-width: 768px) {
             #chatScrollDownBtn { bottom: 92px; left: 12px; width:42px; height:42px; }
             .chat-typing-dots span { width:5px; height:5px; }
-            #chatTypingBar { padding:3px 14px 0; }
+            #chatTypingBar { padding:4px 14px; }
         }
 
         /* ═══ إصلاحات رأس الدردشة على الجوال ═══ */
@@ -2615,7 +2615,7 @@
             <span id="chatScrollDownBadge" style="position:absolute; top:-5px; right:-5px; background:var(--danger); color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; padding:0 4px; border-radius:9px; display:none; align-items:center; justify-content:center;"></span>
         </button>
 
-        <div id="chatTypingBar" style="display:none; padding:6px 14px; font-size:12px; color:var(--text-muted); flex-shrink:0; min-height:0; align-items:center; gap:7px; background:linear-gradient(to top, var(--bg-body) 60%, transparent); pointer-events:none; margin-top:-28px; z-index:5; position:relative;">
+        <div id="chatTypingBar" style="display:none; padding:5px 14px; font-size:12px; color:var(--text-muted); flex-shrink:0; min-height:0; align-items:center; gap:7px; background:var(--bg-body); pointer-events:none; border-top:1px solid var(--border-color);">
             <span class="chat-typing-dots"><span></span><span></span><span></span></span>
             <span id="chatTypingText" style="font-weight:600; pointer-events:none;"></span>
         </div>
@@ -12547,7 +12547,13 @@ function _initChatReadsListener() {
             if(ch.type==='removed') delete _chatReads[ch.doc.id];
             else _chatReads[ch.doc.id]={...ch.doc.data()};
         });
-        if(_chatIsOpen) _renderAllMessages(false);
+        if(_chatIsOpen){
+            const wasNearBottom=_chatNearBottom;   // موضع المستخدم قبل إعادة الرسم
+            _renderAllMessages(false);
+            // عند قراءة رسالتي يظهر سطر "قرأها فلان" تحتها فيزيد ارتفاع المحادثة قليلاً.
+            // إن كنت قريباً من الأسفل ننزل تلقائياً لإظهاره؛ وإن كنت طالعاً للأعلى (زر النزول ظاهر) لا ننزل.
+            if(wasNearBottom) requestAnimationFrame(()=>{ _chatScrollToBottom(true); });
+        }
     },()=>{});
 }
 
@@ -12593,10 +12599,18 @@ function _chatRenderTyping() {
         const ts=t.ts&&typeof t.ts.toMillis==='function'?t.ts.toMillis():(t.ts||0);
         return !t.stopped && t.userId!==currentUser?.id && (Date.now()-ts<CHAT_TYPING_TTL);
     });
-    if(!typers.length){bar.style.display='none';return;}
-    const names=typers.map(t=>esc(t.username)).join(' و');
-    textEl.innerHTML=`<b>${names}</b> ${typers.length===1?'يكتب':'يكتبون'}…`;
-    bar.style.display='flex';
+    const wasVisible = bar.style.display!=='none';
+    const nowVisible = typers.length>0;
+    if(nowVisible){
+        const names=typers.map(t=>esc(t.username)).join(' و');
+        textEl.innerHTML=`<b>${names}</b> ${typers.length===1?'يكتب':'يكتبون'}…`;
+    }
+    bar.style.display = nowVisible ? 'flex' : 'none';
+    // عند ظهور/اختفاء شريط الكتابة تتغيّر مساحة منطقة الرسائل (تتوسّع/تتقلّص).
+    // إن كان المستخدم قريباً من الأسفل ننزل قليلاً حتى تبقى آخر رسالة ظاهرة فوق الشريط.
+    if(nowVisible!==wasVisible && _chatNearBottom){
+        requestAnimationFrame(()=>{ _chatScrollToBottom(false); });
+    }
 }
 
 /* ─── Telegram (send-only) ───────────────────────────────── */
