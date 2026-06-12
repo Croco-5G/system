@@ -11947,6 +11947,8 @@ let _chatReadsListener    = null;
 let _chatTypingListener   = null;
 let _swipeStartX = 0, _swipeStartY = 0, _swipeMsgId = null, _swipeEl = null, _swipeActive = false;
 let _chatScrollAttachedG  = false;
+let _chatJumping          = false;  // أثناء الانتقال لرسالة (الرد): يمنع تحميل الأقدم والسكرول التلقائي من إفساد الحركة
+let _chatJumpClearTimer   = null;
 
 
 /* ─── Outbox ─────────────────────────────────────────────── */
@@ -12254,6 +12256,13 @@ function _chatScrollToBottom(smooth) {
     _chatNearBottom=true;
     _chatUpdateScrollBtn(0);
 }
+// هل المستخدم ملاصق للأسفل تماماً؟ عتبة صغيرة (≈12px) — يُستخدم للسكرول التلقائي
+// للقراءة/الكتابة، بحيث أول ما يطلع المستخدم للأعلى أي مقدار محسوس نتركه حرّاً ولا نجبره للنزول.
+function _chatAtBottom(tol) {
+    const c=document.getElementById('chatMessagesContainer');
+    if(!c) return false;
+    return (c.scrollHeight - c.scrollTop - c.clientHeight) <= (tol||12);
+}
 function _chatUpdateScrollBtn(newCount) {
     const btn=document.getElementById('chatScrollDownBtn');
     const badge=document.getElementById('chatScrollDownBadge');
@@ -12463,6 +12472,10 @@ window.showMsgInfo = function(msgId) {
 
 /* ─── Jump to replied message ────────────────────────────── */
 window._chatJumpToMsg = async function(msgId) {
+    // فعّل حارس الانتقال: يمنع تحميل الأقدم والسكرول التلقائي من إفساد الحركة
+    _chatJumping = true;
+    clearTimeout(_chatJumpClearTimer);
+    _chatJumpClearTimer = setTimeout(()=>{ _chatJumping=false; }, 5000); // أمان: لا يبقى عالقاً أبداً
     // If the target message is hidden locally, un-hide it so we can show it
     if(_chatLocalHidden.has(msgId)){
         _chatLocalHidden.delete(msgId);
@@ -12484,7 +12497,7 @@ window._chatJumpToMsg = async function(msgId) {
     }
     if(ldg){ldg.style.display='none';}
     if(el){ _chatHighlightEl(el); }
-    else notify('لم يتم العثور على الرسالة الأصلية','warning');
+    else { _chatJumping=false; notify('لم يتم العثور على الرسالة الأصلية','warning'); }
 };
 function _chatHighlightEl(el) {
     const container=document.getElementById('chatMessagesContainer');
@@ -12497,6 +12510,10 @@ function _chatHighlightEl(el) {
     } else {
         el.scrollIntoView({behavior:'smooth',block:'center'});
     }
+    // أوقف الحارس بعد أن تستقر الحركة الناعمة (وأبقِه فعّالاً أثناءها)
+    _chatJumping = true;
+    clearTimeout(_chatJumpClearTimer);
+    _chatJumpClearTimer = setTimeout(()=>{ _chatJumping=false; }, 900);
     const bubble=el.querySelector('.chat-bubble')||el;
     bubble.classList.remove('chat-bubble-flash');
     void bubble.offsetWidth;
@@ -12548,11 +12565,12 @@ function _initChatReadsListener() {
             else _chatReads[ch.doc.id]={...ch.doc.data()};
         });
         if(_chatIsOpen){
-            const wasNearBottom=_chatNearBottom;   // موضع المستخدم قبل إعادة الرسم
+            // التقط حالة "ملاصق للأسفل تماماً" قبل إعادة الرسم
+            const atBottom = _chatAtBottom(12);
             _renderAllMessages(false);
-            // عند قراءة رسالتي يظهر سطر "قرأها فلان" تحتها فيزيد ارتفاع المحادثة قليلاً.
-            // إن كنت قريباً من الأسفل ننزل تلقائياً لإظهاره؛ وإن كنت طالعاً للأعلى (زر النزول ظاهر) لا ننزل.
-            if(wasNearBottom) requestAnimationFrame(()=>{ _chatScrollToBottom(true); });
+            // عند قراءة رسالتي يظهر سطر "قرأها فلان" تحتها. ننزل مرة واحدة فقط إن كنت ملاصقاً للأسفل.
+            // إن كنت قد طلعت للأعلى أي مقدار محسوس → لا ننزل إطلاقاً (تبقى حرّاً).
+            if(atBottom && !_chatJumping) requestAnimationFrame(()=>{ _chatScrollToBottom(true); });
         }
     },()=>{});
 }
@@ -12605,10 +12623,13 @@ function _chatRenderTyping() {
         const names=typers.map(t=>esc(t.username)).join(' و');
         textEl.innerHTML=`<b>${names}</b> ${typers.length===1?'يكتب':'يكتبون'}…`;
     }
+    if(nowVisible===wasVisible){ return; }   // لا تغيّر في الظهور → لا نلمس السكرول
+    // التقط حالة "ملاصق للأسفل تماماً" قبل تغيّر المساحة
+    const atBottom = _chatAtBottom(12);
     bar.style.display = nowVisible ? 'flex' : 'none';
-    // عند ظهور/اختفاء شريط الكتابة تتغيّر مساحة منطقة الرسائل (تتوسّع/تتقلّص).
-    // إن كان المستخدم قريباً من الأسفل ننزل قليلاً حتى تبقى آخر رسالة ظاهرة فوق الشريط.
-    if(nowVisible!==wasVisible && _chatNearBottom){
+    // ننزل مرة واحدة فقط إن كنت ملاصقاً للأسفل تماماً، حتى تبقى آخر رسالة ظاهرة فوق الشريط.
+    // إن كنت طالعاً للأعلى أي مقدار محسوس → لا ننزل إطلاقاً.
+    if(atBottom && !_chatJumping){
         requestAnimationFrame(()=>{ _chatScrollToBottom(false); });
     }
 }
@@ -12894,7 +12915,7 @@ function _initChatListener() {
             });
             _renderAllMessages(false);
             if(incomingCount>0){
-                if(_chatNearBottom){
+                if(_chatNearBottom && !_chatJumping){
                     // user is near bottom → snap down once
                     _chatScrollToBottom(true);
                     if(_chatIsOpen && !document.hidden) _chatMarkRead();
@@ -12917,7 +12938,7 @@ function _chatAttachScrollHandler() {
     c.addEventListener('scroll',()=>{
         // أي سكرول فعلي يلغي الضغطة المطولة فوراً (النية كانت تصفّح لا فتح قائمة)
         if(c._lpTimer){ clearTimeout(c._lpTimer); c._lpTimer=null; }
-        if(c.scrollTop<140) _loadOlderMessages();
+        if(c.scrollTop<140 && !_chatJumping) _loadOlderMessages();
         _chatNearBottom = (c.scrollHeight-c.scrollTop-c.clientHeight) < 140;
         _chatUpdateScrollBtn(0);
         if(_chatNearBottom&&_chatIsOpen&&!document.hidden) _chatMarkRead();
@@ -12928,6 +12949,8 @@ function _chatAttachScrollHandler() {
     const LP_MOVE_TOL = 10;  // px: أي حركة أكبر من هذا تُلغي الضغطة المطولة (النية سكرول)
     const DIR_LOCK    = 10;  // px: العتبة التي عندها نقفل اتجاه الإيماءة (أفقي/عمودي)
     c.addEventListener('touchstart',e=>{
+        // لمسة المستخدم تُنهي حارس الانتقال فوراً (يأخذ زمام التحكم بالسكرول)
+        if(_chatJumping){ _chatJumping=false; clearTimeout(_chatJumpClearTimer); }
         const wrap=e.target.closest('.chat-msg-wrap[data-msg-id]');
         if(!wrap){_swipeEl=null;_swipeMsgId=null;return;}
         _swipeStartX=e.touches[0].clientX; _swipeStartY=e.touches[0].clientY;
