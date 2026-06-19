@@ -1679,13 +1679,18 @@
         <h3><i class="fas fa-cart-plus" style="color:var(--primary)"></i> تسجيل اشتراك جديد</h3>
         <div class="grid-2">
             <div class="input-group"><label>نوع الاشتراك (المخزون)</label>
-                <select id="sub" onchange="syncPurchaseDuration()"><option value="">اختر من المخزون المتاح...</option></select>
+                <select id="sub" onchange="syncPurchaseDuration(); syncPurchaseProfilesMax();"><option value="">اختر من المخزون المتاح...</option></select>
             </div>
             <div class="input-group"><label>اسم العميل</label><input id="customer" placeholder="اسم العميل"></div>
         </div>
         <div class="grid-2">
             <div class="input-group"><label>رقم جوال العميل (اختياري)</label><input id="customerPhone" placeholder="97xxxxxxxxxx أو +97xxxxxxxxxx" oninput="validatePhoneInput(this)" onblur="autoAddPlusPhone(this)" dir="ltr" style="text-align:right;"></div>
             <div class="input-group"><label>المبلغ المدفوع من العميل</label><div style="display:flex; gap:10px"><input type="number" id="paidAmount" placeholder="0.00" style="flex: 1;"><select id="paidCurrency" style="width:110px; flex-shrink: 0;"><option value="₪">₪ شيكل</option><option value="$">$ دولار</option></select></div></div>
+        </div>
+        <div class="input-group" style="margin-top:0;">
+            <label>عدد البروفايلات (الذي يأخذه هذا العميل)</label>
+            <input type="number" id="purchaseProfilesCount" min="1" step="1" value="0" placeholder="0" oninput="_clampPurchaseProfilesCount()">
+            <div id="purchaseProfilesHint" style="font-size:12px; color:var(--text-muted); margin-top:6px;"><i class="fas fa-circle-info"></i> اختر اشتراكاً أولاً لمعرفة الحد الأقصى المتاح، ثم أدخل عدد البروفايلات (1 أو أكثر)</div>
         </div>
         
         <div class="grid-2" style="margin-top:10px; padding-top:20px; border-top:1px dashed var(--border-color)">
@@ -6376,6 +6381,42 @@ function syncPurchaseDuration() {
     }
 }
 
+// ── تحديث الحد الأقصى لعدد البروفايلات بحسب الاشتراك المختار ──
+// يُستدعى عند تغيير اختيار المخزون: يقرأ (totalProfiles - soldProfiles)
+// ويضبط الحقل ويعيد تصفيره لـ 0 لإجبار المستخدم على اختيار العدد يدوياً
+function syncPurchaseProfilesMax() {
+    let stockId = document.getElementById("sub").value;
+    let countInput = document.getElementById("purchaseProfilesCount");
+    let hintEl = document.getElementById("purchaseProfilesHint");
+    if (!countInput) return;
+    if (!stockId) {
+        countInput.value = "0";
+        countInput.removeAttribute('max');
+        if (hintEl) hintEl.innerHTML = '<i class="fas fa-circle-info"></i> اختر اشتراكاً أولاً لمعرفة الحد الأقصى المتاح، ثم أدخل عدد البروفايلات (1 أو أكثر)';
+        return;
+    }
+    let stockList = safeJSON(store.stock, []);
+    let stItem = stockList.find(x => x.id === stockId);
+    if (!stItem) return;
+    let total = parseInt(stItem.totalProfiles) || 1;
+    let sold = parseInt(stItem.soldProfiles) || 0;
+    let available = Math.max(0, total - sold);
+    countInput.setAttribute('max', available);
+    countInput.value = "0"; // إعادة تصفير إجبارية عند كل اختيار جديد
+    if (hintEl) hintEl.innerHTML = `<i class="fas fa-circle-info"></i> الحد الأقصى المتاح لهذا الاشتراك: <b>${available}</b> بروفايل`;
+}
+
+// ── منع إدخال قيم سالبة أو أكبر من الحد الأقصى المتاح ──
+function _clampPurchaseProfilesCount() {
+    let el = document.getElementById("purchaseProfilesCount");
+    if (!el) return;
+    let v = Math.floor(parseFloat(el.value)) || 0;
+    if (v < 0) v = 0;
+    let maxAttr = parseInt(el.getAttribute('max'));
+    if (!isNaN(maxAttr) && v > maxAttr) v = maxAttr;
+    el.value = v;
+}
+
 function loadProfitSettings(){
     let s = safeJSON(store.settings, {});
     document.getElementById("setExchangeRate").value = s.exchangeRate || 0;
@@ -6618,6 +6659,12 @@ function addPurchase(){
         if(expD.getTime() <= new Date().getTime()) return notify("هذا الاشتراك منتهي الصلاحية ولا يمكن بيعه", "error");
     }
 
+    // ─── عدد البروفايلات لهذه العملية (قد يأخذ نفس العميل أكثر من بروفايل دفعة واحدة) ───
+    let profilesCount = parseInt(document.getElementById("purchaseProfilesCount").value) || 0;
+    if (profilesCount < 1) return notify("يرجى اختيار عدد البروفايلات (1 أو أكثر) — لا يمكن أن يكون صفراً", "error");
+    let availableProfilesForSale = (parseInt(stItem.totalProfiles) || 1) - (parseInt(stItem.soldProfiles) || 0);
+    if (profilesCount > availableProfilesForSale) return notify(`عدد البروفايلات المطلوب أكبر من المتاح في هذا الاشتراك (المتاح: ${availableProfilesForSale})`, "error");
+
     let customerPhoneVal = document.getElementById("customerPhone").value.trim();
     // إضافة + تلقائياً إن لم تكن موجودة
     if(customerPhoneVal && !customerPhoneVal.startsWith('+')) customerPhoneVal = '+' + customerPhoneVal;
@@ -6691,27 +6738,32 @@ function addPurchase(){
             <div><i class="fas fa-tag"></i> <b>الخدمة:</b> ${esc(cleanName)}</div>
             <div><i class="fas fa-user"></i> <b>العميل:</b> ${esc(customerVal)||'—'} ${customerPhoneVal?'('+esc(customerPhoneVal)+')':''}</div>
             <div><i class="fas fa-calendar"></i> <b>المدة:</b> ${duration === 0 ? 'بدون مدة' : duration + ' شهر'}</div>
+            ${profilesCount > 1 ? `<div><i class="fas fa-layer-group"></i> <b>عدد البروفايلات:</b> ${profilesCount}</div>` : ''}
             <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color)">
                 <span style="color:var(--success)"><i class="fas fa-money-bill-wave"></i> مدفوع: ${paid}${paidCur}</span>
             </div>
-            ${isComp ? `<div style="color:var(--danger); font-weight:bold; text-align:center; padding:5px; background:var(--yellow-bg); border-radius:5px; margin:5px 0;"><i class="fas fa-exclamation-circle"></i> عملية تعويض (المتجر سيتحمل تكلفة هذا البروفايل)</div>` : ''}
+            ${isComp ? `<div style="color:var(--danger); font-weight:bold; text-align:center; padding:5px; background:var(--yellow-bg); border-radius:5px; margin:5px 0;"><i class="fas fa-exclamation-circle"></i> عملية تعويض (المتجر سيتحمل تكلفة ${profilesCount > 1 ? 'هذه البروفايلات' : 'هذا البروفايل'})</div>` : ''}
             ${appliedDiscountPct > 0 ? `<div style="color:var(--success); font-weight:bold; text-align:center; padding:5px; border:1px solid var(--success); border-radius:5px; margin:5px 0;"><i class="fas fa-ticket-alt"></i> تم تطبيق كود خصم: ${appliedDiscountPct}%</div>` : ''}
             ${selectedPledge ? `<div style="color:var(--primary); font-weight:bold; text-align:center; padding:5px; border:1px solid var(--primary); border-radius:5px; margin:5px 0;"><i class="fas fa-handshake"></i> سيتم خصم حساب مرهون من: ${esc(selectedPledge.customer)} / ${esc(selectedPledge.service)} (${selectedPledge.usedCount||0}/${selectedPledge.totalCount})</div>` : ''}
-            <div><i class="fas fa-info-circle"></i> <b>حالة الدفع:</b> <span style="color:var(--danger)">سيتم خصم ${fix(calculatedCost)} ${paidCur} كتكلفة لهذا البروفايل</span></div>
+            <div><i class="fas fa-info-circle"></i> <b>حالة الدفع:</b> <span style="color:var(--danger)">سيتم خصم ${fix(calculatedCost * profilesCount)} ${paidCur} كتكلفة ${profilesCount > 1 ? `لـ ${profilesCount} بروفايلات` : 'لهذا البروفايل'}</span></div>
         </div>`;
     
     document.getElementById("purchaseConfirmModal").style.display = "flex";
     document.getElementById("purchaseConfirmOkBtn").onclick = () => {
         document.getElementById("purchaseConfirmModal").style.display = "none";
-        _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge);
+        _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge, profilesCount);
     };
 }
 
-function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge) {
+function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge, profilesCount) {
     let invest = safeJSON(store.invest, {}), purchases = safeJSON(store.purchases, []);
+    profilesCount = parseInt(profilesCount) || 1; // عدد البروفايلات التي يأخذها هذا العميل في هذه العملية
 
-    // تكلفة هذا البروفايل بعملة المخزون الأصلية (تُحسب مرة واحدة قبل الخصم من الرصيد)
-    let fractionalCostOriginal = _peekNextProfileCost(stItem);
+    // تكلفة كل هذه البروفايلات (profilesCount) بعملة المخزون الأصلية (تُحسب مرة واحدة قبل الخصم من الرصيد)
+    // التكلفة موحّدة لكل بروفايل ضمن نفس العملية (أسلوب باقي التكلفة)، لذا التكلفة الإجمالية = تكلفة البروفايل الواحد × العدد
+    let fractionalCostOriginal = Math.round(_peekNextProfileCost(stItem) * profilesCount * 10000) / 10000;
+    // إجمالي التكلفة بعملة الدفع (لأن العميل أخذ profilesCount بروفايل وليس واحداً فقط)
+    calculatedCost = Math.round(calculatedCost * profilesCount * 10000) / 10000;
 
     let distributableProfit = paid;
     let recoupAmount = 0;
@@ -6761,13 +6813,18 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
 
     let buyerInfo = (customerVal ? customerVal : "عميل") + (customerPhoneVal ? ` - ${customerPhoneVal}` : "");
     if(!stItem.buyers) stItem.buyers = [];
-    stItem.buyers.push(buyerInfo);
 
-    _consumeProfileCost(stItem); // خصم تكلفة هذا البروفايل من الرصيد المتبقي (أسلوب باقي التكلفة)
-    stItem.soldProfiles = (stItem.soldProfiles || 0) + 1;
-    if(stItem.soldProfiles >= (stItem.totalProfiles || 1)) {
-        stItem.status = 'sold';
-        stItem.soldDate = `${nd.getFullYear()}-${nmm}-${nddStr}`;
+    // تسجيل أن هذا العميل أخذ profilesCount من البروفايلات: إضافة اسمه profilesCount مرة
+    // واستهلاك تكلفة كل بروفايل من الرصيد المتبقي على حدة (أسلوب باقي التكلفة)
+    for (let _pc = 0; _pc < profilesCount; _pc++) {
+        stItem.buyers.push(buyerInfo);
+        _consumeProfileCost(stItem); // خصم تكلفة هذا البروفايل من الرصيد المتبقي
+        stItem.soldProfiles = (stItem.soldProfiles || 0) + 1;
+        if(stItem.soldProfiles >= (stItem.totalProfiles || 1)) {
+            stItem.status = 'sold';
+            stItem.soldDate = `${nd.getFullYear()}-${nmm}-${nddStr}`;
+            break; // لا مزيد من البروفايلات المتاحة للاستهلاك
+        }
     }
     let stockList = safeJSON(store.stock, []);
     let stIdx = stockList.findIndex(x => x.id === stItem.id);
@@ -6837,7 +6894,8 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
         stockId: stItem.id,
         duration: duration,
         paid: paid+paidCur,
-        cost: originalCostDisplay, // حفظ التكلفة بعملتها الأصلية في الأرشيف
+        cost: originalCostDisplay, // حفظ التكلفة الإجمالية (لكل البروفايلات المأخوذة) بعملتها الأصلية في الأرشيف
+        profilesCount: profilesCount, // عدد البروفايلات التي أخذها هذا العميل في هذه العملية
         rate: (settings.exchangeRate && settings.exchangeRate > 0 ? settings.exchangeRate : 3.5), // تثبيت سعر الصرف وقت البيع
         expiry: exp ? exp.getTime() : null,
         investDelta: _undoDelta,
@@ -6891,13 +6949,14 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     let _netDeltaUSD = _paidDeltaUSD;
     // نحفظ id آخر purchase في budgetHistory لنتمكن من التراجع
     let _lastPurchaseId = purchases[purchases.length-1]?.id;
-    recordBudgetEvent('purchase', `شراء ${cleanName} للعميل ${customerVal||"عميل"}: ${paid}${paidCur}`, _netDeltaUSD, {
+    let _profilesSuffix = profilesCount > 1 ? ` (${profilesCount} بروفايلات)` : '';
+    recordBudgetEvent('purchase', `شراء ${cleanName} للعميل ${customerVal||"عميل"}${_profilesSuffix}: ${paid}${paidCur}`, _netDeltaUSD, {
         type: 'purchase', customer: customerVal||"عميل", sub: cleanName, paid: paid+paidCur,
-        cost: originalCostDisplay, isComp, purchaseId: _lastPurchaseId
+        cost: originalCostDisplay, isComp, purchaseId: _lastPurchaseId, profilesCount: profilesCount
     });
 
-    logAction(`إضافة عملية شراء: ${cleanName} للعميل ${customerVal}`, 'financial', {
-        type: 'purchase', customer: customerVal||"عميل", sub: cleanName, paid: paid+paidCur, costVal: originalCostDisplay, isFirstProfile: !isComp, appliedDiscountPct: appliedDiscountPct, isComp: isComp
+    logAction(`إضافة عملية شراء: ${cleanName} للعميل ${customerVal}${_profilesSuffix}`, 'financial', {
+        type: 'purchase', customer: customerVal||"عميل", sub: cleanName, paid: paid+paidCur, costVal: originalCostDisplay, isFirstProfile: !isComp, appliedDiscountPct: appliedDiscountPct, isComp: isComp, profilesCount: profilesCount
     });
 
     // ── زيادة راتب الموظف ──────────────────────────────────────────
@@ -6974,7 +7033,7 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     loadPurchaseStock();
     refreshAll();  notify("تمت العملية بنجاح");
     
-    document.getElementById("paidAmount").value=""; document.getElementById("customer").value=""; document.getElementById("sub").value=""; document.getElementById("customerPhone").value=""; document.getElementById("discountCodeInput").value=""; document.getElementById("isCompensation").checked = false; document.getElementById("customerPhone").style.borderColor = ""; document.getElementById("purchaseNotes").value = "";
+    document.getElementById("paidAmount").value=""; document.getElementById("customer").value=""; document.getElementById("sub").value=""; document.getElementById("customerPhone").value=""; document.getElementById("discountCodeInput").value=""; document.getElementById("isCompensation").checked = false; document.getElementById("customerPhone").style.borderColor = ""; document.getElementById("purchaseNotes").value = ""; document.getElementById("purchaseProfilesCount").value = "0"; document.getElementById("purchaseProfilesCount").removeAttribute('max'); if(document.getElementById("purchaseProfilesHint")) document.getElementById("purchaseProfilesHint").innerHTML = '<i class="fas fa-circle-info"></i> اختر اشتراكاً أولاً لمعرفة الحد الأقصى المتاح، ثم أدخل عدد البروفايلات (1 أو أكثر)';
 }
 
 function showCouponModal(coupon, phone, onCloseCallback = null) {
@@ -7424,7 +7483,7 @@ function refreshHistory(){
         let isViewerRole = currentUser && (currentUser.role === 'viewer' || currentUser.role === 'viewer_plus');
         let isEmployeeRole = currentUser && currentUser.role === 'employee';
         let phoneD = isViewerRole ? maskPhone(item.phone) : esc(item.phone);
-        let subD = isRestricted ? '----' : `<span class="badge badge-info">${esc(item.sub)}</span>`;
+        let subD = isRestricted ? '----' : `<span class="badge badge-info">${esc(item.sub)}</span>${(parseInt(item.profilesCount) > 1) ? ` <span class="badge badge-warning" title="عدد البروفايلات في هذه العملية">×${parseInt(item.profilesCount)}</span>` : ''}`;
         let paidD = isRestricted ? '----' : esc(item.paid);
         let costD = (isRestricted || isEmployeeRole) ? '----' : esc(item.cost);
         
@@ -8895,15 +8954,18 @@ async function undoLastPurchase(){
         let stockList = safeJSON(store.stock, []);
         let sItem = stockList.find(x => x.id === lastP.stockId);
         if (sItem) {
-            sItem.soldProfiles = Math.max(0, (sItem.soldProfiles || 0) - 1);
-            if (sItem.buyers && sItem.buyers.length > 0) sItem.buyers.pop();
+            let _undoProfilesCount = parseInt(lastP.profilesCount) || 1; // كم بروفايل أخذه العميل في هذه العملية
+            sItem.soldProfiles = Math.max(0, (sItem.soldProfiles || 0) - _undoProfilesCount);
+            for (let _u = 0; _u < _undoProfilesCount; _u++) {
+                if (sItem.buyers && sItem.buyers.length > 0) sItem.buyers.pop();
+            }
             if (sItem.status === 'sold') { sItem.status = 'active'; delete sItem.soldDate; }
-            // إعادة حصة التكلفة للرصيد المتبقي (أسلوب باقي التكلفة)
+            // إعادة حصة التكلفة للرصيد المتبقي (أسلوب باقي التكلفة) — لكل بروفايل تم استهلاكه في هذه العملية
             {
                 let _tc = parseFloat(sItem.cost) || 0;
                 let _tp = parseInt(sItem.totalProfiles) || 1;
                 let _cur = _getStockRemainingCost(sItem);
-                sItem.remainingCost = Math.min(_tc, Math.round((_cur + (_tc / _tp)) * 10000) / 10000);
+                sItem.remainingCost = Math.min(_tc, Math.round((_cur + (_tc / _tp) * _undoProfilesCount) * 10000) / 10000);
             }
             store.stock = JSON.stringify(stockList);
             undoUpdates.stock = stockList;
