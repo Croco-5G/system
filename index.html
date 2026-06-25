@@ -3996,9 +3996,13 @@ function initFirebase() {
                             store[k] = newStr;
                             if (!fromCache) lastServerState[k] = JSON.parse(JSON.stringify(data[k]));
                             if (k === 'employeeBonus' && !fromCache && currentUser) refreshEmployeeBonus();
-                            if (k === 'adminNotifications' && !fromCache && currentUser) {
-                                if (currentUser.role === 'admin') renderUsersTable();
-                                else {
+                            // ── إشعارات الأدمن: تعمل على كل تحديث (cache أو server) ──
+                            // السبب: Firestore يُطلق fromCache=true أولاً ويحدّث store،
+                            //        ثم fromCache=false لكن store[k] === newStr فلا تحديث.
+                            //        النتيجة: الإشعار لا يظهر إلا عند تسجيل الدخول من جديد.
+                            if (k === 'adminNotifications' && currentUser) {
+                                if (!fromCache && currentUser.role === 'admin') renderUsersTable();
+                                else if (currentUser.role !== 'admin') {
                                     let notifs = safeJSON(store.adminNotifications, {});
                                     let myNotif = notifs[currentUser.id];
                                     if (myNotif && !document.querySelector('[data-notif-overlay]')) {
