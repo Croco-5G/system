@@ -1146,7 +1146,7 @@
 
 <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-<div id="customConfirmDialog" class="dialog-modal" style="display:none; z-index:6000;">
+<div id="customConfirmDialog" class="dialog-modal" style="display:none; z-index:9500;">
     <div class="dialog-box">
         <div id="cdIcon" class="dialog-icon"></div>
         <h3 id="cdTitle" style="font-size:18px; margin-top:0;"></h3>
@@ -1159,7 +1159,7 @@
     </div>
 </div>
 
-<div id="customPromptDialog" class="dialog-modal" style="display:none; z-index:6000;">
+<div id="customPromptDialog" class="dialog-modal" style="display:none; z-index:9500;">
     <div class="dialog-box">
         <div id="pdIcon" class="dialog-icon"></div>
         <h3 id="pdTitle" style="font-size:18px; margin-top:0;"></h3>
@@ -2738,6 +2738,61 @@
         </h3>
         <div id="removeBuyerList" style="display:flex; flex-direction:column; gap:8px; max-height:350px; overflow-y:auto;"></div>
         <button class="btn" style="width:100%; margin-top:16px; background:transparent; border:1px solid var(--border-color); color:var(--text-muted);" onclick="closeRemoveBuyerModal()">إغلاق</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     نافذة إدارة عملاء الاشتراك المباع
+══════════════════════════════════════════════════ -->
+<div id="clientsManagerModal" class="modal-overlay hidden" onclick="if(event.target.id==='clientsManagerModal') closeClientsManagerModal()" style="z-index:7000;">
+    <div class="modal-content" style="max-width:460px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px; display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-users-cog" style="color:var(--primary)"></i>
+            <span>إدارة العملاء</span>
+            <span id="clientsManagerSubBadge" style="font-size:12px; background:rgba(99,102,241,0.12); color:var(--primary); padding:3px 10px; border-radius:20px; font-weight:700; margin-right:auto;"></span>
+        </h3>
+        <div id="clientsManagerList" style="display:flex; flex-direction:column; gap:8px; max-height:420px; overflow-y:auto;"></div>
+        <button class="btn" style="width:100%; margin-top:16px; background:transparent; border:1px solid var(--border-color); color:var(--text-muted);" onclick="closeClientsManagerModal()">إغلاق</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     نافذة اختيار الاشتراك لنقل العميل
+══════════════════════════════════════════════════ -->
+<div id="buyerTransferPickModal" class="modal-overlay hidden" onclick="if(event.target.id==='buyerTransferPickModal') closeBuyerTransferPickModal()" style="z-index:7200;">
+    <div class="modal-content" style="max-width:500px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px;">
+            <i class="fas fa-exchange-alt" style="color:var(--primary)"></i> نقل عميل إلى اشتراك آخر
+        </h3>
+        <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:14px; line-height:1.7;">
+            <span style="color:var(--text-muted); font-size:13px;">العميل:</span>
+            <strong id="transferBuyerName" style="color:var(--primary); font-size:15px;"></strong>
+            <br>
+            <span style="color:var(--text-muted); font-size:13px;">من اشتراك:</span>
+            <strong id="transferFromSubName" style="color:var(--text-main); font-size:13px;"></strong>
+        </div>
+        <div style="position:relative; margin-bottom:12px;">
+            <i class="fas fa-search" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;"></i>
+            <input id="buyerTransferSearch" type="text" placeholder="بحث بالاسم أو الإيميل..." oninput="filterBuyerTransferList()" style="padding-right:40px;">
+        </div>
+        <div id="buyerTransferList" style="display:flex; flex-direction:column; gap:8px; max-height:380px; overflow-y:auto;"></div>
+        <button class="btn" style="width:100%; margin-top:16px; background:transparent; border:1px solid var(--border-color); color:var(--text-muted);" onclick="closeBuyerTransferPickModal()">إغلاق</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     نافذة تأكيد نقل العميل
+══════════════════════════════════════════════════ -->
+<div id="buyerTransferConfirmModal" class="modal-overlay hidden" onclick="if(event.target.id==='buyerTransferConfirmModal') closeBuyerTransferConfirmModal()" style="z-index:7400;">
+    <div class="modal-content" style="max-width:460px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px;">
+            <i class="fas fa-exchange-alt" style="color:var(--primary)"></i> تأكيد نقل العميل
+        </h3>
+        <div id="buyerTransferConfirmBody" style="margin-bottom:16px;"></div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button id="buyerTransferConfirmOkBtn" class="btn btn-primary" style="flex:1;"><i class="fas fa-check"></i> تأكيد النقل</button>
+            <button class="btn" style="flex:1; background:transparent; border:1px solid var(--border-color); color:var(--text-muted);" onclick="closeBuyerTransferConfirmModal()">إلغاء</button>
+        </div>
     </div>
 </div>
 
@@ -6836,17 +6891,24 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     let nmm = (nd.getMonth()+1).toString().padStart(2,'0');
     let nddStr = nd.getDate().toString().padStart(2,'0');
 
-    // ─── حساب تاريخ الانتهاء بالأولوية التالية: ───────────────────
-    // 1) تاريخ شراء المخزون (stItem.timestamp) ← الأصل
-    // 2) تاريخ البيع الفعلي (nd = اليوم)
-    // 3) لا يُحسب (exp = null) إذا duration = 0
+    // ─── حساب تاريخ الانتهاء ─────────────────────────────────────
+    // • Shared (totalProfiles > 1): المدة تبدأ من يوم الشراء الفعلي (اليوم)
+    //   ← العميل يأخذ مدة كاملة بغضّ النظر عن كم بقي في المخزون
+    //   مثال: اشتراك شهر، باقي منه 20 يوم → انتهاء العميل بعد 30 يوم من اليوم
+    // • فردي (totalProfiles = 1): المدة تُحسب من تاريخ شراء المخزون (الوقت المتبقي الحقيقي)
+    // • duration = 0 → لا انتهاء
     let exp = null;
     if (duration > 0) {
+        let isShared = (parseInt(stItem.totalProfiles) || 1) > 1;
         let baseDate;
-        if (stItem.timestamp) {
+        if (isShared) {
+            // مشترك: العميل يستحق مدة كاملة من يوم اشتراكه
+            baseDate = new Date(nd);
+        } else if (stItem.timestamp) {
+            // فردي: نستخدم تاريخ المخزون (ما تبقّى فعلاً)
             baseDate = new Date(stItem.timestamp);
         } else {
-            baseDate = new Date(nd); // fallback: تاريخ البيع
+            baseDate = new Date(nd); // fallback
         }
         exp = _addMonths30(baseDate, duration);
     }
@@ -9425,6 +9487,339 @@ async function removeBuyerFromStock(stockId, buyerIdx) {
 
 // --- MODIFIED STOCK FUNCTIONS ---
 
+// ════════════════════════════════════════════════════════
+//  حذف عميل من اشتراك مباع — يُقلّص soldProfiles وtotalProfiles معاً
+//  النتيجة: 12/12 ← 11/11 (يبقى الاشتراك مباعاً بالكامل)
+// ════════════════════════════════════════════════════════
+async function removeBuyerFromSoldView(stockId, buyerIdx) {
+    let stock = safeJSON(store.stock, []);
+    let item = stock.find(x => x.id === stockId);
+    if (!item) return;
+
+    let buyerName = (item.buyers && item.buyers[buyerIdx]) ? item.buyers[buyerIdx] : 'العميل';
+
+    let ok = await showConfirm(
+        "حذف عميل من الاشتراك",
+        `هل تريد حذف "${buyerName}" من الاشتراك؟\nسيتم تقليص عدد البروفايلات الكلي بمقعد واحد.`,
+        "حذف", "إلغاء",
+        '<i class="fas fa-user-minus"></i>'
+    );
+    if (!ok) return;
+
+    let idx = stock.findIndex(x => x.id === stockId);
+    if (idx === -1) return notify("لم يُعثر على الاشتراك", "error");
+
+    let removedBuyer = stock[idx].buyers[buyerIdx] || '';
+    stock[idx].buyers.splice(buyerIdx, 1);
+
+    // اشتراك مباع بالكامل: كلا العددين ينقصان → يبقى الاشتراك 11/11
+    stock[idx].soldProfiles  = Math.max(0, (parseInt(stock[idx].soldProfiles)  || 0) - 1);
+    stock[idx].totalProfiles = Math.max(0, (parseInt(stock[idx].totalProfiles) || 0) - 1);
+
+    store.stock = JSON.stringify(stock);
+    fbSave("stock", stock);
+
+    logAction(`حذف عميل من اشتراك مباع: ${stock[idx].displayName || stock[idx].service}`, 'danger', {
+        type: 'remove_buyer_sold',
+        stockName: stock[idx].displayName || stock[idx].service,
+        removedBuyer,
+        remainingProfiles: stock[idx].soldProfiles,
+        totalProfiles: stock[idx].totalProfiles
+    });
+
+    notify("تم حذف العميل");
+    refreshStock();
+
+    // تحديث نافذة العملاء أو إغلاقها
+    let updatedItem = safeJSON(store.stock, []).find(x => x.id === stockId);
+    if (updatedItem && updatedItem.buyers && updatedItem.buyers.length > 0) {
+        openClientsManagerModal(stockId);   // إعادة رسم القائمة
+        viewSoldDetails(stockId);           // تحديث التفاصيل خلف النافذة
+    } else {
+        closeClientsManagerModal();
+        viewSoldDetails(stockId);           // يُحدّث عداد "0 عميل" ويُغلق زر العرض
+    }
+}
+
+// ════════════════════════════════════════════════════════
+//  نافذة إدارة عملاء الاشتراك المباع
+// ════════════════════════════════════════════════════════
+function openClientsManagerModal(stockId) {
+    let stock = safeJSON(store.stock, []);
+    let item  = stock.find(x => x.id === stockId);
+    if (!item) return;
+
+    let isAdmin = currentUser && currentUser.role === 'admin';
+    let buyers  = item.buyers || [];
+    let name    = item.displayName || item.service || '';
+
+    document.getElementById("clientsManagerSubBadge").textContent =
+        name + ` · ${buyers.length} عميل`;
+
+    let list = document.getElementById("clientsManagerList");
+
+    if (buyers.length === 0) {
+        list.innerHTML = `
+            <div style="text-align:center; padding:32px 16px; color:var(--text-muted);">
+                <i class="fas fa-users-slash" style="font-size:32px; margin-bottom:10px; display:block; opacity:.35;"></i>
+                <div style="font-size:14px; font-weight:600;">لا يوجد عملاء مسجّلون</div>
+            </div>`;
+    } else {
+        list.innerHTML = buyers.map((b, idx) => `
+            <div style="display:flex; align-items:center; gap:10px;
+                background:var(--bg-input); border:1px solid var(--border-color);
+                border-radius:12px; padding:11px 13px;
+                transition:border-color .15s;"
+                onmouseover="this.style.borderColor='var(--primary)';"
+                onmouseout="this.style.borderColor='var(--border-color)';">
+
+                <div style="width:34px; height:34px; border-radius:50%; flex-shrink:0;
+                    background:linear-gradient(135deg,var(--primary),#8b5cf6);
+                    color:#fff; font-size:12px; font-weight:800;
+                    display:flex; align-items:center; justify-content:center;">${idx + 1}</div>
+
+                <span style="flex:1; font-size:13.5px; font-weight:700; color:var(--text-main);
+                    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                    title="${esc(b)}">${esc(b)}</span>
+
+                ${isAdmin ? `
+                <div style="display:flex; gap:6px; flex-shrink:0;">
+                    <button onclick="closeClientsManagerModal(); openTransferBuyerModal('${stockId}', ${idx});"
+                        style="display:inline-flex; align-items:center; gap:5px; padding:6px 11px;
+                        border-radius:8px; border:none; font-size:12px; font-weight:700;
+                        background:rgba(99,102,241,0.12); color:var(--primary);
+                        cursor:pointer; transition:.15s; white-space:nowrap;"
+                        onmouseover="this.style.background='var(--primary)';this.style.color='#fff';"
+                        onmouseout="this.style.background='rgba(99,102,241,0.12)';this.style.color='var(--primary)';">
+                        <i class="fas fa-exchange-alt"></i> نقل
+                    </button>
+                    <button onclick="removeBuyerFromSoldView('${stockId}', ${idx});"
+                        style="display:inline-flex; align-items:center; gap:5px; padding:6px 11px;
+                        border-radius:8px; border:none; font-size:12px; font-weight:700;
+                        background:rgba(239,68,68,0.1); color:var(--danger);
+                        cursor:pointer; transition:.15s; white-space:nowrap;"
+                        onmouseover="this.style.background='var(--danger)';this.style.color='#fff';"
+                        onmouseout="this.style.background='rgba(239,68,68,0.1)';this.style.color='var(--danger)';">
+                        <i class="fas fa-trash-alt"></i> حذف
+                    </button>
+                </div>` : ''}
+            </div>`).join('');
+    }
+
+    document.getElementById("clientsManagerModal").classList.remove("hidden");
+}
+
+function closeClientsManagerModal() {
+    document.getElementById("clientsManagerModal").classList.add("hidden");
+}
+
+// ════════════════════════════════════════════════════════
+//  نظام نقل العميل بين الاشتراكات
+// ════════════════════════════════════════════════════════
+let _transferFromStockId = null;
+let _transferBuyerIdx    = null;
+let _transferAllSubs     = [];
+
+function openTransferBuyerModal(fromStockId, buyerIdx) {
+    let stock    = safeJSON(store.stock, []);
+    let fromItem = stock.find(x => x.id === fromStockId);
+    if (!fromItem) return;
+
+    _transferFromStockId = fromStockId;
+    _transferBuyerIdx    = buyerIdx;
+
+    let buyerName = (fromItem.buyers && fromItem.buyers[buyerIdx]) ? fromItem.buyers[buyerIdx] : 'عميل';
+
+    document.getElementById("transferBuyerName").textContent    = buyerName;
+    document.getElementById("transferFromSubName").textContent  = fromItem.displayName || fromItem.service;
+
+    // كل الاشتراكات غير المنتهية ما عدا الحالي
+    _transferAllSubs = stock.filter(s => {
+        if (s.id === fromStockId) return false;
+        let dur = parseInt(s.duration);
+        if (dur === 0) return true; // بدون مدة — لا ينتهي
+        let expiry = _addMonths30(new Date(s.timestamp), dur);
+        return expiry.getTime() > new Date().getTime();
+    });
+
+    document.getElementById("buyerTransferSearch").value = "";
+    renderBuyerTransferList(_transferAllSubs);
+    document.getElementById("buyerTransferPickModal").classList.remove("hidden");
+}
+
+function closeBuyerTransferPickModal() {
+    document.getElementById("buyerTransferPickModal").classList.add("hidden");
+}
+
+function filterBuyerTransferList() {
+    let term     = document.getElementById("buyerTransferSearch").value.toLowerCase();
+    let filtered = _transferAllSubs.filter(s => {
+        let name  = (s.displayName || s.service || '').toLowerCase();
+        let email = (s.email || '').toLowerCase();
+        return name.includes(term) || email.includes(term);
+    });
+    renderBuyerTransferList(filtered);
+}
+
+function renderBuyerTransferList(subs) {
+    let list = document.getElementById("buyerTransferList");
+    if (subs.length === 0) {
+        list.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:24px; font-size:13px;"><i class="fas fa-search" style="font-size:24px; margin-bottom:8px; display:block;"></i>لا توجد اشتراكات مطابقة</div>`;
+        return;
+    }
+    list.innerHTML = subs.map(s => {
+        let sold    = parseInt(s.soldProfiles)  || 0;
+        let total   = parseInt(s.totalProfiles) || 1;
+        let avail   = total - sold;
+        let profStr = `${sold}/${total}`;
+        let availBadge = avail > 0
+            ? `<span style="background:rgba(16,185,129,0.15); color:var(--success); padding:2px 8px; border-radius:6px; font-size:11px; font-weight:700; white-space:nowrap;">${avail} متاح</span>`
+            : `<span style="background:rgba(239,68,68,0.15); color:var(--danger); padding:2px 8px; border-radius:6px; font-size:11px; font-weight:700; white-space:nowrap;">ممتلئ</span>`;
+        return `
+            <div onclick="selectTransferTarget('${s.id}')"
+                style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-input); border:1.5px solid var(--border-color); border-radius:10px; padding:12px 14px; gap:10px; flex-wrap:wrap; cursor:pointer; transition:border-color 0.2s, background 0.2s;"
+                onmouseover="this.style.borderColor='var(--primary)'; this.style.background='rgba(99,102,241,0.04)';"
+                onmouseout="this.style.borderColor='var(--border-color)'; this.style.background='var(--bg-input)';">
+                <div style="flex:1; min-width:0; overflow:hidden;">
+                    <div style="font-weight:800; font-size:14px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(s.displayName || s.service)}</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px; direction:ltr; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(s.email || '—')}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                    <span class="eng-num" style="font-weight:800; font-size:14px; color:var(--primary);">${profStr}</span>
+                    ${availBadge}
+                </div>
+            </div>`;
+    }).join('');
+}
+
+function selectTransferTarget(toStockId) {
+    let stock    = safeJSON(store.stock, []);
+    let fromItem = stock.find(x => x.id === _transferFromStockId);
+    let toItem   = stock.find(x => x.id === toStockId);
+    if (!fromItem || !toItem) return;
+
+    let buyerName = (fromItem.buyers && fromItem.buyers[_transferBuyerIdx])
+        ? fromItem.buyers[_transferBuyerIdx] : 'عميل';
+
+    // حساب ما قبل وما بعد للمصدر
+    let fromSoldBefore  = parseInt(fromItem.soldProfiles)  || 0;
+    let fromTotalBefore = parseInt(fromItem.totalProfiles) || 1;
+    let isSoldSrc = fromItem.status === 'sold';
+    let fromSoldAfter  = Math.max(0, fromSoldBefore - 1);
+    let fromTotalAfter = isSoldSrc ? Math.max(0, fromTotalBefore - 1) : fromTotalBefore;
+
+    // حساب ما قبل وما بعد للهدف
+    let toSoldBefore  = parseInt(toItem.soldProfiles)  || 0;
+    let toTotalBefore = parseInt(toItem.totalProfiles) || 1;
+    let toAvail       = toTotalBefore - toSoldBefore;
+    let toSoldAfter   = toSoldBefore + 1;
+    let toTotalAfter  = toAvail > 0 ? toTotalBefore : toTotalBefore + 1;
+
+    let isTargetFull = toAvail <= 0;
+
+    document.getElementById("buyerTransferConfirmBody").innerHTML = `
+        <div style="display:grid; gap:10px;">
+            <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:13px;">
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px; font-weight:700;"><i class="fas fa-user"></i> العميل المُنقَل</div>
+                <div style="font-size:15px; font-weight:800; color:var(--primary);">${esc(buyerName)}</div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:12px;">
+                    <div style="font-size:12px; color:var(--danger); font-weight:800; margin-bottom:6px;"><i class="fas fa-arrow-right"></i> من</div>
+                    <div style="font-size:12px; font-weight:700; color:var(--text-main); margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(fromItem.displayName || fromItem.service)}</div>
+                    <div style="font-size:12px; color:var(--text-muted); display:flex; justify-content:space-between; padding:2px 0; border-bottom:1px dashed var(--border-color);"><span>قبل:</span><span class="eng-num" style="font-weight:700;">${fromSoldBefore}/${fromTotalBefore}</span></div>
+                    <div style="font-size:12px; color:var(--danger); display:flex; justify-content:space-between; padding:2px 0;"><span>بعد:</span><span class="eng-num" style="font-weight:800;">${fromSoldAfter}/${fromTotalAfter}</span></div>
+                </div>
+                <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:12px;">
+                    <div style="font-size:12px; color:var(--success); font-weight:800; margin-bottom:6px;"><i class="fas fa-arrow-left"></i> إلى</div>
+                    <div style="font-size:12px; font-weight:700; color:var(--text-main); margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(toItem.displayName || toItem.service)}</div>
+                    <div style="font-size:12px; color:var(--text-muted); display:flex; justify-content:space-between; padding:2px 0; border-bottom:1px dashed var(--border-color);"><span>قبل:</span><span class="eng-num" style="font-weight:700;">${toSoldBefore}/${toTotalBefore}</span></div>
+                    <div style="font-size:12px; color:var(--success); display:flex; justify-content:space-between; padding:2px 0;"><span>بعد:</span><span class="eng-num" style="font-weight:800;">${toSoldAfter}/${toTotalAfter}</span></div>
+                </div>
+            </div>
+            ${isTargetFull ? `<div style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.4); border-radius:8px; padding:10px 12px; font-size:12px; color:#d97706;"><i class="fas fa-exclamation-triangle"></i> الاشتراك الهدف ممتلئ — سيتم إضافة مقعد تلقائياً لاستيعاب العميل</div>` : ''}
+        </div>`;
+
+    document.getElementById("buyerTransferConfirmOkBtn").onclick = () => executeBuyerTransfer(toStockId);
+    closeBuyerTransferPickModal();
+    document.getElementById("buyerTransferConfirmModal").classList.remove("hidden");
+}
+
+function closeBuyerTransferConfirmModal() {
+    document.getElementById("buyerTransferConfirmModal").classList.add("hidden");
+}
+
+async function executeBuyerTransfer(toStockId) {
+    let stock   = safeJSON(store.stock, []);
+    let fromIdx = stock.findIndex(x => x.id === _transferFromStockId);
+    let toIdx   = stock.findIndex(x => x.id === toStockId);
+    if (fromIdx === -1) return notify("لم يُعثر على الاشتراك المصدر", "error");
+    if (toIdx   === -1) return notify("لم يُعثر على الاشتراك الهدف",  "error");
+
+    let buyerName = (stock[fromIdx].buyers && stock[fromIdx].buyers[_transferBuyerIdx])
+        ? stock[fromIdx].buyers[_transferBuyerIdx] : 'عميل';
+
+    // ── إزالة من المصدر ──────────────────────────────────────────
+    stock[fromIdx].buyers.splice(_transferBuyerIdx, 1);
+    let isSoldSrc = stock[fromIdx].status === 'sold';
+    if (isSoldSrc) {
+        // اشتراك مباع بالكامل → كلاهما ينقصان (12/12 → 11/11)
+        stock[fromIdx].soldProfiles  = Math.max(0, (parseInt(stock[fromIdx].soldProfiles)  || 0) - 1);
+        stock[fromIdx].totalProfiles = Math.max(0, (parseInt(stock[fromIdx].totalProfiles) || 0) - 1);
+    } else {
+        // اشتراك نشط → فقط soldProfiles ينقص (مقعد يتحرر)
+        stock[fromIdx].soldProfiles = Math.max(0, (parseInt(stock[fromIdx].soldProfiles) || 0) - 1);
+        if (stock[fromIdx].status === 'sold' && stock[fromIdx].soldProfiles < (parseInt(stock[fromIdx].totalProfiles) || 1)) {
+            stock[fromIdx].status = 'active';
+            delete stock[fromIdx].soldDate;
+        }
+    }
+
+    // ── إضافة إلى الهدف ──────────────────────────────────────────
+    if (!stock[toIdx].buyers) stock[toIdx].buyers = [];
+    stock[toIdx].buyers.push(buyerName);
+
+    let toAvail = (parseInt(stock[toIdx].totalProfiles) || 1) - (parseInt(stock[toIdx].soldProfiles) || 0);
+    if (toAvail <= 0) {
+        // ممتلئ → نزيد التوتال بمقعد واحد لاستيعاب العميل
+        stock[toIdx].totalProfiles = (parseInt(stock[toIdx].totalProfiles) || 1) + 1;
+    }
+    stock[toIdx].soldProfiles = (parseInt(stock[toIdx].soldProfiles) || 0) + 1;
+
+    // هل امتلأ الهدف الآن؟ → نحوّله لـ sold
+    if (stock[toIdx].soldProfiles >= (parseInt(stock[toIdx].totalProfiles) || 1)) {
+        stock[toIdx].status = 'sold';
+        let nd = new Date();
+        stock[toIdx].soldDate = `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,'0')}-${String(nd.getDate()).padStart(2,'0')}`;
+    }
+
+    let savedStockStr = JSON.stringify(stock);
+    store.stock = savedStockStr;
+    fbSave("stock", stock);
+
+    logAction(`نقل عميل: ${buyerName} | من: ${stock[fromIdx].displayName || stock[fromIdx].service} → إلى: ${stock[toIdx].displayName || stock[toIdx].service}`, 'general', {
+        type: 'transfer_buyer',
+        buyerName,
+        fromStock: stock[fromIdx].displayName || stock[fromIdx].service,
+        toStock:   stock[toIdx].displayName   || stock[toIdx].service
+    });
+
+    closeBuyerTransferConfirmModal();
+    notify("✅ تم نقل العميل بنجاح");
+    refreshStock();
+
+    // تحديث التفاصيل خلف النافذة
+    let savedStock  = safeJSON(store.stock, []);
+    let fromUpdated = savedStock.find(x => x.id === _transferFromStockId);
+    viewSoldDetails(_transferFromStockId);
+    if (fromUpdated && fromUpdated.buyers && fromUpdated.buyers.length > 0) {
+        openClientsManagerModal(_transferFromStockId);
+    }
+
+    _transferFromStockId = null;
+    _transferBuyerIdx    = null;
+}
+
 function openAddStockModal() {
     loadServices();
     
@@ -9962,10 +10357,12 @@ function viewSoldDetails(id) {
     let stock = safeJSON(store.stock, []);
     let item = stock.find(x => x.id === id);
     if(!item) return;
-    
+
+    let isAdmin = currentUser && currentUser.role === 'admin';
     let body = document.getElementById("modalBody");
     body.innerHTML = "";
-    
+
+    // ── معلومات الاشتراك ──────────────────────────────────────
     body.innerHTML += row("الخدمة", esc(item.displayName || item.service));
     body.innerHTML += `<div class="detail-row"><span style="color:var(--text-muted)">الإيميل</span><span style="display:flex;align-items:center;gap:8px;direction:ltr;"><span id="_dEmail">${esc(item.email)}</span><button class="btn btn-primary" style="padding:3px 8px;font-size:11px;" onclick="navigator.clipboard.writeText(document.getElementById('_dEmail').textContent).then(()=>notify('تم نسخ الإيميل'))"><i class='fas fa-copy'></i></button></span></div>`;
     body.innerHTML += `<div class="detail-row"><span style="color:var(--text-muted)">كلمة المرور</span><span style="display:flex;align-items:center;gap:8px;direction:ltr;"><span id="_dPass">${esc(item.pass)}</span><button class="btn btn-primary" style="padding:3px 8px;font-size:11px;" onclick="navigator.clipboard.writeText(document.getElementById('_dPass').textContent).then(()=>notify('تم نسخ كلمة المرور'))"><i class='fas fa-copy'></i></button></span></div>`;
@@ -9974,24 +10371,28 @@ function viewSoldDetails(id) {
     if(!currentUser || currentUser.role !== 'employee') body.innerHTML += row("تكلفة الشراء", (item.cost || 0) + " " + (item.costCurrency || ''));
     body.innerHTML += `<hr style="margin:10px 0; border:0; border-top:1px dashed var(--border-color)">`;
     body.innerHTML += row("تاريخ البيع", item.soldDate);
-    
-    let buyersHtml = "";
-    if(item.buyers && item.buyers.length > 0) {
-        buyersHtml = item.buyers.map((b, idx) => `<div style="padding:8px 0; border-bottom:1px solid var(--border-color);">${idx+1}. ${esc(b)}</div>`).join('');
-    } else {
-        buyersHtml = "مباشر (يدوي)";
+
+    // ── ملاحظات ───────────────────────────────────────────────
+    if (item.notes) {
+        body.innerHTML += `<div style="margin-top:10px; background:var(--bg-input); padding:10px 12px; border-radius:8px; font-size:13px; color:var(--text-muted);"><b style="color:var(--text-main);">ملاحظات:</b> ${esc(item.notes)}</div>`;
     }
-    
-    body.innerHTML += `<div class="detail-row" style="flex-direction:column; align-items:flex-start;">
-        <span class="detail-label" style="margin-bottom:8px;">قائمة العملاء (المشترين):</span>
-        <div style="background:var(--bg-input); width:100%; padding:10px; border-radius:8px; font-weight:bold; color:var(--primary);">${buyersHtml}</div>
-    </div>`;
 
-    body.innerHTML += `<div style="margin-top:10px; background:var(--bg-input); padding:10px; border-radius:8px; font-size:13px;"><b>ملاحظات:</b><br>${esc(item.notes)||'لا يوجد'}</div>`;
+    // ── العملاء + أزرار المدير ────────────────────────────────
+    let hasBuyers = item.buyers && item.buyers.length > 0;
 
-    // زر إرجاع الاشتراك المُباع (للمدير فقط) — يضيف مقعد بروفايل إضافي ويعيده للنشط
-    if (currentUser && currentUser.role === 'admin') {
-        body.innerHTML += `<button class="btn" style="width:100%; margin-top:14px; background:var(--accent); color:#fff;" onclick="returnSoldStock('${item.id}')"><i class="fas fa-rotate-left"></i> إرجاع الاشتراك (إضافة مقعد بروفايل)</button>`;
+    if (!hasBuyers) {
+        body.innerHTML += row("العملاء", "مباشر (يدوي)");
+    }
+
+    if (isAdmin) {
+        let btns = `<div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">`;
+        if (hasBuyers) {
+            let cnt = item.buyers.length;
+            btns += `<button onclick="openClientsManagerModal('${id}')" style="width:100%;padding:12px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--primary),#8b5cf6);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(99,102,241,0.28);transition:opacity .18s;" onmouseover="this.style.opacity='.86';" onmouseout="this.style.opacity='1';"><i class="fas fa-users"></i> عرض العملاء <span style="background:rgba(255,255,255,0.22);padding:1px 8px;border-radius:20px;font-size:12px;font-weight:800;">${cnt}</span></button>`;
+        }
+        btns += `<button onclick="returnSoldStock('${item.id}')" style="width:100%;padding:12px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><i class="fas fa-rotate-left"></i> إرجاع الاشتراك (إضافة مقعد بروفايل)</button>`;
+        btns += `</div>`;
+        body.innerHTML += btns;
     }
 
     document.getElementById("detailsModal").classList.remove("hidden");
