@@ -1685,7 +1685,7 @@
         </div>
         <div class="grid-2">
             <div class="input-group"><label>رقم جوال العميل (اختياري)</label><input id="customerPhone" placeholder="97xxxxxxxxxx أو +97xxxxxxxxxx" oninput="validatePhoneInput(this)" onblur="autoAddPlusPhone(this)" dir="ltr" style="text-align:right;"></div>
-            <div class="input-group"><label>المبلغ المدفوع من العميل</label><div style="display:flex; gap:10px"><input type="number" id="paidAmount" placeholder="0.00" style="flex: 1;"><select id="paidCurrency" style="width:110px; flex-shrink: 0;"><option value="₪">₪ شيكل</option><option value="$">$ دولار</option></select></div></div>
+            <div class="input-group"><label>المبلغ المدفوع من العميل</label><div style="display:flex; gap:10px"><input type="number" id="paidAmount" placeholder="0.00" style="flex: 1;"><select id="paidCurrency" style="width:150px; flex-shrink: 0; text-align:center;"><option value="">اختر العملة</option><option value="₪">₪ شيكل</option><option value="$">$ دولار</option></select></div></div>
         </div>
         <div class="input-group" id="purchaseProfilesGroup" style="margin-top:0; display:none;">
             <label>عدد البروفايلات (الذي يأخذه هذا العميل)</label>
@@ -6769,6 +6769,7 @@ function addPurchase(){
     document.getElementById("customerPhone").value = customerPhoneVal;
 
     let paidCur = document.getElementById("paidCurrency").value;
+    if(!paidCur) { notify("يرجى اختيار العملة", "error"); return; }
     let duration = pDur;
     let settings = safeJSON(store.settings, {});
     let rate = settings.exchangeRate && settings.exchangeRate > 0 ? settings.exchangeRate : 1;
@@ -7135,7 +7136,19 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     loadPurchaseStock();
     refreshAll();  notify("تمت العملية بنجاح");
     
-    document.getElementById("paidAmount").value=""; document.getElementById("customer").value=""; document.getElementById("sub").value=""; document.getElementById("customerPhone").value=""; document.getElementById("discountCodeInput").value=""; document.getElementById("isCompensation").checked = false; document.getElementById("customerPhone").style.borderColor = ""; document.getElementById("purchaseNotes").value = ""; document.getElementById("purchaseProfilesCount").value = "0"; document.getElementById("purchaseProfilesCount").removeAttribute('max'); if(document.getElementById("purchaseProfilesHint")) document.getElementById("purchaseProfilesHint").innerHTML = '<i class="fas fa-circle-info"></i> اختر اشتراكاً أولاً لمعرفة الحد الأقصى المتاح، ثم أدخل عدد البروفايلات (1 أو أكثر)';
+    document.getElementById("paidAmount").value=""; document.getElementById("customer").value=""; document.getElementById("sub").value=""; document.getElementById("customerPhone").value=""; document.getElementById("discountCodeInput").value=""; document.getElementById("isCompensation").checked = false; document.getElementById("customerPhone").style.borderColor = ""; document.getElementById("purchaseNotes").value = ""; document.getElementById("purchaseProfilesCount").value = "0"; document.getElementById("purchaseProfilesCount").removeAttribute('max');
+    // ── إرجاع كل خيارات الشراء للوضع الافتراضي بعد إتمام العملية ──
+    document.getElementById("paidCurrency").value = "";            // العملة ترجع إلى (اختر العملة)
+    let _upEl = document.getElementById("usePledge");             // إلغاء تفعيل الحساب المرهون
+    if (_upEl) { _upEl.checked = false; togglePledgeField(); }
+    let _psEl = document.getElementById("pledgeSelect");
+    if (_psEl) _psEl.value = "";
+    if (document.getElementById("subDuration")) document.getElementById("subDuration").value = "1";
+    // استرجاع بنية تلميح عدد البروفايلات (مع عنصر الحد الأقصى) حتى تعمل عمليات الشراء التالية بشكل صحيح
+    let _ppHint = document.getElementById("purchaseProfilesHint");
+    if (_ppHint) _ppHint.innerHTML = '<i class="fas fa-circle-info"></i> الحد الأقصى المتاح: <b id="purchaseProfilesMax">1</b> بروفايل';
+    // إخفاء قسم البروفايلات وإعادة ضبط العداد بحسب الاشتراك (الفارغ الآن)
+    if (typeof syncPurchaseProfilesMax === 'function') syncPurchaseProfilesMax();
 }
 
 function showCouponModal(coupon, phone, onCloseCallback = null) {
@@ -9230,11 +9243,16 @@ function openRemoveBuyerModal() {
         list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">لا يوجد عملاء مسجلون في هذا البروفايل</div>';
     } else {
         list.innerHTML = item.buyers.map((b, idx) => `
-            <div style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:10px 14px;">
-                <span style="font-weight:700; font-size:14px;">${idx + 1}. ${esc(b)}</span>
-                <button class="btn btn-danger" style="padding:5px 10px; font-size:12px;" onclick="removeBuyerFromStock('${id}', ${idx})">
-                    <i class="fas fa-trash"></i> حذف
-                </button>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:10px 14px;">
+                <span style="font-weight:700; font-size:14px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(b)}">${idx + 1}. ${esc(b)}</span>
+                <div style="display:flex; gap:6px; flex-shrink:0;">
+                    <button class="btn" style="padding:5px 10px; font-size:12px; background:var(--primary); color:#fff;" onclick="closeRemoveBuyerModal(); openTransferBuyerModal('${id}', ${idx}, true)">
+                        <i class="fas fa-exchange-alt"></i> نقل
+                    </button>
+                    <button class="btn btn-danger" style="padding:5px 10px; font-size:12px;" onclick="removeBuyerFromStock('${id}', ${idx})">
+                        <i class="fas fa-trash"></i> حذف
+                    </button>
+                </div>
             </div>
         `).join('');
     }
@@ -9619,14 +9637,16 @@ function closeClientsManagerModal() {
 let _transferFromStockId = null;
 let _transferBuyerIdx    = null;
 let _transferAllSubs     = [];
+let _transferFromActive  = false; // هل بدأ النقل من اشتراك نشط (لسا ما انباع)؟
 
-function openTransferBuyerModal(fromStockId, buyerIdx) {
+function openTransferBuyerModal(fromStockId, buyerIdx, fromActive = false) {
     let stock    = safeJSON(store.stock, []);
     let fromItem = stock.find(x => x.id === fromStockId);
     if (!fromItem) return;
 
     _transferFromStockId = fromStockId;
     _transferBuyerIdx    = buyerIdx;
+    _transferFromActive  = !!fromActive;
 
     let buyerName = (fromItem.buyers && fromItem.buyers[buyerIdx]) ? fromItem.buyers[buyerIdx] : 'عميل';
 
@@ -9808,16 +9828,35 @@ async function executeBuyerTransfer(toStockId) {
     notify("✅ تم نقل العميل بنجاح");
     refreshStock();
 
-    // تحديث التفاصيل خلف النافذة
-    let savedStock  = safeJSON(store.stock, []);
-    let fromUpdated = savedStock.find(x => x.id === _transferFromStockId);
-    viewSoldDetails(_transferFromStockId);
-    if (fromUpdated && fromUpdated.buyers && fromUpdated.buyers.length > 0) {
-        openClientsManagerModal(_transferFromStockId);
+    // تحديث الواجهة خلف النافذة حسب مصدر النقل
+    let _srcId       = _transferFromStockId;
+    let _wasActive   = _transferFromActive;
+    let savedStock   = safeJSON(store.stock, []);
+    let fromUpdated  = savedStock.find(x => x.id === _srcId);
+    let _stillHasBuyers = !!(fromUpdated && fromUpdated.buyers && fromUpdated.buyers.length > 0);
+
+    if (_wasActive) {
+        // المصدر اشتراك نشط (لسا ما انباع) — حدّث نافذة المخزون المفتوحة وأعد فتح قائمة العملاء إن بقي عملاء
+        let isAdmin = currentUser && currentUser.role === 'admin';
+        let btnRem = document.getElementById("btnRemoveBuyer");
+        if (fromUpdated && isAdmin) renderStProfilesAdjust(fromUpdated);
+        if (_stillHasBuyers) {
+            if (btnRem && isAdmin) btnRem.classList.remove("hidden");
+            openRemoveBuyerModal(); // يقرأ stockIndexId الحالي ويعيد رسم القائمة محدّثة
+        } else if (btnRem) {
+            btnRem.classList.add("hidden");
+        }
+    } else {
+        // المصدر اشتراك مباع — السلوك الأصلي
+        viewSoldDetails(_srcId);
+        if (_stillHasBuyers) {
+            openClientsManagerModal(_srcId);
+        }
     }
 
     _transferFromStockId = null;
     _transferBuyerIdx    = null;
+    _transferFromActive  = false;
 }
 
 function openAddStockModal() {
@@ -10451,27 +10490,50 @@ async function sellStock(id) {
     let index = stock.findIndex(x => x.id === id);
     if(index === -1) return;
     let item = stock[index];
-    
-    let customerNum = await showPrompt("إتمام البيع يدوياً", `تسجيل بيع لاشتراك: ${esc(item.displayName || item.service)}`, "أدخل اسم/رقم العميل (اختياري)", '<i class="fas fa-shopping-cart"></i>');
-    if (customerNum === null) return; 
 
-    let buyerInfo = customerNum ? `تسجيل يدوي: ${customerNum}` : "مباشر (يدوي)";
-    if(!item.buyers) item.buyers = [];
-    item.buyers.push(buyerInfo);
+    let used  = parseInt(item.soldProfiles)  || 0;   // البروفايلات المستخدمة حالياً
+    let total = parseInt(item.totalProfiles) || 1;
+    let name  = item.displayName || item.service || 'الاشتراك';
 
-    item.soldProfiles = item.totalProfiles || 1;
+    // العدد بعد البيع يعتمد البروفايلات المستخدمة حالياً وتُحذف الفارغة (5/10 → 5/5)
+    // إن لم يُستخدم أي بروفايل، يُسجَّل البيع كمقعد واحد مباشر
+    let finalCount = used >= 1 ? used : 1;
+    let detailLine = used >= 1
+        ? `سيتم اعتماد البروفايلات المستخدمة حالياً (${used}/${total}) وحذف البروفايلات الفارغة. النتيجة بعد البيع: ${finalCount}/${finalCount}.`
+        : `لا يوجد بروفايلات مستخدمة حالياً — سيُسجَّل البيع كبروفايل واحد مباشر. النتيجة بعد البيع: 1/1.`;
+
+    // نافذة تأكيد فقط (بدون طلب بيانات العميل)
+    let ok = await showConfirm(
+        "تأكيد البيع اليدوي",
+        `هل تريد بيع اشتراك "${name}" ونقله إلى المباع؟ ${detailLine}`,
+        "تأكيد البيع", "إلغاء",
+        '<i class="fas fa-check-circle"></i>'
+    );
+    if (!ok) return;
+
+    if (!item.buyers) item.buyers = [];
+    if (used < 1) {
+        // لا مشتركين — أضف مقعداً مباشراً واحداً
+        item.buyers.push("مباشر (يدوي)");
+        item.soldProfiles  = 1;
+        item.totalProfiles = 1;
+    } else {
+        // اعتمد المستخدم حالياً واحذف الفارغة
+        item.soldProfiles  = used;
+        item.totalProfiles = used;
+    }
     item.remainingCost = 0; // البيع اليدوي يستهلك كل المخزون → لا رصيد تكلفة متبقٍّ
     item.status = 'sold';
-    
+
     let nd = new Date();
     let nmm = (nd.getMonth()+1).toString().padStart(2,'0');
     let ndd = nd.getDate().toString().padStart(2,'0');
     item.soldDate = `${nd.getFullYear()}-${nmm}-${ndd}`;
-    
+
     stock[index] = item;
     store.stock = JSON.stringify(stock); fbSave("stock", stock);
-    
-    logAction(`تم بيع اشتراك من المخزون يدوياً: ${item.displayName || item.service}`, 'financial', { type: 'manual_sell', stockName: item.displayName || item.service, buyer: buyerInfo, soldDate: item.soldDate, vendor: item.vendor || '', totalProfiles: item.totalProfiles });
+
+    logAction(`تم بيع اشتراك من المخزون يدوياً: ${name}`, 'financial', { type: 'manual_sell', stockName: name, soldDate: item.soldDate, vendor: item.vendor || '', soldProfiles: item.soldProfiles, totalProfiles: item.totalProfiles });
     refreshStock(); loadPurchaseStock();  notify("تم نقل الاشتراك إلى المباع");
 }
 
@@ -13981,6 +14043,7 @@ window.onload = init;
     let _finApplying = false;  // لمنع تكرار المعالجة
 
     const _LS_KEY    = 'finPrivacyEnabled';
+    const _LS_STATE_KEY = 'finPrivacyHidden'; // '1' = الأرقام مخفية، '0' = ظاهرة (يُحفظ ليُستعاد بعد تحديث الصفحة)
     const _FIN_MASK  = '****';
     const _CUR_RE    = /[₪$£]/;
     const _NUM_RE    = /[+-]?\d[\d.,]*/g;
@@ -14049,6 +14112,8 @@ window.onload = init;
 
     function toggleFinancialPrivacy() {
         _finPrivacy = !_finPrivacy;
+        // حفظ آخر حالة (إخفاء/إظهار) ليُستعاد عند تحديث الصفحة
+        try { localStorage.setItem(_LS_STATE_KEY, _finPrivacy ? '1' : '0'); } catch (e) {}
         _applyAll();
         _updateBtn(document.getElementById('finPrivacyToggle'));
     }
@@ -14087,10 +14152,18 @@ window.onload = init;
     }
 
     // تفعيل الميزة كاملةً (إنشاء الزر + بدء المراقبة)
-    function _enableFeature() {
+    // restore=true (عند تحميل الصفحة): يستعيد آخر حالة إخفاء/إظهار محفوظة
+    // restore=false (عند التفعيل من الإعدادات أول مرة): الأرقام ظاهرة افتراضياً
+    function _enableFeature(restore) {
         _finEnabled = true;
-        _finPrivacy = false;  // عند كل تفعيل: الأرقام ظاهرة (المستخدم يختار الإخفاء بنفسه)
+        if (restore) {
+            _finPrivacy = (localStorage.getItem(_LS_STATE_KEY) === '1'); // استعادة آخر حالة
+        } else {
+            _finPrivacy = false; // تفعيل جديد: الأرقام ظاهرة (المستخدم يختار الإخفاء بنفسه)
+            try { localStorage.setItem(_LS_STATE_KEY, '0'); } catch (e) {}
+        }
         _createBtn();
+        _updateBtn(document.getElementById('finPrivacyToggle'));
         _applyAll();
         _obs.observe(document.body, { childList: true, subtree: true, characterData: true });
     }
@@ -14109,7 +14182,7 @@ window.onload = init;
         const cb = document.getElementById('finPrivacyFeatureToggle');
         const enabled = cb ? cb.checked : false;
         localStorage.setItem(_LS_KEY, enabled ? '1' : '0');
-        if (enabled) _enableFeature();
+        if (enabled) _enableFeature(false); // تفعيل من الإعدادات: ابدأ بإظهار الأرقام
         else _disableFeature();
     };
 
@@ -14125,7 +14198,7 @@ window.onload = init;
         const cb = document.getElementById('finPrivacyFeatureToggle');
         if (cb) cb.checked = _finEnabled;
 
-        if (_finEnabled) _enableFeature();
+        if (_finEnabled) _enableFeature(true); // عند تحميل الصفحة: استعِد آخر حالة كان عليها المستخدم
         // إذا غير مفعّل: لا نفعل شيئاً — الأرقام ظاهرة بشكل طبيعي
     }
 
