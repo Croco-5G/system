@@ -447,6 +447,14 @@
             #investment > div[style*="grid-template-columns: 1fr 1fr"] {
                 grid-template-columns: 1fr !important;
             }
+
+            /* ── تحسينات الجوال لشرائح العمولة وبطاقة الراتب الشهرية ── */
+            .emp-tier-row { padding: 12px !important; }
+            .emp-tier-row input { font-size: 16px !important; } /* يمنع تقريب iOS التلقائي */
+            #empBonusMonthCard input, #empBonusAdminBox input { font-size: 16px !important; }
+            /* أزرار التنقل بين الأشهر أكبر قليلاً للمس المريح */
+            #empBonusPrevBtn, #empBonusNextBtn { width: 46px !important; height: 46px !important; }
+            #empBonusMonthValue { font-size: 24px !important; }
         }
 
         /* --- OTHER COMPONENTS --- */
@@ -2119,24 +2127,36 @@
     <div id="investment" class="card hidden">
         <h3><i class="fas fa-money-bill-wave" style="color:var(--primary)"></i> سحب أموال</h3>
 
-        <!-- زيادة راتب الموظف - للأدمن فقط -->
-        <div id="empBonusAdminBox" class="inner-box hidden" style="max-width:500px; margin:0 auto 24px auto; border:2px solid rgba(234,179,8,0.4);">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
-                <div style="width:38px; height:38px; border-radius:12px; background:rgba(234,179,8,0.15); display:flex; align-items:center; justify-content:center; color:#eab308; font-size:17px;"><i class="fas fa-coins"></i></div>
-                <div>
-                    <div style="font-size:13px; color:var(--text-muted); font-weight:700;">زيادة راتب الموظف — هذا الشهر</div>
-                    <div id="empBonusAdminValue" style="font-size:22px; font-weight:900; color:#eab308;">0 ₪</div>
-                </div>
+        <!-- بطاقة زيادة راتب الموظف الشهرية (مع التنقل بين الشهور) - للأدمن فقط -->
+        <div id="empBonusMonthCard" class="inner-box hidden" style="max-width:500px; margin:0 auto 16px auto; border:2px solid rgba(234,179,8,0.45); background:linear-gradient(135deg, rgba(234,179,8,0.06), rgba(234,179,8,0.02));">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+                <div style="width:40px; height:40px; border-radius:12px; background:rgba(234,179,8,0.18); display:flex; align-items:center; justify-content:center; color:#eab308; font-size:18px;"><i class="fas fa-coins"></i></div>
+                <div style="font-size:14px; color:var(--text-main); font-weight:800;">زيادة راتب الموظف</div>
             </div>
-            <div style="border-top:1px dashed var(--border-color); padding-top:14px;">
-                <label style="font-size:13px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:8px;">تعديل الزيادة (زيادة أو خصم)</label>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <button id="empBonusPrevBtn" onclick="empBonusNavMonth(-1)" title="الشهر السابق" style="width:42px; height:42px; flex-shrink:0; border:none; border-radius:12px; background:rgba(234,179,8,0.15); color:#eab308; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s;"><i class="fas fa-chevron-right"></i></button>
+                <div style="flex:1; text-align:center;">
+                    <div id="empBonusMonthLabel" style="font-size:13px; color:var(--text-muted); font-weight:700; margin-bottom:4px;">—</div>
+                    <div id="empBonusMonthValue" style="font-size:26px; font-weight:900; color:#eab308; line-height:1.2;">0 ₪</div>
+                </div>
+                <button id="empBonusNextBtn" onclick="empBonusNavMonth(1)" title="الشهر التالي" style="width:42px; height:42px; flex-shrink:0; border:none; border-radius:12px; background:rgba(234,179,8,0.15); color:#eab308; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s;"><i class="fas fa-chevron-left"></i></button>
+            </div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:12px; text-align:center;">استخدم الأسهم للتنقل بين الشهور (تظهر الشهور التي فيها زيادة فقط)</div>
+        </div>
+
+        <!-- تعديل زيادة الراتب اليدوي - للأدمن فقط -->
+        <div id="empBonusAdminBox" class="inner-box hidden" style="max-width:500px; margin:0 auto 24px auto; border:2px solid rgba(234,179,8,0.4);">
+            <div style="border-top:0; padding-top:0;">
+                <label style="font-size:13px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:8px;"><i class="fas fa-edit" style="color:#eab308;"></i> تعديل يدوي للزيادة (للشهر المعروض أعلاه)</label>
                 <div style="display:flex; gap:8px; align-items:center;">
                     <input type="number" id="empBonusAdjust" placeholder="مثال: 10 أو -5" step="0.01" style="flex:1;">
                     <span style="font-weight:800; color:var(--text-muted);">₪</span>
-                    <button class="btn btn-warning" style="white-space:nowrap;" onclick="adjustEmployeeBonus()"><i class="fas fa-edit"></i> تطبيق</button>
+                    <button class="btn btn-warning" style="white-space:nowrap;" onclick="adjustEmployeeBonus()"><i class="fas fa-check"></i> تطبيق</button>
                 </div>
-                <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">أدخل رقم موجب للزيادة أو سالب للخصم</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">أدخل رقم موجب للزيادة أو سالب للخصم — يُطبَّق على الشهر الظاهر في البطاقة</div>
             </div>
+            <!-- عنصر مخفي للحفاظ على التوافق مع الكود القديم -->
+            <div id="empBonusAdminValue" style="display:none;">0 ₪</div>
         </div>
 
         <div class="inner-box" style="max-width:500px; margin:0 auto;">
@@ -2274,6 +2294,29 @@
                         <button class="btn btn-primary" onclick="saveProfitSettings()">حفظ</button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div id="sec-emp-bonus-settings" style="margin-bottom:20px; margin-top:20px;">
+            <h3><i class="fas fa-coins" style="color:var(--primary)"></i> إعدادات عمولة الموظف</h3>
+            <div class="inner-box" style="margin-bottom:20px;">
+                <p style="color:var(--text-muted); font-size:13px; margin-top:0; line-height:1.7;">حدّد <b>بداية</b> كل شريحة ونسبتها فقط. كل شريحة تبدأ من رقم عمليتها وتستمر حتى بداية الشريحة التي تليها، والأخيرة تكمل "فأكثر" تلقائياً — بدون فجوات.</p>
+                <div style="background:rgba(96,165,250,0.08); border:1px solid rgba(96,165,250,0.25); border-radius:10px; padding:10px 12px; margin-bottom:16px; font-size:12px; color:var(--text-muted); line-height:1.8;">
+                    <b style="color:#60a5fa;"><i class="fas fa-info-circle"></i> مثال:</b> بداية أول شريحة = 8 بنسبة 15%، وبداية الشريحة الثانية = 12 بنسبة 20%. النتيجة: العمليات 1–7 بدون عمولة، 8–11 لها 15%، ومن 12 فأكثر لها 20%.
+                </div>
+
+                <!-- عتبة بداية العمولة -->
+                <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:12px; padding:14px; margin-bottom:16px;">
+                    <label style="font-size:12px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:8px;"><i class="fas fa-hourglass-start" style="color:#eab308;"></i> العمليات قبل بداية أول شريحة تكون بدون عمولة تلقائياً</label>
+                </div>
+
+                <!-- قائمة الشرائح الديناميكية -->
+                <div id="empTiersList"></div>
+
+                <!-- زر إضافة شريحة -->
+                <button class="btn" onclick="addEmpTierRow()" style="width:100%; background:transparent; border:1.5px dashed var(--primary); color:var(--primary); margin-bottom:14px;"><i class="fas fa-plus"></i> إضافة شريحة</button>
+
+                <button class="btn btn-primary" onclick="saveEmpBonusSettings()" style="width:100%;"><i class="fas fa-save"></i> حفظ إعدادات العمولة</button>
             </div>
         </div>
 
@@ -2949,6 +2992,58 @@ function safeJSON(str, fallback) {
 function esc(s) { 
     if(typeof s !== 'string') return s; 
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); 
+}
+
+// ══════════════════════════════════════════════════════════════
+//  مُميّز النقر عن التمرير (Tap vs Scroll)
+//  يمنع فتح نافذة التعديل بالخطأ عند التمرير بالإصبع أو الماوس فوق الصفوف.
+//  نفتح النافذة فقط إذا كانت لمسة/نقرة حقيقية: حركة قليلة + وقت قصير.
+// ══════════════════════════════════════════════════════════════
+function _attachTapHandler(container, selector, dataKey, callback) {
+    if (!container) return;
+    // تفادي الربط المزدوج على نفس الحاوية
+    if (container._tapHandlerBound) return;
+    container._tapHandlerBound = true;
+
+    const MOVE_THRESHOLD = 12;   // بكسل — أي حركة أكبر تُعتبر تمريراً وليست نقرة
+    const TIME_THRESHOLD = 600;  // مللي ثانية — أطول من هذا يُعتبر ضغطاً مطوّلاً لا نقرة
+
+    let startX = 0, startY = 0, startT = 0, moved = false, activeRow = null;
+
+    const getRow = (target) => target.closest ? target.closest(selector) : null;
+
+    container.addEventListener('pointerdown', (e) => {
+        // نتجاهل النقرات على العناصر التفاعلية داخل الصف (أزرار/روابط/مدخلات)
+        if (e.target.closest('button, a, input, select, textarea, .badge-action')) { activeRow = null; return; }
+        activeRow = getRow(e.target);
+        if (!activeRow) return;
+        startX = e.clientX; startY = e.clientY; startT = Date.now(); moved = false;
+    }, { passive: true });
+
+    container.addEventListener('pointermove', (e) => {
+        if (!activeRow) return;
+        if (Math.abs(e.clientX - startX) > MOVE_THRESHOLD || Math.abs(e.clientY - startY) > MOVE_THRESHOLD) {
+            moved = true; // تحرك كفاية → هذا تمرير
+        }
+    }, { passive: true });
+
+    container.addEventListener('pointerup', (e) => {
+        if (!activeRow) return;
+        let row = activeRow;
+        activeRow = null;
+        let elapsed = Date.now() - startT;
+        // نقرة حقيقية فقط: لم يتحرك + وقت قصير + انتهت على نفس الصف
+        if (moved) return;
+        if (elapsed > TIME_THRESHOLD) return;
+        let endRow = getRow(e.target);
+        if (endRow !== row) return;
+        let id = row.getAttribute('data-' + dataKey);
+        if (id) callback(id);
+    });
+
+    // إلغاء التتبّع إذا خرج المؤشر أو أُلغيت اللمسة
+    container.addEventListener('pointercancel', () => { activeRow = null; }, { passive: true });
+    container.addEventListener('pointerleave', () => { activeRow = null; }, { passive: true });
 }
 
 const DEFAULT_USER = {
@@ -4268,6 +4363,106 @@ function getDefaultData() {
         vipCustomers: safeJSON(store.vipCustomers, {})
     };
 }
+// ══════════════════════════════════════════════════════════════
+//  خرائط الترجمة الشاملة للعربية (أنواع العمليات + أسماء الحقول + القيم)
+//  الهدف: ألا يظهر أي نص إنجليزي في سجل النشاط أو نافذة التفاصيل
+// ══════════════════════════════════════════════════════════════
+const LOG_TYPE_AR = {
+    // مبيعات ومشتريات
+    purchase:'تسجيل عملية بيع', manual_sell:'بيع يدوي من المخزون', undo:'تراجع عن عملية شراء',
+    stock_add:'شراء مخزون جديد', edit_history:'تعديل سجل مالي', delete_history:'حذف سجل مالي',
+    // محافظ وأموال
+    manual:'تعديل رصيد محفظة', set_wallet:'تعيين رصيد محفظة', manual_invest:'تعديل حصة شريك',
+    transfer:'تحويل أرصدة', withdraw:'سحب أموال', create_wallet:'إنشاء محفظة جديدة',
+    rename_wallet:'تعديل محفظة', delete_wallet:'حذف محفظة',
+    // خصومات وكوبونات
+    manual_coupon:'إنشاء كود خصم يدوي', delete_coupon:'حذف كود خصم', invalid_discount:'محاولة كود خصم غير صالح',
+    discount_settings:'تعديل إعدادات أكواد الخصم',
+    // عملاء مميزون (VIP)
+    add_vip:'إضافة رتبة عميل مميز', delete_vip:'حذف رتبة عميل مميز', reset_all_vip:'إعادة تعيين كل العملاء المميزين',
+    vip_settings:'تعديل إعدادات نظام الرتب',
+    // مستخدمون وأمان
+    add_user:'إضافة مستخدم جديد', delete_user:'حذف مستخدم', user_edit:'تعديل بيانات مستخدم',
+    toggle_ban:'تغيير حالة مستخدم', password_change:'تغيير كلمة المرور', login:'تسجيل دخول',
+    auto_login:'دخول تلقائي', failed_login:'محاولة دخول فاشلة', logout:'تسجيل خروج',
+    send_notification:'إرسال إشعار لمستخدم', delete_notification:'حذف إشعار معلّق',
+    // مخزون
+    remove_buyer:'حذف عميل من بروفايل', remove_buyer_sold:'حذف عميل من اشتراك مباع',
+    transfer_buyer:'نقل عميل بين اشتراكات', adjust_profiles:'تعديل عدد البروفايلات',
+    return_sold_stock:'إرجاع اشتراك مباع', delete_sold_stock:'حذف اشتراك مباع',
+    delete_expired_stock:'حذف اشتراك منتهٍ من المخزون', archive_test_stock:'أرشفة اشتراك تجريبي',
+    archive_partial_stock:'أرشفة اشتراك منتهٍ جزئياً', update_stock_note:'تحديث ملاحظات مخزون',
+    card_removed:'تأكيد إزالة بطاقة', card_ignored:'تجاهل تذكير بطاقة',
+    // خدمات
+    add_service:'إضافة خدمة جديدة', edit_service:'تعديل خدمة',
+    // طلبات وحجوزات
+    delete_order:'حذف طلب وارد', booking_confirm:'تأكيد حجز', booking_delivery:'تسليم حجوزات',
+    order_delivery:'تأكيد تسليم طلب',
+    // رهن
+    add_pledge:'إضافة رهن جديد', delete_pledge:'حذف رهن', delete_all_pledges:'مسح جميع المرهونات',
+    // راتب الموظف
+    adjust_emp_bonus:'تعديل يدوي لزيادة راتب الموظف', emp_bonus_settings:'تعديل إعدادات عمولة الموظف',
+    // نظام وإعدادات
+    exchange_rate:'تعديل سعر الصرف', reset_budget:'إعادة تعيين مسار الميزانية',
+    export_backup:'تصدير نسخة احتياطية', import_backup:'استيراد نسخة احتياطية',
+    csv_export:'تصدير الأرشيف المالي (CSV)', hide_expired:'إخفاء اشتراكات منتهية',
+    add_note:'إضافة ملاحظة', add_task:'إضافة مهمة', whatsapp:'إرسال تذكير واتساب'
+};
+
+const LOG_KEY_AR = {
+    type:'النوع', customer:'العميل', customerName:'العميل', sub:'الخدمة', service:'الخدمة',
+    serviceName:'الخدمة', paid:'المدفوع', costVal:'التكلفة', cost:'التكلفة', toName:'المحفظة',
+    tBefore:'الرصيد قبل', tAfter:'الرصيد بعد', isComp:'عملية تعويض', isPledge:'عملية رهن',
+    isFirstProfile:'بروفايل أول', profilesCount:'عدد البروفايلات', appliedDiscountPct:'نسبة الخصم',
+    wallet:'المحفظة', reason:'السبب', before:'قبل', after:'بعد', diff:'الفارق',
+    syncedShare:'الحصة المرتبطة', person:'الشريك', currency:'العملة', syncedWallet:'المحفظة المرتبطة',
+    from:'من', to:'إلى', amount:'المبلغ', fee:'العمولة', feeCur:'عملة العمولة', result:'الصافي',
+    fromCur:'عملة المصدر', toCur:'عملة الهدف', item:'العنصر', wBefore:'الرصيد قبل', wAfter:'الرصيد بعد',
+    deducted:'المخصوم', attempted:'الحساب المُستهدف', password:'كلمة المرور المُدخلة', code:'الكود',
+    search:'فلتر البحث', count:'العدد', shareBefore:'الحصة قبل', shareAfter:'الحصة بعد',
+    walletBefore:'المحفظة قبل', walletAfter:'المحفظة بعد', walletName:'المحفظة', netAmount:'الصافي',
+    deductedFromWallet:'المخصوم من المحفظة', time:'الوقت', username:'اسم المستخدم', role:'الصلاحية',
+    oldRole:'الصلاحية القديمة', newRole:'الصلاحية الجديدة', device:'الجهاز', loginCount:'عدد مرات الدخول',
+    oldStatus:'الحالة السابقة', newStatus:'الحالة الجديدة', lastLogin:'آخر دخول', name:'الاسم',
+    phone:'الجوال', rank:'الرتبة', assignedRank:'الرتبة المُعيّنة', purchaseCount:'عدد المشتريات',
+    target:'الهدف', percentage:'النسبة', validDays:'مدة الصلاحية', maxUses:'الحد الأقصى للاستخدام',
+    usedCount:'عدد مرات الاستخدام', newRate:'السعر الجديد', enabled:'مفعّل', chance:'الاحتمالية',
+    minDiscount:'أدنى خصم', maxDiscount:'أقصى خصم', minValidity:'أدنى صلاحية', maxValidity:'أقصى صلاحية',
+    stockName:'اسم الاشتراك', vendor:'البائع', addedDate:'تاريخ الإضافة', soldDate:'تاريخ البيع',
+    soldProfiles:'البروفايلات المباعة', totalProfiles:'إجمالي البروفايلات', removedBuyer:'العميل المحذوف',
+    remainingProfiles:'البروفايلات المتبقية', beforeTotal:'الإجمالي قبل', afterTotal:'الإجمالي بعد',
+    buyers:'العملاء', notes:'الملاحظات', purpose:'الغرض', branches:'الفروع', newCurrency:'العملة الجديدة',
+    oldCurrency:'العملة القديمة', lastBalance:'آخر رصيد', fileName:'اسم الملف', importedAt:'وقت الاستيراد',
+    exportedAt:'وقت التصدير', records:'السجلات', balanceUSD:'الرصيد بالدولار', resetDate:'تاريخ التصفير',
+    targetUsername:'المستخدم المستهدف', message:'الرسالة', sentAt:'وقت الإرسال', rate:'سعر الصرف',
+    duration:'المدة', expiry:'تاريخ الانتهاء', id:'المعرّف', userId:'معرّف المستخدم', ip:'عنوان IP',
+    browser:'المتصفح', country:'الدولة', city:'المدينة', purchaseNotes:'ملاحظات العملية',
+    opType:'نوع العملية', profit:'الربح', paidCurrency:'عملة الدفع',
+    totalCount:'العدد الكلي', operation:'العملية', month:'الشهر',
+    customerPhone:'جوال العميل', paidCur:'عملة الدفع',
+    tier1:'الشريحة الأولى', tier2:'الشريحة الثانية'
+};
+
+// ترجمة القيم الإنجليزية الشائعة (أنظمة تشغيل، حالات، إلخ)
+const LOG_VALUE_AR = {
+    'Windows':'ويندوز','Mac OS':'ماك','iOS':'آيفون/آيباد','Android':'أندرويد',
+    'Linux':'لينكس','Unknown':'غير معروف','active':'مفعّل','banned':'محظور',
+    'sale':'للبيع','test':'تجريبي','admin':'أدمن','employee':'موظف',
+    'viewer':'مشاهد عادي','viewer_plus':'مشاهد متقدم'
+};
+
+// دالة موحّدة: تُحوّل قيمة أي حقل إلى نص عربي مقروء
+function _trLogValue(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'boolean') return v ? 'نعم' : 'لا';
+    if (typeof v === 'object') {
+        try { return Object.entries(v).map(([kk, vv]) => `${LOG_KEY_AR[kk] || kk}: ${_trLogValue(vv)}`).join('، '); }
+        catch(e) { return JSON.stringify(v); }
+    }
+    let s = String(v);
+    return LOG_VALUE_AR[s] || s;
+}
+
 function showModalDetails(details) {
     if(!details) return;
     const body = document.getElementById("modalBody");
@@ -4388,27 +4583,16 @@ function showModalDetails(details) {
         if(details.from)   body.innerHTML += row("من تاريخ", esc(details.from));
         if(details.to)     body.innerHTML += row("إلى تاريخ", esc(details.to));
     } else {
-        // عرض عام لأي تفاصيل غير معرَّفة
-        const keyMap = {
-            type:'النوع', customer:'العميل', sub:'الخدمة', paid:'المدفوع', costVal:'التكلفة',
-            toName:'المحفظة', tBefore:'الرصيد قبل', tAfter:'الرصيد بعد', isComp:'تعويض',
-            appliedDiscountPct:'نسبة الخصم', wallet:'المحفظة', reason:'السبب', before:'قبل',
-            after:'بعد', diff:'الفارق', syncedShare:'الحصة المرتبطة', person:'الشريك',
-            currency:'العملة', syncedWallet:'المحفظة المرتبطة', from:'من', to:'إلى',
-            amount:'المبلغ', fee:'العمولة', result:'الصافي', fromCur:'عملة المصدر',
-            toCur:'عملة الهدف', item:'العنصر', cost:'التكلفة', wBefore:'الرصيد قبل',
-            wAfter:'الرصيد بعد', deducted:'المخصوم', attempted:'الحساب', password:'كلمة المرور',
-            code:'الكود', search:'البحث', count:'العدد', service:'الخدمة',
-            shareBefore:'الحصة قبل', shareAfter:'الحصة بعد', walletBefore:'المحفظة قبل',
-            walletAfter:'المحفظة بعد', walletName:'المحفظة', netAmount:'الصافي',
-            deductedFromWallet:'المخصوم من المحفظة', time:'الوقت'
-        };
+        // عرض عام لأي تفاصيل غير معرَّفة — يعتمد على خرائط الترجمة الشاملة
+        // إظهار اسم العملية بالعربي أولاً (بدل النوع الإنجليزي الخام)
+        if (details.type && LOG_TYPE_AR[details.type]) {
+            body.innerHTML += row("العملية", LOG_TYPE_AR[details.type]);
+        }
         Object.entries(details).forEach(([k, v]) => {
             if(v === null || v === undefined || v === '' || v === 'null') return;
-            let label = keyMap[k] || k;
-            let displayVal = typeof v === 'boolean' ? (v ? 'نعم' : 'لا') :
-                             typeof v === 'object' ? JSON.stringify(v) : String(v);
-            body.innerHTML += row(label, esc(displayVal));
+            if(k === 'type') return; // عُرض بالأعلى كاسم عملية عربي
+            let label = LOG_KEY_AR[k] || k;
+            body.innerHTML += row(label, esc(_trLogValue(v)));
         });
     }
     
@@ -5757,6 +5941,7 @@ function applyRBAC() {
     safeToggle("sec-manage-wallets", "add");
     safeToggle("sec-rename-wallet", "add");
     safeToggle("sec-profit-settings", "add");
+    safeToggle("sec-emp-bonus-settings", "add");
     safeToggle("sec-discount-settings", "add");
     safeToggle("sec-vip-settings", "add");
     safeToggle("todoSection", "add");
@@ -5802,6 +5987,7 @@ function applyRBAC() {
         safeToggle("sec-manage-wallets", "remove");
         safeToggle("sec-rename-wallet", "remove");
         safeToggle("sec-profit-settings", "remove");
+        safeToggle("sec-emp-bonus-settings", "remove");
         safeToggle("sec-discount-settings", "remove");
         safeToggle("sec-vip-settings", "remove");
         safeToggle("sec-manage-services", "remove");
@@ -5823,6 +6009,11 @@ function applyRBAC() {
         safeToggle("btnAddVip", "remove");
         safeToggle("btnDeleteAllVip", "remove");
         safeToggle("btnClearChat", "remove");
+
+        // البطاقة العلوية (زيادة الراتب - هذا الشهر) للموظف فقط — تُخفى عن الأدمن دائماً.
+        // الأدمن يتحكم بالزيادة (إضافة/خصم) والتنقل بين الأشهر من صفحة سحب الأموال.
+        safeToggle("statCardEmployeeBonus", "add");
+        refreshEmployeeBonus();
     } 
     else if (role === 'employee') {
         if(tfRes) tfRes.readOnly = true;
@@ -5839,7 +6030,7 @@ function applyRBAC() {
         
         safeToggle("btnStock", "remove");
         safeToggle("btnUndo", "remove");
-        safeToggle("btnExportCSV", "remove"); // <--- إظهار للموظف
+        safeToggle("btnExportCSV", "add"); // <--- إخفاء زر التصدير عن الموظف (للأدمن فقط)
         safeToggle("btnHideExpired", "add");
         safeToggle("btnClearHistory", "add");
         safeToggle("btnServicesMgmt", "add");
@@ -5856,7 +6047,7 @@ function applyRBAC() {
         safeToggle("thVipAction", "add");
         let _hasEmpNow = (() => { try { let uu = safeJSON(store.users, []); return Array.isArray(uu) && uu.some(u => u && u.role === 'employee'); } catch(e){ return false; } })();
         safeToggle("statCardEmployeeBonus", _hasEmpNow ? "remove" : "add");
-        safeToggle("empBonusAdminBox", _hasEmpNow ? "remove" : "add");
+        // ملاحظة: صندوق التعديل اليدوي (empBonusAdminBox) للأدمن فقط — تتكفّل refreshEmployeeBonus بإخفائه عن الموظف
         refreshEmployeeBonus();
     }
     else if (role === 'viewer_plus') {
@@ -6254,7 +6445,7 @@ function toggleBan(id) {
         let newState = users[index].status === 'active' ? 'banned' : 'active';
         users[index].status = newState;
         store.users = JSON.stringify(users); fbSave("users", users);
-        logAction(`تغيير حالة المستخدم ${users[index].username} إلى ${newState}`, 'danger', { type: 'toggle_ban', username: users[index].username, oldStatus: newState === 'banned' ? 'مفعّل' : 'محظور', newStatus: newState === 'banned' ? 'محظور' : 'مفعّل', role: getRoleName(users[index].role) });
+        logAction(`تغيير حالة المستخدم ${users[index].username} إلى ${newState === 'banned' ? 'محظور' : 'مفعّل'}`, 'danger', { type: 'toggle_ban', username: users[index].username, oldStatus: newState === 'banned' ? 'مفعّل' : 'محظور', newStatus: newState === 'banned' ? 'محظور' : 'مفعّل', role: getRoleName(users[index].role) });
         renderUsersTable(); 
     }
 }
@@ -6304,7 +6495,7 @@ function showPage(id, btn){
     
     if(id === 'purchase') { loadServices(); loadPurchaseStock(); }
     if(id === 'generalNotes') refreshGeneralNotes();
-    if(id === 'investment') refreshInvestment();
+    if(id === 'investment') { _empBonusViewMonth = _curMonthKey(); refreshInvestment(); }
     if(id === 'history') { refreshHistory(); initDatePickers(); }
     if(id === 'wallets') { loadWallets(); refreshWallets(); }
     if(id === 'expiring') refreshExpiring();
@@ -6534,6 +6725,9 @@ function loadProfitSettings(){
     document.getElementById("setValidityMax").value = s.validityMax ?? 45;
     let _alertDaysEl = document.getElementById("setExpiryAlertDays");
     if (_alertDaysEl) _alertDaysEl.value = s.expiryAlertDays ?? 1;
+
+    // ── تحميل إعدادات عمولة الموظف (النظام الديناميكي) ──
+    if (typeof renderEmpTiers === 'function') renderEmpTiers();
 }
 
 function saveAlertSettings() {
@@ -6624,6 +6818,140 @@ function saveVipSettings(){
     
     logAction("تعديل إعدادات نظام الرتب", 'general', { type: 'vip_settings', enabled: sObj.vipEnabled });
     notify(sObj.vipEnabled ? "تم تفعيل نظام الرتب" : "تم إيقاف نظام الرتب");
+}
+
+// ══════════════════════════════════════════════════════════════
+//  نظام شرائح عمولة الموظف الديناميكي (نموذج نقاط البداية)
+// ══════════════════════════════════════════════════════════════
+
+// يبني صف شريحة واحد داخل القائمة
+function _empTierRowHTML(startVal, pctVal) {
+    let sv = (startVal === null || startVal === undefined) ? '' : startVal;
+    let pv = (pctVal === null || pctVal === undefined) ? '' : pctVal;
+    return `
+    <div class="emp-tier-row" style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:12px; padding:14px; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:8px;">
+            <div class="emp-tier-title" style="font-size:13px; font-weight:800; color:#eab308; display:flex; align-items:center; gap:6px;"><i class="fas fa-layer-group"></i> <span class="emp-tier-name">شريحة</span></div>
+            <button type="button" class="emp-tier-del" onclick="removeEmpTierRow(this)" title="حذف الشريحة" style="width:32px; height:32px; flex-shrink:0; border:none; border-radius:9px; background:rgba(239,68,68,0.12); color:var(--danger); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px;"><i class="fas fa-trash-alt"></i></button>
+        </div>
+        <div class="emp-tier-range" style="font-size:12px; color:var(--text-muted); margin-bottom:12px; padding:7px 10px; background:rgba(234,179,8,0.08); border-radius:8px; text-align:center;">—</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            <div style="flex:1; min-width:110px;">
+                <label style="font-size:12px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:5px;">تبدأ من عملية رقم</label>
+                <input type="number" class="emp-tier-start" min="1" step="1" value="${sv}" placeholder="8" oninput="_updateEmpTierRanges()" style="width:100%;">
+            </div>
+            <div style="flex:1; min-width:110px;">
+                <label style="font-size:12px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:5px;">النسبة %</label>
+                <input type="number" class="emp-tier-pct" min="0" max="100" step="0.1" value="${pv}" placeholder="15" style="width:100%;">
+            </div>
+        </div>
+    </div>`;
+}
+
+// يعرض قائمة الشرائح من الإعدادات المحفوظة
+function renderEmpTiers() {
+    let list = document.getElementById('empTiersList');
+    if (!list) return;
+    let tiers = _getEmpBonusTiers();
+    list.innerHTML = tiers.map(t => _empTierRowHTML(t.startSale, t.pct)).join('');
+    _updateEmpTierRanges();
+}
+
+// إضافة شريحة جديدة (تبدأ فارغة)
+function addEmpTierRow() {
+    let list = document.getElementById('empTiersList');
+    if (!list) return;
+    list.insertAdjacentHTML('beforeend', _empTierRowHTML('', ''));
+    _updateEmpTierRanges();
+}
+
+// حذف شريحة (مع منع حذف آخر شريحة متبقية)
+function removeEmpTierRow(btn) {
+    let list = document.getElementById('empTiersList');
+    let rows = list.querySelectorAll('.emp-tier-row');
+    if (rows.length <= 1) return notify("يجب أن تبقى شريحة واحدة على الأقل", "error");
+    let row = btn.closest('.emp-tier-row');
+    if (row) row.remove();
+    _updateEmpTierRanges();
+}
+
+// يحدّث نطاق كل شريحة (من–إلى) والأسماء تلقائياً بناءً على نقاط البداية
+function _updateEmpTierRanges() {
+    let list = document.getElementById('empTiersList');
+    if (!list) return;
+    let rows = Array.from(list.querySelectorAll('.emp-tier-row'));
+    // اجمع نقاط البداية مع مرجع الصف
+    let data = rows.map(r => ({
+        row: r,
+        start: parseInt(r.querySelector('.emp-tier-start').value)
+    }));
+    // رتّب حسب البداية (الصفوف ذات القيمة الصالحة فقط تُرتّب فعلياً في العرض)
+    let sorted = data.slice().filter(d => !isNaN(d.start)).sort((a,b) => a.start - b.start);
+
+    rows.forEach((r) => {
+        let startEl = r.querySelector('.emp-tier-start');
+        let rangeEl = r.querySelector('.emp-tier-range');
+        let nameEl = r.querySelector('.emp-tier-name');
+        let start = parseInt(startEl.value);
+        if (isNaN(start)) { rangeEl.textContent = 'أدخل رقم بداية الشريحة'; nameEl.textContent = 'شريحة'; return; }
+        // موقع هذه الشريحة ضمن المرتّبة
+        let idx = sorted.findIndex(d => d.row === r);
+        let next = sorted[idx + 1];
+        nameEl.textContent = 'الشريحة ' + (idx + 1);
+        if (next && !isNaN(next.start)) {
+            let end = next.start - 1;
+            if (end < start) rangeEl.textContent = `⚠ تتعارض مع الشريحة التالية`;
+            else if (end === start) rangeEl.textContent = `العملية رقم ${start} فقط`;
+            else rangeEl.textContent = `من العملية ${start} إلى ${end}`;
+        } else {
+            rangeEl.textContent = `من العملية ${start} فأكثر`;
+        }
+    });
+}
+
+function saveEmpBonusSettings(){
+    if(currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
+    let list = document.getElementById('empTiersList');
+    let rows = Array.from(list.querySelectorAll('.emp-tier-row'));
+    if (rows.length === 0) return notify("أضف شريحة واحدة على الأقل", "error");
+
+    // اجمع القيم
+    let tiers = [];
+    for (let i = 0; i < rows.length; i++) {
+        let start = parseInt(rows[i].querySelector('.emp-tier-start').value);
+        let pct = parseFloat(rows[i].querySelector('.emp-tier-pct').value);
+        if (isNaN(start) || start < 1) return notify(`أدخل رقم بداية صحيح للشريحة رقم ${i+1}`, "error");
+        if (isNaN(pct) || pct < 0 || pct > 100) return notify(`نسبة الشريحة رقم ${i+1} يجب أن تكون بين 0 و100`, "error");
+        tiers.push({ startSale: start, pct: pct });
+    }
+
+    // رتّب حسب البداية
+    tiers.sort((a,b) => a.startSale - b.startSale);
+
+    // تحقق: لا تتكرر نقطة بداية، والنسبة تتصاعد (كل شريحة ≥ التي قبلها)
+    for (let i = 1; i < tiers.length; i++) {
+        if (tiers[i].startSale === tiers[i-1].startSale)
+            return notify(`لا يمكن أن تبدأ شريحتان من نفس رقم العملية (${tiers[i].startSale})`, "error");
+        if (tiers[i].pct < tiers[i-1].pct)
+            return notify("نسبة كل شريحة يجب أن تكون أكبر من أو تساوي نسبة الشريحة التي قبلها (لأنها لمبيعات أعلى)", "error");
+    }
+
+    let sObj = safeJSON(store.settings, {});
+    sObj.empBonusTiers = tiers;
+    store.settings = JSON.stringify(sObj); fbSave("settings", sObj);
+
+    // إعادة العرض المرتّب
+    renderEmpTiers();
+
+    // سجل مفصّل: كل شريحة بنطاقها
+    let details = { type: 'emp_bonus_settings' };
+    tiers.forEach((t, i) => {
+        let next = tiers[i+1];
+        let rangeTxt = next ? `من ${t.startSale} إلى ${next.startSale - 1}` : `من ${t.startSale} فأكثر`;
+        details['الشريحة ' + (i+1)] = `${rangeTxt} = ${t.pct}%`;
+    });
+    logAction("تعديل إعدادات عمولة الموظف", 'general', details);
+    notify("تم حفظ إعدادات العمولة");
 }
 
 async function resetAllVips(){
@@ -7629,9 +7957,10 @@ function refreshHistory(){
         let durBadge = (parsedDur === 0) ? "badge-success" : "badge-warning";
         
         let rowTitle = item.purchaseNotes ? `الملاحظات: ${item.purchaseNotes.replace(/"/g, '&quot;')}` : 'لا يوجد ملاحظات';
-        rows+=`<tr onclick="openEditHistoryModal('${item.id}')" style="cursor:pointer;" title="${rowTitle}"><td>${item.date}</td><td style="${colorStyle}"><b>${esc(item.customer)}</b></td><td style="${colorStyle}">${phoneD}</td><td>${subD}</td><td><span class="badge ${durBadge}">${durStr}</span></td><td style="color:var(--success)">${paidD}</td>${isEmployeeRole ? '' : `<td style="color:var(--danger)">${costD}</td><td>${profitD}</td>`}</tr>`;
+        rows+=`<tr class="history-row" data-histid="${item.id}" style="cursor:pointer;" title="${rowTitle}"><td>${item.date}</td><td style="${colorStyle}"><b>${esc(item.customer)}</b></td><td style="${colorStyle}">${phoneD}</td><td>${subD}</td><td><span class="badge ${durBadge}">${durStr}</span></td><td style="color:var(--success)">${paidD}</td>${isEmployeeRole ? '' : `<td style="color:var(--danger)">${costD}</td><td>${profitD}</td>`}</tr>`;
     });
     document.getElementById("historyBody").innerHTML = rows || `<tr><td colspan='8' style='text-align:center; padding:20px; color:var(--text-muted)'>لا توجد بيانات</td></tr>`;
+    _attachTapHandler(document.getElementById("historyBody"), 'tr.history-row', 'histid', openEditHistoryModal);
 }
 function filterHistory() { refreshHistory(); }
 
@@ -11877,7 +12206,8 @@ function updateDiscountBadge() {
 // ميزة 4: تصدير الأرشيف المالي كـ CSV
 // ─────────────────────────────────────────────
 function exportHistoryCSV() {
-    if (currentUser && (currentUser.role === 'viewer' || currentUser.role === 'viewer_plus')) return notify("ليس لديك صلاحية", "error");
+    // التصدير للأدمن فقط
+    if (!currentUser || currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
     let p = safeJSON(store.purchases, []);
     let v = document.getElementById("historySearch").value.toLowerCase();
     let fromDate = document.getElementById("historyFromDate") ? document.getElementById("historyFromDate").value : "";
@@ -11888,21 +12218,51 @@ function exportHistoryCSV() {
         let matchesFrom = !fromDate || (item.date && item.date >= fromDate);
         let matchesTo = !toDate || (item.date && item.date <= toDate);
         return matchesSearch && matchesFrom && matchesTo;
+    }).sort((a, b) => {
+        let dateComp = (b.date || '').localeCompare(a.date || '');
+        if (dateComp !== 0) return dateComp;
+        let tsA = a.id ? parseInt(a.id.split('_')[1]) || 0 : 0;
+        let tsB = b.id ? parseInt(b.id.split('_')[1]) || 0 : 0;
+        return tsB - tsA;
     });
 
     if (filtered.length === 0) return notify("لا توجد بيانات للتصدير", "error");
 
-    const headers = ["التاريخ", "العميل", "الجوال", "الخدمة", "المدة", "المدفوع", "التكلفة", "المحفظة"];
-    const rows = filtered.map(item => [
-        item.date || '',
-        item.customer || '',
-        item.phone || '',
-        item.sub || '',
-        parseInt(item.duration) === 0 ? 'بدون مدة' : (item.duration || '') + ' شهر',
-        item.paid || '',
-        item.cost || '',
-        item.wallet || ''
-    ]);
+    // ─── حساب الربح لكل عملية بنفس منطق جدول السجل المالي ───
+    let _sCsv = safeJSON(store.settings, {});
+    function _calcProfit(item) {
+        let rate = (item.rate && item.rate > 0) ? item.rate : (_sCsv.exchangeRate && _sCsv.exchangeRate > 0 ? _sCsv.exchangeRate : 3.5);
+        let paidNum = parseFloat((item.paid || '0').replace(/[^0-9.\-]/g, '')) || 0;
+        let paidCur = (item.paid || '').replace(/[0-9.\-\s]/g, '').trim() || '₪';
+        let costNum = parseFloat((item.cost || '0').replace(/[^0-9.\-]/g, '')) || 0;
+        let costCur = (item.cost || '').replace(/[0-9.\-\s]/g, '').trim() || '₪';
+        let costInPaid = costNum;
+        if (paidCur !== costCur) {
+            if (paidCur === '$' && costCur === '₪') costInPaid = costNum / rate;
+            else if (paidCur === '₪' && costCur === '$') costInPaid = costNum * rate;
+        }
+        let profit = paidNum - costInPaid;
+        return (profit >= 0 ? '+' : '') + profit.toFixed(2) + paidCur;
+    }
+
+    // الحقول المطابقة تماماً لما يظهر في جدول السجل المالي (بدون حقول وهمية كالمحفظة)
+    const headers = ["التاريخ", "العميل", "الجوال", "الخدمة", "عدد البروفايلات", "المدة", "المدفوع", "التكلفة", "الربح", "نوع العملية", "ملاحظات"];
+    const rows = filtered.map(item => {
+        let opType = item.isComp ? "تعويض" : (item.isPledge ? "رهن" : "بيع");
+        return [
+            item.date || '',
+            item.customer || '',
+            item.phone || '',
+            item.sub || '',
+            parseInt(item.profilesCount) || 1,
+            parseInt(item.duration) === 0 ? 'بدون مدة' : (item.duration || '') + ' شهر',
+            item.paid || '',
+            item.cost || '',
+            _calcProfit(item),
+            opType,
+            item.purchaseNotes || ''
+        ];
+    });
 
     let csvContent = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -12216,9 +12576,12 @@ function refreshPledges() {
 async function deletePledge(id) {
     let ok = await showConfirm("حذف الرهن", "هل أنت متأكد من حذف هذا الرهن نهائياً؟", "حذف", "إلغاء", '<i class="fas fa-trash-alt"></i>');
     if(!ok) return;
-    let pledges = safeJSON(store.pledges, []).filter(p => p.id !== id);
+    let _allPledges = safeJSON(store.pledges, []);
+    let _deleted = _allPledges.find(p => p.id === id);
+    let pledges = _allPledges.filter(p => p.id !== id);
     store.pledges = JSON.stringify(pledges);
     fbSave("pledges", pledges);
+    logAction(`حذف رهن العميل ${_deleted?.customer || ''}`, 'danger', { type: 'delete_pledge', customer: _deleted?.customer || '', phone: _deleted?.phone || '', service: _deleted?.service || '', usedCount: _deleted?.usedCount || 0, totalCount: _deleted?.totalCount || 0 });
     refreshPledges();
     loadPledgesIntoSelect();
     notify("تم الحذف");
@@ -12228,8 +12591,10 @@ async function deleteAllPledges() {
     if(currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
     let ok = await showConfirm("مسح المرهونات", "هل أنت متأكد من مسح جميع المرهونات؟", "مسح الكل", "إلغاء", '<i class="fas fa-trash-alt"></i>');
     if(!ok) return;
+    let _cnt = safeJSON(store.pledges, []).length;
     store.pledges = "[]";
     fbSave("pledges", []);
+    logAction("مسح جميع المرهونات", 'danger', { type: 'delete_all_pledges', count: _cnt });
     refreshPledges();
     loadPledgesIntoSelect();
     notify("تم مسح جميع المرهونات");
@@ -12269,18 +12634,83 @@ window._userCountry = null;
 // ─────────────────────────────────────────
 // زيادة راتب الموظف
 // ─────────────────────────────────────────
-function _getEmpBonusStore() {
+// بنية التخزين الجديدة: { months: { "YYYY-MM": مبلغ, ... } }
+// (تُهاجَر تلقائياً من البنية القديمة { month, totalShekels })
+function _curMonthKey() { return new Date().toISOString().slice(0,7); } // "YYYY-MM"
+
+function _getEmpBonusRoot() {
     let raw = safeJSON(store.employeeBonus, null);
-    let curMonth = new Date().toISOString().slice(0,7); // "YYYY-MM"
-    if (!raw || raw.month !== curMonth) {
-        return { month: curMonth, totalShekels: 0 };
+    if (!raw || typeof raw !== 'object') return { months: {} };
+    // هجرة البنية القديمة إلى الجديدة (مرة واحدة، آمنة للتكرار)
+    if (!raw.months) {
+        let migrated = { months: {} };
+        if (raw.month && typeof raw.totalShekels === 'number') {
+            migrated.months[raw.month] = +raw.totalShekels.toFixed(4);
+        }
+        return migrated;
     }
     return raw;
 }
 
-function _saveEmpBonus(obj) {
-    store.employeeBonus = JSON.stringify(obj);
-    fbSave('employeeBonus', obj);
+function _getEmpBonusForMonth(monthKey) {
+    let root = _getEmpBonusRoot();
+    return +((root.months[monthKey] || 0)).toFixed(4);
+}
+
+function _saveEmpBonusRoot(root) {
+    store.employeeBonus = JSON.stringify(root);
+    fbSave('employeeBonus', root);
+}
+
+function _setEmpBonusForMonth(monthKey, value) {
+    let root = _getEmpBonusRoot();
+    root.months[monthKey] = +value.toFixed(4);
+    _saveEmpBonusRoot(root);
+}
+
+// إعدادات شرائح العمولة (يتحكم بها الأدمن)
+// النموذج الجديد: مصفوفة من { startSale: بداية العملية, pct: النسبة } مرتبة تصاعدياً.
+// كل شريحة تمتد من startSale حتى (بداية الشريحة التالية − 1)، والأخيرة "فأكثر".
+// العمليات قبل بداية أول شريحة = بدون عمولة تلقائياً.
+function _getEmpBonusTiers() {
+    let s = safeJSON(store.settings, {});
+    let t = s.empBonusTiers;
+    if (Array.isArray(t) && t.length >= 1) {
+        // النموذج الجديد (فيه startSale)
+        if (t[0] && t[0].startSale !== undefined) {
+            return t.map(x => ({ startSale: parseInt(x.startSale), pct: parseFloat(x.pct) }))
+                    .filter(x => !isNaN(x.startSale) && !isNaN(x.pct))
+                    .sort((a,b) => a.startSale - b.startSale);
+        }
+        // هجرة النموذج القديم { fromSale, toSale, pct } → { startSale, pct }
+        if (t[0] && t[0].fromSale !== undefined) {
+            return t.map(x => ({ startSale: parseInt(x.fromSale), pct: parseFloat(x.pct) }))
+                    .filter(x => !isNaN(x.startSale) && !isNaN(x.pct))
+                    .sort((a,b) => a.startSale - b.startSale);
+        }
+    }
+    // الافتراضي المطابق للنظام القديم: 8–11 => 15%، 12 فأكثر => 20%
+    return [
+        { startSale: 8,  pct: 15 },
+        { startSale: 12, pct: 20 }
+    ];
+}
+
+// الشهر المعروض حالياً في صندوق سحب الأموال (افتراضياً الشهر الحالي)
+let _empBonusViewMonth = _curMonthKey();
+
+// إزاحة مفتاح شهر بمقدار delta (±1) وإرجاع "YYYY-MM"
+function _shiftMonthKey(monthKey, delta) {
+    let [y, m] = monthKey.split('-').map(Number);
+    let d = new Date(y, (m - 1) + delta, 1);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+// اسم الشهر بالعربي من مفتاح "YYYY-MM"
+function _monthLabelAr(monthKey) {
+    const names = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    let [y, m] = monthKey.split('-').map(Number);
+    return (names[m-1] || monthKey) + ' ' + y;
 }
 
 function refreshEmployeeBonus() {
@@ -12293,29 +12723,75 @@ function refreshEmployeeBonus() {
 
     // صندوق تعديل راتب الموظف (في صفحة سحب الأموال) — للأدمن وفقط عند وجود موظفين
     let _adminBox = document.getElementById('empBonusAdminBox');
+    let _isAdminNow = currentUser && currentUser.role === 'admin';
     if (_adminBox) {
-        let _isAdminNow = currentUser && currentUser.role === 'admin';
         if (_isAdminNow && _hasEmployees) _adminBox.classList.remove('hidden');
         else _adminBox.classList.add('hidden');
+    }
+    // بطاقة عرض الزيادة الشهرية مع التنقل — للأدمن فقط وعند وجود موظفين
+    let _monthCard = document.getElementById('empBonusMonthCard');
+    if (_monthCard) {
+        if (_isAdminNow && _hasEmployees) _monthCard.classList.remove('hidden');
+        else _monthCard.classList.add('hidden');
     }
     // بطاقة "زيادة الراتب" في لوحة الإحصائيات العلوية — تختفي عند عدم وجود موظفين
     let _statCard = document.getElementById('statCardEmployeeBonus');
     if (_statCard && !_hasEmployees) _statCard.classList.add('hidden');
 
-    let bonus = _getEmpBonusStore();
     let settings = safeJSON(store.settings, {});
     let egpRate = (settings.egpRate && settings.egpRate > 0) ? settings.egpRate : 13;
     let isEgypt = window._userCountry === 'EG';
-    let displayVal = isEgypt
-        ? '+' + fix(bonus.totalShekels * egpRate) + ' £'
-        : '+' + fix(bonus.totalShekels) + ' ₪';
-    if (bonus.totalShekels < 0) displayVal = displayVal.replace('+', '');
 
+    // دالة تنسيق مبلغ بالعملة المناسبة
+    const _fmtBonus = (shekels) => {
+        let v = isEgypt ? '+' + fix(shekels * egpRate) + ' £' : '+' + fix(shekels) + ' ₪';
+        if (shekels < 0) v = v.replace('+', '');
+        return v;
+    };
+
+    // القيمة العلوية (البطاقة الإحصائية) = الشهر الحالي دائماً
+    let curVal = _getEmpBonusForMonth(_curMonthKey());
     let empEl = document.getElementById('statEmployeeBonus');
-    if (empEl) empEl.textContent = displayVal;
+    if (empEl) empEl.textContent = _fmtBonus(curVal);
 
+    // القيمة اليدوية القديمة (لو ظلّت) = الشهر الحالي
     let adminEl = document.getElementById('empBonusAdminValue');
-    if (adminEl) adminEl.textContent = displayVal;
+    if (adminEl) adminEl.textContent = _fmtBonus(curVal);
+
+    // ── بطاقة الشهر القابلة للتنقل ──
+    // تأكد أن الشهر المعروض غير فارغ إلا إذا كان الشهر الحالي
+    let monthVal = _getEmpBonusForMonth(_empBonusViewMonth);
+    let monthValEl = document.getElementById('empBonusMonthValue');
+    if (monthValEl) monthValEl.textContent = _fmtBonus(monthVal);
+    let monthLabelEl = document.getElementById('empBonusMonthLabel');
+    if (monthLabelEl) monthLabelEl.textContent = _monthLabelAr(_empBonusViewMonth);
+
+    // أزرار التنقل: يُفعّل زر الشهر السابق/التالي فقط إذا كان لذلك الشهر قيمة > 0
+    let prevKey = _shiftMonthKey(_empBonusViewMonth, -1);
+    let nextKey = _shiftMonthKey(_empBonusViewMonth, +1);
+    let prevBtn = document.getElementById('empBonusPrevBtn');
+    let nextBtn = document.getElementById('empBonusNextBtn');
+    if (prevBtn) {
+        let has = _getEmpBonusForMonth(prevKey) > 0;
+        prevBtn.disabled = !has;
+        prevBtn.style.opacity = has ? '1' : '0.3';
+        prevBtn.style.cursor = has ? 'pointer' : 'not-allowed';
+    }
+    if (nextBtn) {
+        let has = _getEmpBonusForMonth(nextKey) > 0;
+        nextBtn.disabled = !has;
+        nextBtn.style.opacity = has ? '1' : '0.3';
+        nextBtn.style.cursor = has ? 'pointer' : 'not-allowed';
+    }
+}
+
+// التنقل بين شهور الزيادة (يُستدعى من أزرار الأسهم)
+function empBonusNavMonth(delta) {
+    let target = _shiftMonthKey(_empBonusViewMonth, delta);
+    // لا ننتقل إلا إذا كان للشهر الهدف قيمة > 0
+    if (_getEmpBonusForMonth(target) <= 0) return;
+    _empBonusViewMonth = target;
+    refreshEmployeeBonus();
 }
 
 function calculateEmployeeBonusForSale(profitShekels, purchases) {
@@ -12324,18 +12800,23 @@ function calculateEmployeeBonusForSale(profitShekels, purchases) {
     let todaySales = purchases.filter(p =>
         p.date === today && !p.isComp && !p.isPledge && !p.pledgeId
     );
-    let saleIndex = todaySales.length - 1; // الرقم التسلسلي للبيعة الحالية
+    let saleNumber = todaySales.length; // ترتيب البيعة الحالية (1 = أول عملية اليوم)
 
+    // تحديد النسبة حسب شرائح الأدمن (نموذج نقاط البداية)
+    // نأخذ أعلى شريحة تكون بدايتها ≤ رقم العملية الحالية
+    let tiers = _getEmpBonusTiers(); // مرتبة تصاعدياً حسب startSale
     let bonusPct = 0;
-    if (saleIndex >= 11) bonusPct = 0.20;
-    else if (saleIndex >= 7) bonusPct = 0.15;
+    for (let t of tiers) {
+        if (saleNumber >= t.startSale) bonusPct = (t.pct || 0) / 100;
+        else break; // الشرائح مرتبة، فأول واحدة بدايتها أكبر توقفنا
+    }
 
     if (bonusPct === 0 || profitShekels <= 0) return;
 
     let bonusAmount = +(profitShekels * bonusPct).toFixed(4);
-    let obj = _getEmpBonusStore();
-    obj.totalShekels = +((obj.totalShekels || 0) + bonusAmount).toFixed(4);
-    _saveEmpBonus(obj);
+    let mk = _curMonthKey();
+    let cur = _getEmpBonusForMonth(mk);
+    _setEmpBonusForMonth(mk, cur + bonusAmount);
     refreshEmployeeBonus();
 }
 
@@ -12343,11 +12824,18 @@ function adjustEmployeeBonus() {
     if (!currentUser || currentUser.role !== 'admin') return notify('للأدمن فقط', 'error');
     let val = parseFloat(document.getElementById('empBonusAdjust').value);
     if (isNaN(val) || val === 0) return notify('أدخل قيمة صحيحة', 'error');
-    let obj = _getEmpBonusStore();
-    obj.totalShekels = +((obj.totalShekels || 0) + val).toFixed(4);
-    _saveEmpBonus(obj);
+    // التعديل يُطبَّق على الشهر المعروض حالياً في البطاقة
+    let mk = _empBonusViewMonth || _curMonthKey();
+    let _before = _getEmpBonusForMonth(mk);
+    let _after = +(_before + val).toFixed(4);
+    _setEmpBonusForMonth(mk, _after);
     document.getElementById('empBonusAdjust').value = '';
     refreshEmployeeBonus();
+    logAction(
+        val > 0 ? `تعديل يدوي: إضافة ${val} ₪ لزيادة راتب الموظف (${_monthLabelAr(mk)})` : `تعديل يدوي: خصم ${Math.abs(val)} ₪ من زيادة راتب الموظف (${_monthLabelAr(mk)})`,
+        'financial',
+        { type: 'adjust_emp_bonus', operation: val > 0 ? 'إضافة' : 'خصم', amount: Math.abs(val) + ' ₪', before: _before + ' ₪', after: _after + ' ₪', month: _monthLabelAr(mk) }
+    );
     notify(val > 0 ? `تمت إضافة ${val} ₪ لزيادة الراتب` : `تم خصم ${Math.abs(val)} ₪ من زيادة الراتب`);
 }
 
