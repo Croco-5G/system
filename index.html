@@ -4758,7 +4758,7 @@ function migrateRateStamps() {
     return changed;
 }
 
-// تهيئة رصيد التكلفة المتبقي للمخزون القديم (أسلوب باقي التكلفة) — آمن للتكرار
+// تهيئة رصيد التكلفة المتبقّي للمخزون القديم (أسلوب باقي التكلفة) — آمن للتكرار
 let _stockRemCostDone = false;
 function migrateStockRemainingCost() {
     if (_stockRemCostDone) return;
@@ -4768,10 +4768,12 @@ function migrateStockRemainingCost() {
     stock.forEach(s => {
         if (!s) return;
         if (s.remainingCost === undefined || s.remainingCost === null || isNaN(parseFloat(s.remainingCost))) {
-            // اشتقاق الرصيد من الحالة الحالية: التكلفة الكلية ناقص حصة المباع بالنظام القديم
+            // اشتقاق الرصيد من الحالة الحالية باستخدام العدد الفعلي للمشترين (الأصح)
             let totalCost = parseFloat(s.cost) || 0;
             let total = parseInt(s.totalProfiles) || 1;
-            let sold = parseInt(s.soldProfiles) || 0;
+            let soldByField = parseInt(s.soldProfiles) || 0;
+            let soldByBuyers = Array.isArray(s.buyers) ? s.buyers.length : 0;
+            let sold = Math.min(Math.max(soldByField, soldByBuyers), total);
             let consumed = (totalCost / total) * sold;
             s.remainingCost = Math.max(0, Math.round((totalCost - consumed) * 10000) / 10000);
             changed = true;
@@ -7370,26 +7372,31 @@ function autoAddPlusPhone(el) {
 
 // --- NEW PURCHASE LOGIC ---
 // ──────────────────────────────────────────────────────────────
-//  أسلوب "باقي التكلفة" لتسعير البروفايلات
-//  كل بروفايل يُباع تُخصم تكلفته الفعلية وقت البيع من رصيد متبقٍّ،
-//  فلا يتأثر المباع سابقاً عند تغيير عدد البروفايلات لاحقاً.
-//  - remainingCost: رصيد التكلفة المتبقي (بعملة التكلفة الأصلية)
-//  - تكلفة البروفايل التالي = remainingCost / (totalProfiles - soldProfiles)
+//  أسلوب "باقي التكلفة" لتسعير البروفايلات (النظام الصحيح):
+//  تكلفة البروفايل التالي = الرصيد المتبقّي ÷ البروفايلات المتبقّية.
+//  مثال: باقي 5 بروفايلات وباقي 10$ من تكلفة الاشتراك → كل بروفايل = 2$.
+//  وكل بيع يخصم تكلفته الفعلية من الرصيد، فلو زاد/نقص عدد البروفايلات لاحقاً
+//  يتكيّف الحساب مع الرصيد والبروفايلات المتبقّية الفعلية.
+//  - remainingCost: رصيد التكلفة المتبقّي (بعملة التكلفة الأصلية)
 // ──────────────────────────────────────────────────────────────
 function _getStockRemainingCost(stItem) {
-    // تهيئة آمنة للبيانات القديمة: إن لم يوجد رصيد متبقٍّ، نشتقّه من الحالة الحالية
+    if (stItem.remainingCost !== undefined && stItem.remainingCost !== null && !isNaN(parseFloat(stItem.remainingCost))) {
+        return Math.max(0, parseFloat(stItem.remainingCost));
+    }
+    // اشتقاق آمن للبيانات القديمة (التي لا تملك remainingCost):
+    // نعتمد على العدد الفعلي للمشترين (buyers.length) لأنه المصدر الأصح لعدد المباع،
+    // وقد يكون soldProfiles غير متزامن في البيانات القديمة.
     let totalCost = parseFloat(stItem.cost) || 0;
     let total = parseInt(stItem.totalProfiles) || 1;
-    let sold = parseInt(stItem.soldProfiles) || 0;
-    if (stItem.remainingCost === undefined || stItem.remainingCost === null || isNaN(parseFloat(stItem.remainingCost))) {
-        // البيانات القديمة: نفترض أن المباع استهلك حصته بالنظام القديم (cost/total)
-        let consumed = (totalCost / total) * sold;
-        return Math.max(0, totalCost - consumed);
-    }
-    return Math.max(0, parseFloat(stItem.remainingCost));
+    let soldByField = parseInt(stItem.soldProfiles) || 0;
+    let soldByBuyers = Array.isArray(stItem.buyers) ? stItem.buyers.length : 0;
+    let sold = Math.max(soldByField, soldByBuyers); // الأدق: أكبر عدد موثوق للمباع
+    sold = Math.min(sold, total); // لا يتجاوز الإجمالي
+    let consumed = (totalCost / total) * sold; // حصة المباع بالنظام القديم (cost/total)
+    return Math.max(0, Math.round((totalCost - consumed) * 10000) / 10000);
 }
 
-// تكلفة البروفايل التالي بعملة التكلفة الأصلية (بدون خصم)
+// تكلفة البروفايل التالي = الرصيد المتبقّي ÷ البروفايلات المتبقّية
 function _peekNextProfileCost(stItem) {
     let total = parseInt(stItem.totalProfiles) || 1;
     let sold = parseInt(stItem.soldProfiles) || 0;
@@ -7398,8 +7405,8 @@ function _peekNextProfileCost(stItem) {
     return remCost / remainingProfiles;
 }
 
-// خصم تكلفة بروفايل واحد من الرصيد المتبقي (يُستدعى عند تأكيد البيع)
-// يُعدّل stItem.remainingCost في المكان، ويُرجع التكلفة المخصومة بعملتها الأصلية
+// خصم تكلفة بروفايل واحد من الرصيد المتبقّي (يُستدعى عند تأكيد البيع)
+// يُعدّل stItem.remainingCost في المكان ويُرجع التكلفة المخصومة بعملتها الأصلية
 function _consumeProfileCost(stItem) {
     let cost = _peekNextProfileCost(stItem);
     let remCost = _getStockRemainingCost(stItem);
