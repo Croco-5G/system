@@ -1553,6 +1553,81 @@
     </div>
 </div>
 
+<!-- ═══ نافذة إنشاء/إدارة تذكير مخصّص (تُفتح من تفاصيل المخزون) ═══ -->
+<div id="customReminderCreateModal" class="dialog-modal" style="display:none; z-index: 7100;">
+    <div class="dialog-box" style="text-align:right; max-width:480px; width:95%; border:2px solid var(--primary);">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px; color:var(--primary);">
+            <i class="fas fa-bell"></i> تذكير الاشتراك
+        </h3>
+
+        <!-- حالة: يوجد تذكير معلّق بالفعل -->
+        <div id="reminderPendingBox" style="display:none;">
+            <div style="background:rgba(234,179,8,0.08); border:1px solid rgba(234,179,8,0.35); border-radius:12px; padding:14px; margin-bottom:16px;">
+                <div style="font-size:12px; color:#eab308; font-weight:800; margin-bottom:8px;"><i class="fas fa-clock"></i> يوجد تذكير مُعيّن لهذا الاشتراك:</div>
+                <div id="reminderPendingText" style="font-size:14px; color:var(--text-main); font-weight:700; line-height:1.7; word-break:break-word;"></div>
+                <div id="reminderPendingWhen" style="font-size:12px; color:var(--text-muted); margin-top:8px;"></div>
+            </div>
+            <div style="background:rgba(99,102,241,0.05); border:1px dashed var(--border-color); border-radius:10px; padding:10px 12px; margin-bottom:16px; font-size:12px; color:var(--text-muted); line-height:1.7;">
+                <i class="fas fa-info-circle" style="color:var(--primary);"></i> لإرسال تذكير جديد، احذف التذكير الحالي أولاً.
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btn-danger" style="flex:1; min-width:130px; justify-content:center;" onclick="deleteCustomReminder()"><i class="fas fa-trash"></i> حذف التذكير</button>
+                <button class="btn" style="flex:1; min-width:130px; justify-content:center; background:rgba(100,116,139,0.12); color:var(--text-muted); border:1px solid var(--border-color);" onclick="document.getElementById('customReminderCreateModal').style.display='none';"><i class="fas fa-times"></i> إغلاق</button>
+            </div>
+        </div>
+
+        <!-- حالة: لا يوجد تذكير — نموذج الإنشاء -->
+        <div id="reminderCreateBox">
+            <div style="background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:12px; padding:12px 14px; margin-bottom:18px; font-size:13px; line-height:1.7; color:var(--text-muted);">
+                <i class="fas fa-info-circle" style="color:var(--primary);"></i> اكتب ما المطلوب من التذكير، ومتى يظهر لك (بعد كم يوم من الآن).
+            </div>
+
+            <div class="input-group" style="margin-bottom:16px;">
+                <label style="font-size:13px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:8px;"><i class="fas fa-pen" style="color:var(--primary);"></i> المطلوب من التذكير</label>
+                <textarea id="customReminderText" rows="3" placeholder="مثال: تجديد الاشتراك ومتابعة العميل" style="width:100%; resize:vertical; min-height:70px;"></textarea>
+            </div>
+
+            <div class="input-group" style="margin-bottom:20px;">
+                <label style="font-size:13px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:8px;"><i class="fas fa-calendar-day" style="color:var(--primary);"></i> يظهر بعد كم يوم؟</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="number" id="customReminderDays" min="1" step="1" placeholder="مثال: 7" inputmode="numeric"
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                        onkeydown="if(['e','E','+','-','.',','].includes(event.key)) event.preventDefault();"
+                        style="flex:1;">
+                    <span style="font-weight:800; color:var(--text-muted); white-space:nowrap;">يوم</span>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btn-primary" style="flex:1; min-width:130px; justify-content:center;" onclick="saveCustomReminder()"><i class="fas fa-check"></i> تعيين التذكير</button>
+                <button class="btn" style="flex:1; min-width:130px; justify-content:center; background:rgba(100,116,139,0.12); color:var(--text-muted); border:1px solid var(--border-color);" onclick="document.getElementById('customReminderCreateModal').style.display='none';"><i class="fas fa-times"></i> إلغاء</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ نافذة ظهور التذكير المخصّص عند حلول وقته (نفس أسلوب تذكير البطاقة) ═══ -->
+<div id="customReminderAlertModal" class="dialog-modal" style="display:none; z-index: 7000;">
+    <div class="dialog-box" style="text-align:right; max-width:520px; width:95%; border:2px solid var(--primary);">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px; color:var(--primary);">
+            <i class="fas fa-bell"></i> تذكير
+        </h3>
+        <div style="background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:12px; padding:14px; margin-bottom:16px; font-size:14px; line-height:1.7;">
+            حان وقت تذكير طلبتَه على هذا الاشتراك. التفاصيل بالأسفل.
+        </div>
+        <div id="customReminderDetails" style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:12px; padding:16px; margin-bottom:14px; font-size:14px; line-height:1.9;"></div>
+        <!-- عداد الدقيقة -->
+        <div id="customReminderCountdownBox" style="background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:10px; padding:10px 14px; margin-bottom:14px; text-align:center; font-size:13px; color:var(--primary); font-weight:700;">
+            <i class="fas fa-hourglass-half"></i> يمكنك تأكيد الإنجاز بعد: <span id="customReminderCountdown">60</span> ثانية
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button id="btnConfirmCustomReminder" class="btn btn-success" style="flex:1; min-width:140px; justify-content:center; opacity:0.4; cursor:not-allowed;" onclick="confirmCustomReminder()" disabled><i class="fas fa-check"></i> تم الإنجاز</button>
+            <button class="btn btn-warning" style="flex:1; min-width:140px; justify-content:center; color:#000;" onclick="snoozeCustomReminder()"><i class="fas fa-clock"></i> ذكّرني بعد 5 دقائق</button>
+            <button class="btn" style="flex:1; min-width:140px; justify-content:center; background:rgba(100,116,139,0.12); color:var(--text-muted); border:1px solid var(--border-color);" onclick="ignoreCustomReminderForMe()"><i class="fas fa-eye-slash"></i> ليس من اختصاصي</button>
+        </div>
+    </div>
+</div>
+
 <div id="customerDetailsModal" class="dialog-modal" style="display:none; z-index: 6100;">
     <div class="dialog-box custom-scroll" style="text-align:right; max-width:780px; width:95%; max-height:90vh; overflow-y:auto;">
         <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:15px; margin-bottom:18px;">
@@ -2919,6 +2994,7 @@
         <button id="btnSaveStock" class="btn btn-primary" style="width:100%; margin-top:10px" onclick="verifyStockAdd()"><i class="fas fa-save"></i> حفظ وشراء</button>
         <button id="btnUpdateNote" class="btn btn-warning hidden" style="width:100%; margin-top:10px" onclick="updateStockNote()"><i class="fas fa-edit"></i> تحديث الملاحظات والغرض</button>
         <button id="btnRemoveBuyer" class="btn btn-danger hidden" style="width:100%; margin-top:10px" onclick="openRemoveBuyerModal()"><i class="fas fa-user-minus"></i> حذف عميل من بروفايل</button>
+        <div id="stockReminderBtnWrap" style="display:none; margin-top:10px;"></div>
         <button class="btn" style="width:100%; margin-top:10px; background:transparent; color:var(--text-muted); border:1px solid var(--border-color)" onclick="closeStockModal('force')">إلغاء</button>
     </div>
 </div>
@@ -4393,6 +4469,8 @@ const LOG_TYPE_AR = {
     delete_expired_stock:'حذف اشتراك منتهٍ من المخزون', archive_test_stock:'أرشفة اشتراك تجريبي',
     archive_partial_stock:'أرشفة اشتراك منتهٍ جزئياً', update_stock_note:'تحديث ملاحظات مخزون',
     card_removed:'تأكيد إزالة بطاقة', card_ignored:'تجاهل تذكير بطاقة',
+    custom_reminder_set:'تعيين تذكير على اشتراك', custom_reminder_done:'إنجاز تذكير اشتراك',
+    custom_reminder_ignored:'تجاهل تذكير اشتراك', custom_reminder_deleted:'حذف تذكير من اشتراك',
     // خدمات
     add_service:'إضافة خدمة جديدة', edit_service:'تعديل خدمة',
     // طلبات وحجوزات
@@ -4429,6 +4507,7 @@ const LOG_KEY_AR = {
     usedCount:'عدد مرات الاستخدام', newRate:'السعر الجديد', enabled:'مفعّل', chance:'الاحتمالية',
     minDiscount:'أدنى خصم', maxDiscount:'أقصى خصم', minValidity:'أدنى صلاحية', maxValidity:'أقصى صلاحية',
     stockName:'اسم الاشتراك', vendor:'البائع', addedDate:'تاريخ الإضافة', soldDate:'تاريخ البيع',
+    reminderText:'نص التذكير', afterDays:'يظهر بعد',
     soldProfiles:'البروفايلات المباعة', totalProfiles:'إجمالي البروفايلات', removedBuyer:'العميل المحذوف',
     remainingProfiles:'البروفايلات المتبقية', beforeTotal:'الإجمالي قبل', afterTotal:'الإجمالي بعد',
     buyers:'العملاء', notes:'الملاحظات', purpose:'الغرض', branches:'الفروع', newCurrency:'العملة الجديدة',
@@ -5336,7 +5415,7 @@ function tryAutoLogin() {
         checkAdminNotificationOnLogin();
         startExpiryPeriodicCheck();
         startCardReminderCheck();
-        setTimeout(checkCardRemovalReminders, 1200);
+        setTimeout(checkCardRemovalReminders, 1200);        setTimeout(checkCustomReminders, 1400);
         _startChatOnLogin();
     });
 }
@@ -5591,7 +5670,7 @@ async function attemptLogin() {
         checkAdminNotificationOnLogin();
         startExpiryPeriodicCheck();
         startCardReminderCheck();
-        setTimeout(checkCardRemovalReminders, 1200);
+        setTimeout(checkCardRemovalReminders, 1200);        setTimeout(checkCustomReminders, 1400);
         btn.classList.remove('loading');
         return;
     }
@@ -5636,7 +5715,7 @@ async function attemptLogin() {
         checkAdminNotificationOnLogin();
         startExpiryPeriodicCheck();
         startCardReminderCheck();
-        setTimeout(checkCardRemovalReminders, 1200);
+        setTimeout(checkCardRemovalReminders, 1200);        setTimeout(checkCustomReminders, 1400);
           _startChatOnLogin();
         });
     } else {
@@ -5852,7 +5931,277 @@ function startCardReminderCheck() {
     _cardReminderInterval = setInterval(() => {
         if (!currentUser) { clearInterval(_cardReminderInterval); _cardReminderInterval = null; return; }
         checkCardRemovalReminders();
+        checkCustomReminders();
     }, 60 * 1000); // فحص كل دقيقة (يلتقط انتهاء التأجيل خلال 5 دقائق)
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  التذكيرات المخصّصة على اشتراكات المخزون (للأدمن، معلّقة على الشاشة)
+//  - تُنشأ من نافذة تفاصيل الاشتراك (المباع وغير المباع)
+//  - تُخزَّن على الاشتراك ضمن item.customReminder
+//  - تظهر بنفس أسلوب تذكير إزالة البطاقة تماماً عند حلول وقتها
+// ═══════════════════════════════════════════════════════════════
+let _customReminderActiveId = null; // الاشتراك المعروض تذكيره حالياً
+let _customReminderTargetId = null; // الاشتراك الذي نُنشئ له تذكيراً في نافذة الإنشاء
+
+// هل يوجد تذكير فعّال (غير منجَز) على الاشتراك؟ — التذكير المنجَز يُعتبر منتهياً
+function _hasActiveReminder(item) {
+    return !!(item && item.customReminder && !item.customReminder.done);
+}
+
+// فتح نافذة تذكير لاشتراك معيّن — تعرض حالة "معلّق" أو نموذج الإنشاء
+function openCustomReminderModal(stockId) {
+    _customReminderTargetId = stockId;
+    let stock = safeJSON(store.stock, []);
+    let item = stock.find(s => s && s.id === stockId);
+    let pendingBox = document.getElementById('reminderPendingBox');
+    let createBox = document.getElementById('reminderCreateBox');
+
+    if (item && _hasActiveReminder(item)) {
+        // يوجد تذكير معلّق → اعرض حالة المعلّق مع زر الحذف
+        let r = item.customReminder;
+        let pTxt = document.getElementById('reminderPendingText');
+        let pWhen = document.getElementById('reminderPendingWhen');
+        if (pTxt) pTxt.textContent = r.text || '—';
+        if (pWhen) {
+            let now = Date.now();
+            if (now >= r.triggerAt) {
+                pWhen.innerHTML = '<i class="fas fa-hourglass-end" style="color:#eab308;"></i> حان وقته الآن';
+            } else {
+                let daysLeft = Math.ceil((r.triggerAt - now) / 86400000);
+                pWhen.innerHTML = `<i class="fas fa-hourglass-half"></i> يظهر بعد ${daysLeft} يوم (بتاريخ ${new Date(r.triggerAt).toLocaleDateString('en-CA')})`;
+            }
+        }
+        if (pendingBox) pendingBox.style.display = 'block';
+        if (createBox) createBox.style.display = 'none';
+    } else {
+        // لا يوجد تذكير → اعرض نموذج الإنشاء فارغاً
+        let txt = document.getElementById('customReminderText');
+        let days = document.getElementById('customReminderDays');
+        if (txt) txt.value = '';
+        if (days) days.value = '';
+        if (pendingBox) pendingBox.style.display = 'none';
+        if (createBox) createBox.style.display = 'block';
+        setTimeout(() => { if (txt) txt.focus(); }, 60);
+    }
+    document.getElementById('customReminderCreateModal').style.display = 'flex';
+}
+
+// تحديث زر التذكير في نافذة التفاصيل المفتوحة خلف نافذة الإنشاء (بدون إغلاقها)
+function _refreshOpenReminderBtn(stockId) {
+    let stock = safeJSON(store.stock, []);
+    let item = stock.find(s => s && s.id === stockId);
+    if (!item) return;
+    // نافذة المخزون النشط (editStock)
+    let wrap = document.getElementById('stockReminderBtnWrap');
+    if (wrap && wrap.style.display !== 'none' && document.getElementById('stockIndexId') && document.getElementById('stockIndexId').value === stockId) {
+        wrap.innerHTML = _reminderBtnHTML(item);
+    }
+    // نافذة المباع (detailsModal) — نعيد بناء الزر داخلها إن كانت مفتوحة
+    let existingBtn = document.querySelector(`#detailsModal [onclick="openCustomReminderModal('${stockId}')"]`);
+    if (existingBtn) {
+        let tmp = document.createElement('div');
+        tmp.innerHTML = _reminderBtnHTML(item);
+        existingBtn.replaceWith(tmp.firstElementChild);
+    }
+}
+
+// حفظ التذكير المخصّص
+function saveCustomReminder() {
+    if (!_customReminderTargetId) return;
+    let text = (document.getElementById('customReminderText').value || '').trim();
+    let daysRaw = (document.getElementById('customReminderDays').value || '').trim();
+    let days = parseInt(daysRaw);
+
+    if (!text) return notify("اكتب المطلوب من التذكير", "error");
+    if (!daysRaw || isNaN(days) || days < 1) return notify("أدخل عدد أيام صحيح (رقم أكبر من صفر)", "error");
+
+    let stock = safeJSON(store.stock, []);
+    let idx = stock.findIndex(s => s && s.id === _customReminderTargetId);
+    if (idx === -1) return notify("لم يُعثر على الاشتراك", "error");
+
+    // منع الإرسال إذا يوجد تذكير فعّال بالفعل (يجب حذف القديم أولاً)
+    if (_hasActiveReminder(stock[idx])) return notify("يوجد تذكير مُعيّن لهذا الاشتراك — احذفه أولاً", "error");
+
+    let triggerAt = Date.now() + days * 24 * 60 * 60 * 1000;
+    stock[idx].customReminder = {
+        text: text,
+        triggerAt: triggerAt,
+        days: days,
+        createdBy: currentUser ? currentUser.id : null,
+        createdAt: Date.now(),
+        done: false,
+        snoozeUntil: null,
+        ignoredBy: []
+    };
+    store.stock = JSON.stringify(stock);
+    fbSave("stock", stock);
+
+    logAction(`تعيين تذكير على اشتراك: ${stock[idx].displayName || stock[idx].service}`, 'general', {
+        type: 'custom_reminder_set',
+        stockName: stock[idx].displayName || stock[idx].service,
+        reminderText: text,
+        afterDays: days + ' يوم'
+    });
+
+    let tid = _customReminderTargetId;
+    document.getElementById('customReminderCreateModal').style.display = 'none';
+    _customReminderTargetId = null;
+    _refreshOpenReminderBtn(tid); // تحديث الزر فوراً في نافذة التفاصيل المفتوحة
+    notify(`تم تعيين التذكير — سيظهر بعد ${days} يوم`);
+}
+
+// حذف التذكير المعلّق (يتيح إرسال تذكير جديد)
+function deleteCustomReminder() {
+    if (!_customReminderTargetId) return;
+    let stock = safeJSON(store.stock, []);
+    let idx = stock.findIndex(s => s && s.id === _customReminderTargetId);
+    if (idx === -1) return notify("لم يُعثر على الاشتراك", "error");
+    let oldText = stock[idx].customReminder ? stock[idx].customReminder.text : '';
+    delete stock[idx].customReminder;
+    store.stock = JSON.stringify(stock);
+    fbSave("stock", stock);
+    logAction(`حذف تذكير من اشتراك: ${stock[idx].displayName || stock[idx].service}`, 'general', {
+        type: 'custom_reminder_deleted',
+        stockName: stock[idx].displayName || stock[idx].service,
+        reminderText: oldText
+    });
+    let tid = _customReminderTargetId;
+    document.getElementById('customReminderCreateModal').style.display = 'none';
+    _customReminderTargetId = null;
+    _refreshOpenReminderBtn(tid);
+    notify("تم حذف التذكير — يمكنك الآن إرسال تذكير جديد");
+}
+
+// جلب التذكيرات المخصّصة المستحقة
+function _getDueCustomReminders() {
+    let stock = safeJSON(store.stock, []);
+    let now = Date.now();
+    return stock.filter(s => {
+        let r = s && s.customReminder;
+        if (!r) return false;
+        if (r.done) return false;                                   // أُنجز سابقاً
+        if (now < r.triggerAt) return false;                        // لم يحن وقته بعد
+        if (r.ignoredBy && currentUser && r.ignoredBy.includes(currentUser.id)) return false; // تجاهله هذا المستخدم
+        if (r.snoozeUntil && now < r.snoozeUntil) return false;     // مؤجّل حالياً
+        return true;
+    });
+}
+
+let _customCountdownInterval = null;
+
+function _startCustomCountdown() {
+    if (_customCountdownInterval) clearInterval(_customCountdownInterval);
+    let countdownEl = document.getElementById('customReminderCountdown');
+    let confirmBtn = document.getElementById('btnConfirmCustomReminder');
+    let countdownBox = document.getElementById('customReminderCountdownBox');
+    if (!countdownEl || !confirmBtn) return;
+
+    let secs = 60;
+    countdownEl.textContent = secs;
+    confirmBtn.disabled = true;
+    confirmBtn.style.opacity = '0.4';
+    confirmBtn.style.cursor = 'not-allowed';
+    if (countdownBox) countdownBox.style.display = 'block';
+
+    _customCountdownInterval = setInterval(() => {
+        secs--;
+        if (countdownEl) countdownEl.textContent = secs;
+        if (secs <= 0) {
+            clearInterval(_customCountdownInterval);
+            _customCountdownInterval = null;
+            confirmBtn.disabled = false;
+            confirmBtn.style.opacity = '1';
+            confirmBtn.style.cursor = 'pointer';
+            if (countdownBox) countdownBox.style.display = 'none';
+        }
+    }, 1000);
+}
+
+function checkCustomReminders() {
+    if (!currentUser || currentUser.role !== 'admin') return; // للأدمن فقط
+    let modal = document.getElementById("customReminderAlertModal");
+    if (!modal) return;
+    if (modal.style.display === "flex") return; // لا تقاطع تذكيراً مفتوحاً
+    // لا تظهر تذكيراً مخصّصاً فوق تذكير بطاقة مفتوح
+    let cardModal = document.getElementById("cardRemovalReminderModal");
+    if (cardModal && cardModal.style.display === "flex") return;
+
+    let due = _getDueCustomReminders();
+    if (due.length === 0) { _customReminderActiveId = null; return; }
+
+    let item = due[0];
+    _customReminderActiveId = item.id;
+    let r = item.customReminder;
+
+    let row = (label, val) => `<div style="display:flex; gap:8px; margin-bottom:4px;"><b style="min-width:90px; color:var(--text-muted);">${label}:</b><span style="word-break:break-all;">${val}</span></div>`;
+    let detailsHtml = '';
+    detailsHtml += row("الخدمة", esc(item.displayName || item.service || '—'));
+    detailsHtml += row("الإيميل", esc(item.email || '—'));
+    detailsHtml += row("كلمة السر", esc(item.pass || '—'));
+    detailsHtml += row("ملاحظات", esc(item.notes || '—') || '—');
+    // المطلوب (النص الذي حدّده المستخدم) — مميّز بصرياً
+    detailsHtml += `<div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color);"><div style="display:flex; gap:8px;"><b style="min-width:90px; color:var(--primary);">المطلوب:</b><span style="word-break:break-word; font-weight:700; color:var(--text-main);">${esc(r.text || '—')}</span></div></div>`;
+
+    document.getElementById("customReminderDetails").innerHTML = detailsHtml;
+    modal.style.display = "flex";
+    _startCustomCountdown();
+}
+
+function confirmCustomReminder() {
+    let confirmBtn = document.getElementById('btnConfirmCustomReminder');
+    if (confirmBtn && confirmBtn.disabled) return; // منع الضغط قبل انتهاء العداد
+    if (_customCountdownInterval) { clearInterval(_customCountdownInterval); _customCountdownInterval = null; }
+    if (!_customReminderActiveId) { document.getElementById("customReminderAlertModal").style.display = "none"; return; }
+    let stock = safeJSON(store.stock, []);
+    let idx = stock.findIndex(s => s && s.id === _customReminderActiveId);
+    if (idx !== -1 && stock[idx].customReminder) {
+        stock[idx].customReminder.done = true;              // لن يُذكِّر مجدداً
+        delete stock[idx].customReminder.snoozeUntil;
+        store.stock = JSON.stringify(stock);
+        fbSave("stock", stock);
+        logAction(`إنجاز تذكير اشتراك: ${stock[idx].displayName || stock[idx].service}`, 'general', { type: 'custom_reminder_done', stockName: stock[idx].displayName || stock[idx].service, reminderText: stock[idx].customReminder.text || '' });
+    }
+    document.getElementById("customReminderAlertModal").style.display = "none";
+    _customReminderActiveId = null;
+    notify("تم تسجيل إنجاز التذكير");
+    setTimeout(checkCustomReminders, 400); // اعرض التالي إن وُجد
+}
+
+function snoozeCustomReminder() {
+    if (_customCountdownInterval) { clearInterval(_customCountdownInterval); _customCountdownInterval = null; }
+    if (!_customReminderActiveId) { document.getElementById("customReminderAlertModal").style.display = "none"; return; }
+    let stock = safeJSON(store.stock, []);
+    let idx = stock.findIndex(s => s && s.id === _customReminderActiveId);
+    if (idx !== -1 && stock[idx].customReminder) {
+        stock[idx].customReminder.snoozeUntil = Date.now() + 5 * 60 * 1000; // تأجيل 5 دقائق
+        store.stock = JSON.stringify(stock);
+        fbSave("stock", stock);
+    }
+    document.getElementById("customReminderAlertModal").style.display = "none";
+    _customReminderActiveId = null;
+    setTimeout(checkCustomReminders, 400);
+}
+
+// "ليس من اختصاصي" — يتجاهل التذكير لهذا المستخدم فقط
+function ignoreCustomReminderForMe() {
+    if (_customCountdownInterval) { clearInterval(_customCountdownInterval); _customCountdownInterval = null; }
+    if (!_customReminderActiveId || !currentUser) { document.getElementById("customReminderAlertModal").style.display = "none"; return; }
+    let stock = safeJSON(store.stock, []);
+    let idx = stock.findIndex(s => s && s.id === _customReminderActiveId);
+    if (idx !== -1 && stock[idx].customReminder) {
+        if (!stock[idx].customReminder.ignoredBy) stock[idx].customReminder.ignoredBy = [];
+        if (!stock[idx].customReminder.ignoredBy.includes(currentUser.id)) {
+            stock[idx].customReminder.ignoredBy.push(currentUser.id);
+        }
+        store.stock = JSON.stringify(stock);
+        fbSave("stock", stock);
+        logAction(`تجاهل تذكير اشتراك (ليس من اختصاصي): ${stock[idx].displayName || stock[idx].service}`, 'general', { type: 'custom_reminder_ignored', stockName: stock[idx].displayName || stock[idx].service, userId: currentUser.id });
+    }
+    document.getElementById("customReminderAlertModal").style.display = "none";
+    _customReminderActiveId = null;
+    notify("تم تجاهل هذا التذكير — لن يظهر لك مجدداً");
+    setTimeout(checkCustomReminders, 400);
 }
 
 function checkExpiredCouponsOnLogin() {
@@ -7244,11 +7593,15 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
 
     let buyerInfo = (customerVal ? customerVal : "عميل") + (customerPhoneVal ? ` - ${customerPhoneVal}` : "");
     if(!stItem.buyers) stItem.buyers = [];
+    if(!stItem.buyerDates) stItem.buyerDates = [];
+    // تاريخ اشتراك هذا العميل (يبقى ثابتاً حتى لو نُقل لاحقاً)
+    let _subDate = `${nd.getFullYear()}-${nmm}-${nddStr}`;
 
     // تسجيل أن هذا العميل أخذ profilesCount من البروفايلات: إضافة اسمه profilesCount مرة
     // واستهلاك تكلفة كل بروفايل من الرصيد المتبقي على حدة (أسلوب باقي التكلفة)
     for (let _pc = 0; _pc < profilesCount; _pc++) {
         stItem.buyers.push(buyerInfo);
+        stItem.buyerDates.push(_subDate); // تاريخ الاشتراك المقابل لهذا الإدخال
         _consumeProfileCost(stItem); // خصم تكلفة هذا البروفايل من الرصيد المتبقي
         stItem.soldProfiles = (stItem.soldProfiles || 0) + 1;
         if(stItem.soldProfiles >= (stItem.totalProfiles || 1)) {
@@ -9402,6 +9755,7 @@ async function undoLastPurchase(){
             sItem.soldProfiles = Math.max(0, (sItem.soldProfiles || 0) - _undoProfilesCount);
             for (let _u = 0; _u < _undoProfilesCount; _u++) {
                 if (sItem.buyers && sItem.buyers.length > 0) sItem.buyers.pop();
+                if (Array.isArray(sItem.buyerDates) && sItem.buyerDates.length > 0) sItem.buyerDates.pop();
             }
             if (sItem.status === 'sold') { sItem.status = 'active'; delete sItem.soldDate; }
             // إعادة حصة التكلفة للرصيد المتبقي (أسلوب باقي التكلفة) — لكل بروفايل تم استهلاكه في هذه العملية
@@ -9573,7 +9927,10 @@ function openRemoveBuyerModal() {
     } else {
         list.innerHTML = item.buyers.map((b, idx) => `
             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:10px 14px;">
-                <span style="font-weight:700; font-size:14px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(b)}">${idx + 1}. ${esc(b)}</span>
+                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;">
+                    <span style="font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(b)}">${idx + 1}. ${esc(b)}</span>
+                    ${_getBuyerDate(item, idx) ? `<span style="font-size:11px; font-weight:600; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;"><i class="fas fa-calendar-check" style="color:var(--primary); font-size:10px;"></i> اشترك في ${_getBuyerDate(item, idx)}</span>` : ''}
+                </div>
                 <div style="display:flex; gap:6px; flex-shrink:0;">
                     <button class="btn" style="padding:5px 10px; font-size:12px; background:var(--primary); color:#fff;" onclick="closeRemoveBuyerModal(); openTransferBuyerModal('${id}', ${idx}, true)">
                         <i class="fas fa-exchange-alt"></i> نقل
@@ -9804,7 +10161,9 @@ async function removeBuyerFromStock(stockId, buyerIdx) {
     let idx = stock.findIndex(x => x.id === stockId);
     if (idx === -1) return notify("لم يُعثر على الاشتراك", "error");
 
+    let _removedBuyerName = stock[idx].buyers[buyerIdx] || '';
     stock[idx].buyers.splice(buyerIdx, 1);
+    if (Array.isArray(stock[idx].buyerDates)) stock[idx].buyerDates.splice(buyerIdx, 1); // إزالة التاريخ المقابل
     stock[idx].soldProfiles = Math.max(0, (parseInt(stock[idx].soldProfiles) || 0) - 1);
 
     // إعادة حصة التكلفة للرصيد المتبقي (أسلوب باقي التكلفة) عند تحرير مقعد
@@ -9823,7 +10182,7 @@ async function removeBuyerFromStock(stockId, buyerIdx) {
 
     store.stock = JSON.stringify(stock);
     fbSave("stock", stock);
-    logAction(`حذف عميل من بروفايل: ${stock[idx].displayName || stock[idx].service}`, 'danger', { type: 'remove_buyer', stockName: stock[idx].displayName || stock[idx].service, removedBuyer: stock[idx].buyers[buyerIdx] || '', remainingProfiles: stock[idx].soldProfiles, totalProfiles: stock[idx].totalProfiles });
+    logAction(`حذف عميل من بروفايل: ${stock[idx].displayName || stock[idx].service}`, 'danger', { type: 'remove_buyer', stockName: stock[idx].displayName || stock[idx].service, removedBuyer: _removedBuyerName, remainingProfiles: stock[idx].soldProfiles, totalProfiles: stock[idx].totalProfiles });
     notify("تم حذف العميل وإرجاع المقعد");
 
     let hasB = stock[idx].buyers && stock[idx].buyers.length > 0;
@@ -9858,6 +10217,7 @@ async function removeBuyerFromSoldView(stockId, buyerIdx) {
 
     let removedBuyer = stock[idx].buyers[buyerIdx] || '';
     stock[idx].buyers.splice(buyerIdx, 1);
+    if (Array.isArray(stock[idx].buyerDates)) stock[idx].buyerDates.splice(buyerIdx, 1); // إزالة التاريخ المقابل
 
     // اشتراك مباع بالكامل: كلا العددين ينقصان → يبقى الاشتراك 11/11
     stock[idx].soldProfiles  = Math.max(0, (parseInt(stock[idx].soldProfiles)  || 0) - 1);
@@ -9891,6 +10251,20 @@ async function removeBuyerFromSoldView(stockId, buyerIdx) {
 // ════════════════════════════════════════════════════════
 //  نافذة إدارة عملاء الاشتراك المباع
 // ════════════════════════════════════════════════════════
+// إرجاع تاريخ اشتراك العميل عند فهرس معيّن (أو null للبيانات القديمة بلا تاريخ)
+function _getBuyerDate(item, idx) {
+    if (!item || !Array.isArray(item.buyerDates)) return null;
+    let d = item.buyerDates[idx];
+    return (d && typeof d === 'string') ? d : null;
+}
+
+// شارة تاريخ الاشتراك (تظهر فقط إن وُجد تاريخ)
+function _buyerDateBadgeHTML(item, idx) {
+    let d = _getBuyerDate(item, idx);
+    if (!d) return '';
+    return `<span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:var(--text-muted); background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.18); border-radius:20px; padding:2px 9px; white-space:nowrap; flex-shrink:0;"><i class="fas fa-calendar-check" style="color:var(--primary); font-size:10px;"></i> ${d}</span>`;
+}
+
 function openClientsManagerModal(stockId) {
     let stock = safeJSON(store.stock, []);
     let item  = stock.find(x => x.id === stockId);
@@ -9925,9 +10299,12 @@ function openClientsManagerModal(stockId) {
                     color:#fff; font-size:12px; font-weight:800;
                     display:flex; align-items:center; justify-content:center;">${idx + 1}</div>
 
-                <span style="flex:1; font-size:13.5px; font-weight:700; color:var(--text-main);
-                    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
-                    title="${esc(b)}">${esc(b)}</span>
+                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+                    <span style="font-size:13.5px; font-weight:700; color:var(--text-main);
+                        overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                        title="${esc(b)}">${esc(b)}</span>
+                    ${_getBuyerDate(item, idx) ? `<span style="font-size:11px; font-weight:600; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;"><i class="fas fa-calendar-check" style="color:var(--primary); font-size:10px;"></i> اشترك في ${_getBuyerDate(item, idx)}</span>` : ''}
+                </div>
 
                 ${isAdmin ? `
                 <div style="display:flex; gap:6px; flex-shrink:0;">
@@ -10107,9 +10484,12 @@ async function executeBuyerTransfer(toStockId) {
 
     let buyerName = (stock[fromIdx].buyers && stock[fromIdx].buyers[_transferBuyerIdx])
         ? stock[fromIdx].buyers[_transferBuyerIdx] : 'عميل';
+    // تاريخ اشتراك العميل الأصلي — يبقى ثابتاً بعد النقل
+    let _movedDate = _getBuyerDate(stock[fromIdx], _transferBuyerIdx);
 
     // ── إزالة من المصدر ──────────────────────────────────────────
     stock[fromIdx].buyers.splice(_transferBuyerIdx, 1);
+    if (Array.isArray(stock[fromIdx].buyerDates)) stock[fromIdx].buyerDates.splice(_transferBuyerIdx, 1);
     let isSoldSrc = stock[fromIdx].status === 'sold';
     if (isSoldSrc) {
         // اشتراك مباع بالكامل → كلاهما ينقصان (12/12 → 11/11)
@@ -10126,7 +10506,9 @@ async function executeBuyerTransfer(toStockId) {
 
     // ── إضافة إلى الهدف ──────────────────────────────────────────
     if (!stock[toIdx].buyers) stock[toIdx].buyers = [];
+    if (!stock[toIdx].buyerDates) stock[toIdx].buyerDates = [];
     stock[toIdx].buyers.push(buyerName);
+    stock[toIdx].buyerDates.push(_movedDate || null); // نفس تاريخ الاشتراك الأصلي (ثابت)
 
     let toAvail = (parseInt(stock[toIdx].totalProfiles) || 1) - (parseInt(stock[toIdx].soldProfiles) || 0);
     if (toAvail <= 0) {
@@ -10641,6 +11023,18 @@ function editStock(id) {
     let _remBoxEdit = document.getElementById("stRemindCardBox");
     if (_remBoxEdit) _remBoxEdit.style.display = "none"; // خيار التذكير يظهر فقط عند الإضافة
 
+    // زر "إرسال تذكير" — للأدمن فقط في وضع التفاصيل (اشتراك موجود)
+    let _remBtnWrap = document.getElementById("stockReminderBtnWrap");
+    if (_remBtnWrap) {
+        if (isAdmin && item.id) {
+            _remBtnWrap.innerHTML = _reminderBtnHTML(item);
+            _remBtnWrap.style.display = "block";
+        } else {
+            _remBtnWrap.innerHTML = "";
+            _remBtnWrap.style.display = "none";
+        }
+    }
+
     // عناصر تعديل عدد البروفايلات (للمدير فقط، وفي وضع التفاصيل فقط)
     let _adjBox = document.getElementById("stProfilesAdjustBox");
     if (_adjBox) {
@@ -10758,12 +11152,35 @@ function viewSoldDetails(id) {
             let cnt = item.buyers.length;
             btns += `<button onclick="openClientsManagerModal('${id}')" style="width:100%;padding:12px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--primary),#8b5cf6);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(99,102,241,0.28);transition:opacity .18s;" onmouseover="this.style.opacity='.86';" onmouseout="this.style.opacity='1';"><i class="fas fa-users"></i> عرض العملاء <span style="background:rgba(255,255,255,0.22);padding:1px 8px;border-radius:20px;font-size:12px;font-weight:800;">${cnt}</span></button>`;
         }
+        btns += _reminderBtnHTML(item);
         btns += `<button onclick="returnSoldStock('${item.id}')" style="width:100%;padding:12px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><i class="fas fa-rotate-left"></i> إرجاع الاشتراك (إضافة مقعد بروفايل)</button>`;
         btns += `</div>`;
         body.innerHTML += btns;
     }
 
     document.getElementById("detailsModal").classList.remove("hidden");
+}
+
+// زر "إرسال تذكير" بتصميم موحّد + مؤشّر إن كان هناك تذكير معلّق
+function _reminderBtnHTML(item) {
+    let hasPending = _hasActiveReminder(item);
+    let r = item.customReminder;
+    let label = hasPending ? 'تذكير مُعيّن — إدارة' : 'إرسال تذكير';
+    let bg = hasPending
+        ? 'linear-gradient(135deg,#eab308,#f59e0b)'
+        : 'linear-gradient(135deg,#6366f1,#8b5cf6)';
+    let shadow = hasPending ? 'rgba(234,179,8,0.28)' : 'rgba(99,102,241,0.28)';
+    let sub = '';
+    if (hasPending) {
+        let now = Date.now();
+        if (now >= r.triggerAt) {
+            sub = `<span style="background:rgba(255,255,255,0.22);padding:1px 8px;border-radius:20px;font-size:11px;font-weight:800;">حان وقته</span>`;
+        } else {
+            let daysLeft = Math.max(1, Math.ceil((r.triggerAt - now) / 86400000));
+            sub = `<span style="background:rgba(255,255,255,0.22);padding:1px 8px;border-radius:20px;font-size:11px;font-weight:800;">بعد ${daysLeft} يوم</span>`;
+        }
+    }
+    return `<button onclick="openCustomReminderModal('${item.id}')" style="width:100%;padding:12px 16px;border-radius:10px;border:none;background:${bg};color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px ${shadow};transition:opacity .18s;" onmouseover="this.style.opacity='.86';" onmouseout="this.style.opacity='1';"><i class="fas fa-bell"></i> ${label} ${sub}</button>`;
 }
 
 // ── إرجاع اشتراك مُباع: يضيف بروفايل إضافي (5/5 ← 5/6) ويعيده للمخزون النشط ──
@@ -10841,9 +11258,13 @@ async function sellStock(id) {
     if (!ok) return;
 
     if (!item.buyers) item.buyers = [];
+    if (!item.buyerDates) item.buyerDates = [];
+    let _ndSell = new Date();
+    let _sellDate = `${_ndSell.getFullYear()}-${String(_ndSell.getMonth()+1).padStart(2,'0')}-${String(_ndSell.getDate()).padStart(2,'0')}`;
     if (used < 1) {
         // لا مشتركين — أضف مقعداً مباشراً واحداً
         item.buyers.push("مباشر (يدوي)");
+        item.buyerDates.push(_sellDate);
         item.soldProfiles  = 1;
         item.totalProfiles = 1;
     } else {
@@ -11728,11 +12149,13 @@ async function executeBookingDelivery() {
         let stItem = stkIdx > -1 ? stockItems[stkIdx] : null;
         if (stkIdx > -1) {
             if (!stockItems[stkIdx].buyers) stockItems[stkIdx].buyers = [];
+            if (!stockItems[stkIdx].buyerDates) stockItems[stkIdx].buyerDates = [];
             stockItems[stkIdx].soldProfiles = (parseInt(stockItems[stkIdx].soldProfiles)||0) + grp.orders.length;
-            // إضافة أسماء العملاء
+            // إضافة أسماء العملاء مع تاريخ اشتراك كل منهم
             grp.orders.forEach(ord => {
                 let buyerInfo = (ord.customerName || 'عميل') + (ord.phone ? ` - ${ord.phone}` : '');
                 stockItems[stkIdx].buyers.push(buyerInfo);
+                stockItems[stkIdx].buyerDates.push(todayStr);
             });
             if (stockItems[stkIdx].soldProfiles >= (parseInt(stockItems[stkIdx].totalProfiles)||1)) {
                 stockItems[stkIdx].status = 'sold';
@@ -12052,8 +12475,11 @@ async function executeDelivery() {
         newPurchase.expiry = null;
     } else if (stItem) {
         if (!stItem.buyers) stItem.buyers = [];
+        if (!stItem.buyerDates) stItem.buyerDates = [];
         let buyerInfo = (customerName || 'عميل') + (customerPhone ? ` - ${customerPhone}` : '');
         stItem.buyers.push(buyerInfo);
+        let _ndBuy = new Date();
+        stItem.buyerDates.push(`${_ndBuy.getFullYear()}-${String(_ndBuy.getMonth()+1).padStart(2,'0')}-${String(_ndBuy.getDate()).padStart(2,'0')}`);
         _consumeProfileCost(stItem); // خصم تكلفة هذا البروفايل من الرصيد المتبقي
         stItem.soldProfiles = (parseInt(stItem.soldProfiles)||0) + 1;
         if (stItem.soldProfiles >= (parseInt(stItem.totalProfiles)||1)) {
