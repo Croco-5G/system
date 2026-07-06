@@ -5953,9 +5953,12 @@ function _hasActiveReminder(item) {
 
 // فتح نافذة تذكير لاشتراك معيّن — تعرض حالة "معلّق" أو نموذج الإنشاء
 function openCustomReminderModal(stockId) {
+    // حماية: لا تذكيرات لاشتراك غير محفوظ بعد (وضع الإضافة)
+    if (!stockId || stockId === 'new') return notify("احفظ الاشتراك أولاً قبل تعيين تذكير", "error");
     _customReminderTargetId = stockId;
     let stock = safeJSON(store.stock, []);
     let item = stock.find(s => s && s.id === stockId);
+    if (!item) return notify("لم يُعثر على الاشتراك", "error");
     let pendingBox = document.getElementById('reminderPendingBox');
     let createBox = document.getElementById('reminderCreateBox');
 
@@ -7608,7 +7611,7 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     // واستهلاك تكلفة كل بروفايل من الرصيد المتبقي على حدة (أسلوب باقي التكلفة)
     for (let _pc = 0; _pc < profilesCount; _pc++) {
         stItem.buyers.push(buyerInfo);
-        stItem.buyerDates.push(_subDate); // تاريخ الاشتراك المقابل لهذا الإدخال
+        _pushBuyerDate(stItem, _subDate); // تاريخ الاشتراك في الفهرس الصحيح (يتفادى مشكلة القدامى)
         _consumeProfileCost(stItem); // خصم تكلفة هذا البروفايل من الرصيد المتبقي
         stItem.soldProfiles = (stItem.soldProfiles || 0) + 1;
         if(stItem.soldProfiles >= (stItem.totalProfiles || 1)) {
@@ -10265,6 +10268,18 @@ function _getBuyerDate(item, idx) {
     return (d && typeof d === 'string') ? d : null;
 }
 
+// إضافة تاريخ اشتراك للعميل الأخير الذي أُضيف لـ buyers، بحيث يقع التاريخ في الفهرس الصحيح تماماً.
+// مهم: العملاء القدامى قد لا يملكون تواريخ (buyerDates أقصر من buyers)، فنملأ الفراغات بـ null
+// حتى لا يُنسب التاريخ الجديد لعميل قديم بالخطأ. يجب استدعاؤها بعد دفع العميل إلى item.buyers مباشرة.
+function _pushBuyerDate(item, dateStr) {
+    if (!item) return;
+    if (!Array.isArray(item.buyers)) item.buyers = [];
+    if (!Array.isArray(item.buyerDates)) item.buyerDates = [];
+    let targetIdx = item.buyers.length - 1; // فهرس العميل الذي أُضيف للتو
+    while (item.buyerDates.length < targetIdx) item.buyerDates.push(null); // املأ فجوات القدامى
+    item.buyerDates[targetIdx] = dateStr; // ضع التاريخ في مكانه الصحيح بالضبط
+}
+
 // شارة تاريخ الاشتراك (تظهر فقط إن وُجد تاريخ)
 function _buyerDateBadgeHTML(item, idx) {
     let d = _getBuyerDate(item, idx);
@@ -10515,7 +10530,7 @@ async function executeBuyerTransfer(toStockId) {
     if (!stock[toIdx].buyers) stock[toIdx].buyers = [];
     if (!stock[toIdx].buyerDates) stock[toIdx].buyerDates = [];
     stock[toIdx].buyers.push(buyerName);
-    stock[toIdx].buyerDates.push(_movedDate || null); // نفس تاريخ الاشتراك الأصلي (ثابت)
+    _pushBuyerDate(stock[toIdx], _movedDate || null); // نفس تاريخ الاشتراك الأصلي في الفهرس الصحيح
 
     let toAvail = (parseInt(stock[toIdx].totalProfiles) || 1) - (parseInt(stock[toIdx].soldProfiles) || 0);
     if (toAvail <= 0) {
@@ -10603,6 +10618,10 @@ function openAddStockModal() {
     if (_remOptsEl) _remOptsEl.style.display = 'none';
     let _remBox = document.getElementById("stRemindCardBox");
     if (_remBox) _remBox.style.display = ""; // إظهار خيار التذكير في وضع الإضافة
+
+    // إخفاء زر "إرسال تذكير" ومسح محتواه في وضع الإضافة (اشتراك غير محفوظ بعد)
+    let _remBtnWrapAdd = document.getElementById("stockReminderBtnWrap");
+    if (_remBtnWrapAdd) { _remBtnWrapAdd.innerHTML = ""; _remBtnWrapAdd.style.display = "none"; }
     
     document.getElementById("stockPurchaseInputs").style.display = "block";
     document.getElementById("btnSaveStock").classList.remove("hidden");
@@ -11271,7 +11290,7 @@ async function sellStock(id) {
     if (used < 1) {
         // لا مشتركين — أضف مقعداً مباشراً واحداً
         item.buyers.push("مباشر (يدوي)");
-        item.buyerDates.push(_sellDate);
+        _pushBuyerDate(item, _sellDate);
         item.soldProfiles  = 1;
         item.totalProfiles = 1;
     } else {
@@ -12162,7 +12181,7 @@ async function executeBookingDelivery() {
             grp.orders.forEach(ord => {
                 let buyerInfo = (ord.customerName || 'عميل') + (ord.phone ? ` - ${ord.phone}` : '');
                 stockItems[stkIdx].buyers.push(buyerInfo);
-                stockItems[stkIdx].buyerDates.push(todayStr);
+                _pushBuyerDate(stockItems[stkIdx], todayStr);
             });
             if (stockItems[stkIdx].soldProfiles >= (parseInt(stockItems[stkIdx].totalProfiles)||1)) {
                 stockItems[stkIdx].status = 'sold';
@@ -12486,7 +12505,7 @@ async function executeDelivery() {
         let buyerInfo = (customerName || 'عميل') + (customerPhone ? ` - ${customerPhone}` : '');
         stItem.buyers.push(buyerInfo);
         let _ndBuy = new Date();
-        stItem.buyerDates.push(`${_ndBuy.getFullYear()}-${String(_ndBuy.getMonth()+1).padStart(2,'0')}-${String(_ndBuy.getDate()).padStart(2,'0')}`);
+        _pushBuyerDate(stItem, `${_ndBuy.getFullYear()}-${String(_ndBuy.getMonth()+1).padStart(2,'0')}-${String(_ndBuy.getDate()).padStart(2,'0')}`);
         _consumeProfileCost(stItem); // خصم تكلفة هذا البروفايل من الرصيد المتبقي
         stItem.soldProfiles = (parseInt(stItem.soldProfiles)||0) + 1;
         if (stItem.soldProfiles >= (parseInt(stItem.totalProfiles)||1)) {
