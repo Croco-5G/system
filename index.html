@@ -1305,16 +1305,65 @@
         <div class="grid-2">
             <div class="input-group">
                 <label>عدد الحسابات المرهونة *</label>
-                <input type="number" id="plgCount" placeholder="مثال: 12" min="1">
+                <input type="number" id="plgCount" placeholder="مثال: 12" min="1" oninput="_plgAmountPreview()">
             </div>
             <div class="input-group">
                 <label>مدة كل حساب (شهر)</label>
                 <input type="number" id="plgDuration" placeholder="مثال: 1" min="1">
             </div>
         </div>
+        <div class="input-group">
+            <label>المبلغ المدفوع من العميل *</label>
+            <div style="display:flex; gap:10px">
+                <input type="number" id="plgAmount" placeholder="0.00" step="0.01" min="0" style="flex:1;" oninput="_plgAmountPreview()">
+                <select id="plgCurrency" style="width:150px; flex-shrink:0; text-align:center;" onchange="_plgAmountPreview()">
+                    <option value="">اختر العملة</option>
+                    <option value="₪">₪ شيكل</option>
+                    <option value="$">$ دولار</option>
+                </select>
+            </div>
+            <div id="plgAmountHint" style="font-size:12px; margin-top:6px; color:var(--text-muted);">
+                <i class="fas fa-circle-info"></i> هذا هو المبلغ الكامل الذي دفعه العميل مقابل كل الحسابات المرهونة.
+            </div>
+        </div>
+        <div style="background:var(--bg-input); border:1px dashed var(--border-color); border-radius:10px; padding:10px 12px; font-size:12px; color:var(--text-muted); line-height:1.7;">
+            <i class="fas fa-lightbulb" style="color:var(--accent)"></i>
+            إضافة الرهن تُحتسب <b>عملية شراء واحدة</b> للعميل (ترفع عدّاد مشترياته ورتبته، وقد يحصل على كود خصم).
+            سحب الحسابات لاحقاً من الرهن <b>لا يُحتسب</b> عملية شراء جديدة.
+        </div>
         <div class="dialog-actions" style="margin-top:20px;">
             <button class="btn btn-primary" onclick="savePledge()"><i class="fas fa-check"></i> حفظ الرهن</button>
             <button class="btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted)" onclick="document.getElementById('pledgeModal').style.display='none'">إلغاء</button>
+        </div>
+    </div>
+</div>
+<!-- ─── Modal تعيين/تعديل مبلغ الرهن (للرهون القديمة أو التصحيح) ─── -->
+<div id="plgEditAmountModal" class="dialog-modal" style="display:none; z-index:5600;">
+    <div class="dialog-box" style="text-align:right; max-width:460px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px;">
+            <i class="fas fa-money-bill-wave" style="color:var(--success)"></i> تعيين المبلغ المدفوع للرهن
+        </h3>
+        <input type="hidden" id="plgEditId" value="">
+        <div id="plgEditWho" style="font-size:13px; color:var(--text-muted); margin-bottom:14px;"></div>
+        <div class="input-group">
+            <label>المبلغ الكامل الذي دفعه العميل *</label>
+            <div style="display:flex; gap:10px">
+                <input type="number" id="plgEditAmount" placeholder="0.00" step="0.01" min="0" style="flex:1;" oninput="_plgEditPreview()">
+                <select id="plgEditCurrency" style="width:150px; flex-shrink:0; text-align:center;" onchange="_plgEditPreview()">
+                    <option value="">اختر العملة</option>
+                    <option value="₪">₪ شيكل</option>
+                    <option value="$">$ دولار</option>
+                </select>
+            </div>
+            <div id="plgEditHint" style="font-size:12px; margin-top:6px; color:var(--text-muted);"></div>
+        </div>
+        <div style="background:var(--bg-input); border:1px dashed var(--border-color); border-radius:10px; padding:10px 12px; font-size:12px; color:var(--text-muted); line-height:1.7;">
+            <i class="fas fa-triangle-exclamation" style="color:var(--accent)"></i>
+            هذا تعديل للبيانات فقط ولا يُسجَّل كعملية شراء ولا يرفع رتبة العميل (لأن الرهن أُضيف سابقاً).
+        </div>
+        <div class="dialog-actions" style="margin-top:20px;">
+            <button class="btn btn-primary" onclick="savePledgeAmount()"><i class="fas fa-check"></i> حفظ</button>
+            <button class="btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted)" onclick="document.getElementById('plgEditAmountModal').style.display='none'">إلغاء</button>
         </div>
     </div>
 </div>
@@ -1768,7 +1817,7 @@
         </div>
         <div class="grid-2">
             <div class="input-group"><label>رقم جوال العميل (اختياري)</label><input id="customerPhone" placeholder="97xxxxxxxxxx أو +97xxxxxxxxxx" oninput="validatePhoneInput(this)" onblur="autoAddPlusPhone(this)" dir="ltr" style="text-align:right;"></div>
-            <div class="input-group"><label>المبلغ المدفوع من العميل</label><div style="display:flex; gap:10px"><input type="number" id="paidAmount" placeholder="0.00" style="flex: 1;"><select id="paidCurrency" style="width:150px; flex-shrink: 0; text-align:center;"><option value="">اختر العملة</option><option value="₪">₪ شيكل</option><option value="$">$ دولار</option></select></div></div>
+            <div class="input-group" id="paidAmountGroup"><label>المبلغ المدفوع من العميل</label><div style="display:flex; gap:10px"><input type="number" id="paidAmount" placeholder="0.00" style="flex: 1;"><select id="paidCurrency" style="width:150px; flex-shrink: 0; text-align:center;"><option value="">اختر العملة</option><option value="₪">₪ شيكل</option><option value="$">$ دولار</option></select></div></div>
         </div>
         <div class="input-group" id="purchaseProfilesGroup" style="margin-top:0; display:none;">
             <label>عدد البروفايلات (الذي يأخذه هذا العميل)</label>
@@ -1809,7 +1858,8 @@
             <div id="pledgeSelectWrap" style="display:none;">
                 <div class="input-group" style="margin-bottom:0;">
                     <label>اختر العميل المرهون</label>
-                    <select id="pledgeSelect" style="border-color:var(--primary);"><option value="">اختر من المرهونات...</option></select>
+                    <select id="pledgeSelect" style="border-color:var(--primary);" onchange="onPledgeSelectChange()"><option value="">اختر من المرهونات...</option></select>
+                    <div id="pledgePayInfo" style="display:none; margin-top:10px;"></div>
                 </div>
             </div>
         </div>
@@ -1866,6 +1916,7 @@
                     <th style="text-align:center;">نوع الخدمة</th>
                     <th style="text-align:center;">الحسابات المرهونة</th>
                     <th style="text-align:center;">مدة كل حساب</th>
+                    <th style="text-align:center;">المبلغ المدفوع</th>
                     <th id="thPledgesDelete" style="text-align:center;">حذف</th>
                 </tr></thead>
                 <tbody id="pledgesBody"></tbody>
@@ -7055,6 +7106,9 @@ function _stepPurchaseProfiles(delta) {
     if (v > maxAttr) v = maxAttr;
     el.value = v;
     if (display) display.textContent = v;
+    // تحديث معاينة مبلغ الرهن لهذه العملية
+    let _upEl = document.getElementById("usePledge");
+    if (_upEl && _upEl.checked && typeof onPledgeSelectChange === 'function') onPledgeSelectChange();
 }
 
 function loadProfitSettings(){
@@ -7419,15 +7473,34 @@ function _consumeProfileCost(stItem) {
 
 function addPurchase(){
     if(currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') return;
-    
-    let paidVal = document.getElementById("paidAmount").value;
-    let paid = parseFloat(paidVal);
-    
-    if(isNaN(paid) || paid < 0 || paidVal === "") { 
-        notify("يرجى إدخال المبلغ المقبوض", "error"); 
-        return; 
+
+    // ─── الرهن يُحلّ أولاً: العميل دفع مسبقاً، فلا نطلب منه المبلغ ولا العملة ───
+    let usePledge = document.getElementById("usePledge").checked;
+    let isComp    = document.getElementById("isCompensation").checked;
+    if(usePledge && isComp) return notify("لا يمكن الجمع بين الرهن والتعويض في نفس الوقت", "error");
+
+    let selectedPledge = null;
+    if(usePledge) {
+        let pledgeSelectVal = document.getElementById("pledgeSelect").value;
+        if(!pledgeSelectVal) return notify("يرجى اختيار العميل المرهون", "error");
+        selectedPledge = safeJSON(store.pledges, []).find(p => p.id === pledgeSelectVal);
+        if(!selectedPledge) return notify("الرهن المحدد غير موجود", "error");
+        if((selectedPledge.usedCount || 0) >= selectedPledge.totalCount) return notify("تم استنفاد جميع الحسابات المرهونة لهذا العميل", "error");
     }
-    
+
+    // رهن قديم (بلا مبلغ مسجّل) → نطلب المبلغ يدوياً كما كان قبل التحديث
+    let pledgePrepaid = !!(selectedPledge && !_plgIsLegacy(selectedPledge));
+
+    let paid, paidVal;
+    if(!pledgePrepaid) {
+        paidVal = document.getElementById("paidAmount").value;
+        paid = parseFloat(paidVal);
+        if(isNaN(paid) || paid < 0 || paidVal === "") {
+            notify("يرجى إدخال المبلغ المقبوض", "error");
+            return;
+        }
+    }
+
     let stockId = document.getElementById("sub").value;
     if(!stockId) { notify("يرجى اختيار الاشتراك من المخزون","error"); return; }
     
@@ -7447,6 +7520,12 @@ function addPurchase(){
     let availableProfilesForSale = (parseInt(stItem.totalProfiles) || 1) - (parseInt(stItem.soldProfiles) || 0);
     if (profilesCount > availableProfilesForSale) return notify(`عدد البروفايلات المطلوب أكبر من المتاح في هذا الاشتراك (المتاح: ${availableProfilesForSale})`, "error");
 
+    // عدد البروفايلات المسحوبة لا يجوز أن يتجاوز الحسابات المرهونة المتبقية
+    if (selectedPledge) {
+        let _plgRemainAcc = (parseInt(selectedPledge.totalCount) || 0) - (parseInt(selectedPledge.usedCount) || 0);
+        if (profilesCount > _plgRemainAcc) return notify(`عدد البروفايلات أكبر من الحسابات المرهونة المتبقية (المتبقي: ${_plgRemainAcc})`, "error");
+    }
+
     let customerPhoneVal = document.getElementById("customerPhone").value.trim();
     // إضافة + تلقائياً إن لم تكن موجودة
     if(customerPhoneVal && !customerPhoneVal.startsWith('+')) customerPhoneVal = '+' + customerPhoneVal;
@@ -7455,8 +7534,27 @@ function addPurchase(){
     // تحديث الحقل بالقيمة المعدّلة
     document.getElementById("customerPhone").value = customerPhoneVal;
 
-    let paidCur = document.getElementById("paidCurrency").value;
-    if(!paidCur) { notify("يرجى اختيار العملة", "error"); return; }
+    // الرهن: إن تُركت بيانات العميل فارغة نأخذها من الرهن نفسه
+    if (selectedPledge) {
+        if (!customerPhoneVal) {
+            customerPhoneVal = selectedPledge.phone || "";
+            document.getElementById("customerPhone").value = customerPhoneVal;
+        }
+        if (!document.getElementById("customer").value.trim()) {
+            document.getElementById("customer").value = selectedPledge.customer || "";
+        }
+    }
+
+    // ─── العملة والمبلغ ───────────────────────────────────────────
+    // في الرهن: العملة هي عملة الرهن، والمبلغ = (مبلغ الرهن ÷ عدد الحسابات المرهونة) × عدد البروفايلات
+    let paidCur;
+    if (pledgePrepaid) {
+        paidCur = _plgCurrency(selectedPledge);
+        paid = Math.round(_plgPerAccount(selectedPledge) * profilesCount * 100) / 100;
+    } else {
+        paidCur = document.getElementById("paidCurrency").value;
+        if(!paidCur) { notify("يرجى اختيار العملة", "error"); return; }
+    }
     let duration = pDur;
     let settings = safeJSON(store.settings, {});
     let rate = settings.exchangeRate && settings.exchangeRate > 0 ? settings.exchangeRate : 1;
@@ -7464,7 +7562,6 @@ function addPurchase(){
     let discountCodeInput = document.getElementById("discountCodeInput").value.trim();
     let appliedDiscountPct = 0;
     let usedDiscountObj = null;
-    let isComp = document.getElementById("isCompensation").checked;
 
     if (discountCodeInput) {
         if(isComp) {
@@ -7503,18 +7600,7 @@ function addPurchase(){
     let customerVal = document.getElementById("customer").value;
     let walletVal = ""; // المحافظ محذوفة — لا حاجة للاختيار
 
-    // ─── التحقق من الحساب المرهون ───────────────────────────────
-    let usePledge = document.getElementById("usePledge").checked;
-    if(usePledge && isComp) return notify("لا يمكن الجمع بين الرهن والتعويض في نفس الوقت", "error");
-    let pledgeSelectVal = document.getElementById("pledgeSelect").value;
-    let selectedPledge = null;
-    if(usePledge) {
-        if(!pledgeSelectVal) return notify("يرجى اختيار العميل المرهون", "error");
-        let pledges = safeJSON(store.pledges, []);
-        selectedPledge = pledges.find(p => p.id === pledgeSelectVal);
-        if(!selectedPledge) return notify("الرهن المحدد غير موجود", "error");
-        if((selectedPledge.usedCount || 0) >= selectedPledge.totalCount) return notify("تم استنفاد جميع الحسابات المرهونة لهذا العميل", "error");
-    }
+    // (تم التحقق من الحساب المرهون في بداية الدالة)
 
     document.getElementById("purchaseConfirmBody").innerHTML = `
         <div style="display:grid; gap:8px;">
@@ -7524,6 +7610,7 @@ function addPurchase(){
             ${profilesCount > 1 ? `<div><i class="fas fa-layer-group"></i> <b>عدد البروفايلات:</b> ${profilesCount}</div>` : ''}
             <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color)">
                 <span style="color:var(--success)"><i class="fas fa-money-bill-wave"></i> مدفوع: ${paid}${paidCur}</span>
+                ${selectedPledge ? `<span style="font-size:11px; color:var(--text-muted); display:block; margin-top:4px;">(مدفوع مسبقاً ضمن الرهن — حصة ${profilesCount} حساب من أصل ${selectedPledge.totalCount})</span>` : ''}
             </div>
             ${isComp ? `<div style="color:var(--danger); font-weight:bold; text-align:center; padding:5px; background:var(--yellow-bg); border-radius:5px; margin:5px 0;"><i class="fas fa-exclamation-circle"></i> عملية تعويض (المتجر سيتحمل تكلفة ${profilesCount > 1 ? 'هذه البروفايلات' : 'هذا البروفايل'})</div>` : ''}
             ${appliedDiscountPct > 0 ? `<div style="color:var(--success); font-weight:bold; text-align:center; padding:5px; border:1px solid var(--success); border-radius:5px; margin:5px 0;"><i class="fas fa-ticket-alt"></i> تم تطبيق كود خصم: ${appliedDiscountPct}%</div>` : ''}
@@ -7710,7 +7797,9 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
         let pledges = safeJSON(store.pledges, []);
         let plgIdx = pledges.findIndex(p => p.id === selectedPledge.id);
         if(plgIdx !== -1) {
-            pledges[plgIdx].usedCount = (pledges[plgIdx].usedCount || 0) + 1;
+            // يُخصم عدد الحسابات المسحوبة فعلياً في هذه العملية (وليس حساباً واحداً دائماً)
+            let _plgTot = parseInt(pledges[plgIdx].totalCount) || 0;
+            pledges[plgIdx].usedCount = Math.min(_plgTot, (parseInt(pledges[plgIdx].usedCount) || 0) + profilesCount);
             store.pledges = JSON.stringify(pledges);
             fbSave("pledges", pledges);
         }
@@ -7977,7 +8066,7 @@ function refreshAll(){
     let ndd = now.getDate().toString().padStart(2,'0');
     let todayStr = `${now.getFullYear()}-${nmm}-${ndd}`;
     let isRestricted = currentUser ? (currentUser.role === 'viewer') : true;
-    document.getElementById("statSales").textContent = p.filter(x => x.date && x.date.includes(todayStr) && !x.isComp && !x.pledgeId && !x.isPledge && !_paidIsZero(x)).length;
+    document.getElementById("statSales").textContent = p.filter(x => x.date && x.date.includes(todayStr) && !x.isComp && !x.pledgeId && !x.isPledge && !_paidIsZero(x)).length + _pledgeSalesCountForDay(todayStr);
     if(isRestricted) {
         document.getElementById("statDollar").textContent = "****";
         document.getElementById("statShekel").textContent = "****";
@@ -8203,6 +8292,11 @@ function refreshWallets(_pPre, _bPre) {
             mSales++;
         }
     });
+
+    // إضافة الرهن نفسها تُحتسب عملية شراء واحدة (السحب من الرهن لا يُحتسب)
+    let _curMonthISO = `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
+    todayCount += _pledgeSalesCountForDay(today);
+    mSales     += _pledgeSalesCountForMonth(_curMonthISO);
 
     // حساب أرباح هذا الشهر وأرباح اليوم من deltaUSD (لا علاقة بالمحافظ)
     let bHistory = _bPre || safeJSON(store.budgetHistory, []);
@@ -9939,7 +10033,7 @@ function openRemoveBuyerModal() {
             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:10px 14px;">
                 <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;">
                     <span style="font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(b)}">${idx + 1}. ${esc(b)}</span>
-                    ${_getBuyerDate(item, idx) ? `<span style="font-size:11px; font-weight:600; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;"><i class="fas fa-calendar-check" style="color:var(--primary); font-size:10px;"></i> اشترك في ${_getBuyerDate(item, idx)}</span>` : ''}
+                    ${_buyerSubInfoHTML(item, idx)}
                 </div>
                 <div style="display:flex; gap:6px; flex-shrink:0;">
                     <button class="btn" style="padding:5px 10px; font-size:12px; background:var(--primary); color:#fff;" onclick="closeRemoveBuyerModal(); openTransferBuyerModal('${id}', ${idx}, true)">
@@ -10287,6 +10381,79 @@ function _buyerDateBadgeHTML(item, idx) {
     return `<span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:var(--text-muted); background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.18); border-radius:20px; padding:2px 9px; white-space:nowrap; flex-shrink:0;"><i class="fas fa-calendar-check" style="color:var(--primary); font-size:10px;"></i> ${d}</span>`;
 }
 
+// ── تاريخ انتهاء اشتراك عميل داخل اشتراك المخزون (نفس منطق البيع) ──
+// • مشترك (totalProfiles > 1): المدة تبدأ من يوم اشتراك العميل نفسه
+// • فردي (totalProfiles = 1): المدة تبدأ من تاريخ شراء المخزون
+function _buyerExpiryTs(item, idx) {
+    let dur = parseInt(item && item.duration) || 0;
+    if (!dur) return null; // بدون مدة
+    let d = _getBuyerDate(item, idx);
+    let isShared = (parseInt(item.totalProfiles) || 1) > 1;
+    let base = null;
+    if (isShared) {
+        if (d) base = new Date(d + 'T00:00:00');
+    } else if (item.timestamp) {
+        base = new Date(item.timestamp);
+    } else if (d) {
+        base = new Date(d + 'T00:00:00');
+    }
+    if (!base || isNaN(base.getTime())) return null;
+    return _addMonths30(base, dur).getTime();
+}
+
+// عملاء قدامى بلا تاريخ اشتراك محفوظ → نحاول استنتاجه من السجل المالي (نفس الاشتراك + نفس الرقم/الاسم)
+function _buyerPurchaseMatch(item, idx) {
+    try {
+        let b = (item && item.buyers) ? item.buyers[idx] : null;
+        if (!b || !item.id) return null;
+        let parts = String(b).split(' - ');
+        let nm = (parts[0] || '').trim();
+        let ph = (parts[1] || '').trim().replace(/\D/g, '');
+        let cands = safeJSON(store.purchases, []).filter(p =>
+            p && p.stockId === item.id && (
+                (ph && String(p.phone || '').replace(/\D/g, '') === ph) ||
+                (!ph && nm && String(p.customer || '').trim() === nm)
+            )
+        );
+        if (!cands.length) return null;
+        cands.sort((a, c) => String(a.date || '').localeCompare(String(c.date || '')));
+        return cands[0];
+    } catch (e) { return null; }
+}
+
+// نص الأيام المتبقية بين قوسين بجانب تاريخ الاشتراك
+function _buyerRemainHTML(item, idx, expTsOverride) {
+    let dur = parseInt(item && item.duration) || 0;
+    let ts = expTsOverride || _buyerExpiryTs(item, idx);
+    if (!dur && !ts) return `<span style="font-weight:800; color:var(--text-muted);">(بدون مدة)</span>`;
+    if (!ts) return '';
+    let left = ts - Date.now();
+    if (left <= 0) return `<span style="font-weight:800; color:var(--danger);">(منتهي)</span>`;
+    let days  = Math.ceil(left / 86400000);
+    let color = days <= 3 ? 'var(--danger)' : (days <= 7 ? 'var(--accent)' : 'var(--success)');
+    return `<span style="font-weight:800; color:${color};">(متبقٍ ${days} يوم)</span>`;
+}
+
+// سطر "اشترك في التاريخ (متبقٍ N يوم)" — يُستخدم في المخزون المباع وغير المباع
+function _buyerSubInfoHTML(item, idx) {
+    let d = _getBuyerDate(item, idx);
+    let expTs = _buyerExpiryTs(item, idx);
+    let inferred = false;
+
+    // بيانات قديمة: لا تاريخ محفوظ → نستنتجه من السجل المالي إن أمكن
+    if (!d || !expTs) {
+        let m = _buyerPurchaseMatch(item, idx);
+        if (m) {
+            if (!d && m.date) { d = m.date; inferred = true; }
+            if (!expTs && m.expiry) { expTs = Number(m.expiry); inferred = true; }
+        }
+    }
+    if (!d) return '';
+
+    let mark = inferred ? ` <i class="fas fa-circle-info" title="تاريخ مستنتج من السجل المالي (لم يكن محفوظاً في السجلات القديمة)" style="opacity:.6; font-size:9px;"></i>` : '';
+    return `<span style="font-size:11px; font-weight:600; color:var(--text-muted); display:inline-flex; align-items:center; gap:5px; flex-wrap:wrap;"><i class="fas fa-calendar-check" style="color:var(--primary); font-size:10px;"></i> اشترك في <span dir="ltr">${d}</span> ${_buyerRemainHTML(item, idx, expTs)}${mark}</span>`;
+}
+
 function openClientsManagerModal(stockId) {
     let stock = safeJSON(store.stock, []);
     let item  = stock.find(x => x.id === stockId);
@@ -10325,7 +10492,7 @@ function openClientsManagerModal(stockId) {
                     <span style="font-size:13.5px; font-weight:700; color:var(--text-main);
                         overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
                         title="${esc(b)}">${esc(b)}</span>
-                    ${_getBuyerDate(item, idx) ? `<span style="font-size:11px; font-weight:600; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;"><i class="fas fa-calendar-check" style="color:var(--primary); font-size:10px;"></i> اشترك في ${_getBuyerDate(item, idx)}</span>` : ''}
+                    ${_buyerSubInfoHTML(item, idx)}
                 </div>
 
                 ${isAdmin ? `
@@ -12916,8 +13083,134 @@ function openPledgeModal() {
     document.getElementById("plgService").value = "";
     document.getElementById("plgCount").value = "";
     document.getElementById("plgDuration").value = "";
+    document.getElementById("plgAmount").value = "";
+    document.getElementById("plgCurrency").value = "";
     document.getElementById("plgPhone").style.borderColor = "";
+    _plgAmountPreview();
     document.getElementById("pledgeModal").style.display = "flex";
+}
+
+// معاينة حيّة: كم يقابل كل حساب مرهون من المبلغ المدفوع
+function _plgAmountPreview() {
+    let hint = document.getElementById("plgAmountHint");
+    if (!hint) return;
+    let amt = parseFloat(document.getElementById("plgAmount").value);
+    let cur = document.getElementById("plgCurrency").value;
+    let cnt = parseInt(document.getElementById("plgCount").value);
+    if (!isNaN(amt) && amt > 0 && cur && cnt && cnt > 0) {
+        hint.innerHTML = `<i class="fas fa-divide" style="color:var(--primary)"></i> حصة كل حساب = <b style="color:var(--success)">${fix(amt / cnt)}${cur}</b> (تُسجَّل في السجل المالي عند كل سحب من الرهن)`;
+    } else {
+        hint.innerHTML = '<i class="fas fa-circle-info"></i> هذا هو المبلغ الكامل الذي دفعه العميل مقابل كل الحسابات المرهونة.';
+    }
+}
+
+// ── دوال مساعدة لمبالغ الرهن ──────────────────────────────────
+// رهن "قديم" = أُضيف قبل التحديث فلا يحمل حقل المبلغ إطلاقاً
+function _plgIsLegacy(p) {
+    if (!p) return true;
+    return (p.amount === undefined || p.amount === null || p.amount === '' || isNaN(parseFloat(p.amount)));
+}
+
+function openPledgeAmountModal(id) {
+    if (!currentUser || currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
+    let p = safeJSON(store.pledges, []).find(x => x.id === id);
+    if (!p) return;
+    document.getElementById("plgEditId").value = id;
+    document.getElementById("plgEditAmount").value = _plgIsLegacy(p) ? "" : _plgAmount(p);
+    document.getElementById("plgEditCurrency").value = _plgIsLegacy(p) ? "" : _plgCurrency(p);
+    document.getElementById("plgEditWho").innerHTML =
+        `<b style="color:var(--text-main)">${esc(p.customer)}</b> · ${esc(p.service)} · الحسابات: ${_plgUsedCount(p)}/${_plgTotalCount(p)}`;
+    _plgEditPreview();
+    document.getElementById("plgEditAmountModal").style.display = "flex";
+}
+
+function _plgEditPreview() {
+    let hint = document.getElementById("plgEditHint");
+    if (!hint) return;
+    let p = safeJSON(store.pledges, []).find(x => x.id === document.getElementById("plgEditId").value);
+    let amt = parseFloat(document.getElementById("plgEditAmount").value);
+    let cur = document.getElementById("plgEditCurrency").value;
+    if (!p || isNaN(amt) || amt <= 0 || !cur) { hint.innerHTML = ''; return; }
+    let total = _plgTotalCount(p), used = _plgUsedCount(p);
+    let per = total > 0 ? amt / total : 0;
+    let remain = Math.round(per * Math.max(0, total - used) * 100) / 100;
+    hint.innerHTML = `<i class="fas fa-divide" style="color:var(--primary)"></i> حصة الحساب = <b style="color:var(--success)">${fix(per)}${cur}</b> · المتبقي الآن = <b style="color:var(--accent)">${fix(remain)}${cur}</b>`;
+}
+
+function savePledgeAmount() {
+    if (!currentUser || currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
+    let id  = document.getElementById("plgEditId").value;
+    let raw = document.getElementById("plgEditAmount").value;
+    let amt = parseFloat(raw);
+    let cur = document.getElementById("plgEditCurrency").value;
+    if (raw === "" || isNaN(amt) || amt < 0) return notify("يرجى إدخال مبلغ صحيح", "error");
+    if (!cur) return notify("يرجى اختيار العملة", "error");
+
+    let pledges = safeJSON(store.pledges, []);
+    let i = pledges.findIndex(x => x.id === id);
+    if (i === -1) return notify("الرهن غير موجود", "error");
+
+    pledges[i].amount   = Math.round(amt * 100) / 100;
+    pledges[i].currency = cur;
+    // ملء التاريخ المفقود للرهون القديمة (حتى لا يُحتسب في مبيعات اليوم بالخطأ)
+    if (!pledges[i].dateISO) {
+        let ts = pledges[i].createdAt || (pledges[i].id && pledges[i].id.indexOf('_') !== -1 ? parseInt(pledges[i].id.split('_')[1]) : 0);
+        if (ts) {
+            let d = new Date(ts);
+            if (!isNaN(d.getTime())) {
+                pledges[i].createdAt = ts;
+                pledges[i].dateISO = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            }
+        }
+    }
+    store.pledges = JSON.stringify(pledges);
+    fbSave("pledges", pledges);
+    logAction(`تعيين مبلغ رهن العميل ${pledges[i].customer}: ${fix(amt)}${cur}`, 'financial', { type: 'edit_pledge_amount', customer: pledges[i].customer, amount: pledges[i].amount, currency: cur });
+    document.getElementById("plgEditAmountModal").style.display = "none";
+    refreshPledges();
+    loadPledgesIntoSelect();
+    refreshAll();
+    notify("تم حفظ المبلغ");
+}
+
+function _plgAmount(p)    { return parseFloat(p && p.amount) || 0; }
+function _plgCurrency(p)  { return (p && p.currency) || '₪'; }
+function _plgTotalCount(p){ return parseInt(p && p.totalCount) || 0; }
+function _plgUsedCount(p) { return parseInt(p && p.usedCount) || 0; }
+
+// حصة الحساب الواحد من المبلغ المدفوع
+function _plgPerAccount(p) {
+    let t = _plgTotalCount(p);
+    return t > 0 ? (_plgAmount(p) / t) : 0;
+}
+
+// المبلغ المتبقي (الحسابات التي لم تُسحب بعد)
+function _plgRemainingAmount(p) {
+    let t = _plgTotalCount(p);
+    if (t <= 0) return 0;
+    let remainAcc = Math.max(0, t - _plgUsedCount(p));
+    return Math.round(_plgPerAccount(p) * remainAcc * 100) / 100;
+}
+
+// تاريخ إنشاء الرهن بصيغة YYYY-MM-DD (مع دعم السجلات القديمة)
+function _pledgeDateISO(p) {
+    if (!p) return null;
+    if (p.dateISO) return p.dateISO;
+    let ts = p.createdAt || (p.id && p.id.indexOf('_') !== -1 ? parseInt(p.id.split('_')[1]) : 0);
+    if (!ts) return null;
+    let d = new Date(ts);
+    if (isNaN(d.getTime())) return null;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// إضافة الرهن = عملية شراء واحدة → تُحتسب في عدّاد مبيعات اليوم/الشهر
+function _pledgeSalesCountForDay(dayStr) {
+    if (!dayStr) return 0;
+    return safeJSON(store.pledges, []).filter(p => !_plgIsLegacy(p) && _plgAmount(p) > 0 && _pledgeDateISO(p) === dayStr).length;
+}
+function _pledgeSalesCountForMonth(monthStr) {
+    if (!monthStr) return 0;
+    return safeJSON(store.pledges, []).filter(p => !_plgIsLegacy(p) && _plgAmount(p) > 0 && String(_pledgeDateISO(p) || '').startsWith(monthStr)).length;
 }
 
 function validatePledgePhone(el) {
@@ -12950,6 +13243,15 @@ function savePledge() {
     if(!service) return notify("يرجى إدخال نوع الخدمة", "error");
     if(!count || count < 1) return notify("يرجى إدخال عدد الحسابات المرهونة", "error");
 
+    let amountRaw = document.getElementById("plgAmount").value;
+    let amount = parseFloat(amountRaw);
+    let currency = document.getElementById("plgCurrency").value;
+    if(amountRaw === "" || isNaN(amount) || amount < 0) return notify("يرجى إدخال المبلغ الذي دفعه العميل", "error");
+    if(!currency) return notify("يرجى اختيار عملة المبلغ المدفوع", "error");
+
+    let nd = new Date();
+    let dateISO = `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,'0')}-${String(nd.getDate()).padStart(2,'0')}`;
+
     let pledges = safeJSON(store.pledges, []);
     pledges.push({
         id: 'plg_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
@@ -12959,14 +13261,98 @@ function savePledge() {
         totalCount: count,
         usedCount: 0,
         duration: duration || "-",
-        date: new Date().toLocaleDateString('ar-EG')
+        amount: Math.round(amount * 100) / 100,
+        currency: currency,
+        createdAt: nd.getTime(),
+        dateISO: dateISO,
+        date: nd.toLocaleDateString('ar-EG')
     });
     store.pledges = JSON.stringify(pledges);
     fbSave("pledges", pledges);
-    logAction(`إضافة رهن جديد للعميل ${customer}`, 'financial', { customer, phone, service, count });
+    logAction(`إضافة رهن جديد للعميل ${customer} بمبلغ ${fix(amount)}${currency}`, 'financial', { type: 'add_pledge', customer, phone, service, count, amount: Math.round(amount*100)/100, currency });
     document.getElementById("pledgeModal").style.display = "none";
     refreshPledges();
+    loadPledgesIntoSelect();
     notify("تم حفظ الرهن بنجاح");
+
+    // ── إضافة الرهن تُعامَل كعملية شراء واحدة: رتبة العميل + فرصة كود خصم ──
+    _processPledgeAsPurchase(customer, phone, service, amount, nd);
+
+    refreshAll();
+}
+
+// إضافة الرهن = عملية شراء واحدة (رتبة + كود خصم). السحب من الرهن لاحقاً لا يُحتسب.
+function _processPledgeAsPurchase(customer, phone, service, amount, nd) {
+    if (!phone || !(amount > 0)) return;
+
+    let settings   = safeJSON(store.settings, {});
+    let vipEnabled = settings.vipEnabled === true;
+
+    // ── رفع عدّاد المشتريات والرتبة (يعمل داخلياً حتى لو كان نظام الرتب معطّلاً) ──
+    let vips = safeJSON(store.vipCustomers, {});
+    let vipCustomerObj = vips[phone] || { name: customer, count: 0, rankIndex: 0, target: 3, lastPurchaseTime: nd.getTime() };
+    vipCustomerObj.count++;
+    vipCustomerObj.name = customer;
+    vipCustomerObj.lastPurchaseTime = nd.getTime();
+
+    let oldRank = vipCustomerObj.rankIndex;
+    if (vipCustomerObj.rankIndex < 4 && vipCustomerObj.count >= vipCustomerObj.target) {
+        vipCustomerObj.rankIndex++;
+        if (vipCustomerObj.rankIndex < 4) {
+            let nextRankDiff = VIP_RANKS[vipCustomerObj.rankIndex + 1].min - VIP_RANKS[vipCustomerObj.rankIndex].min;
+            vipCustomerObj.target = vipCustomerObj.count + nextRankDiff;
+        } else {
+            vipCustomerObj.target = null;
+        }
+    }
+    vips[phone] = vipCustomerObj;
+    store.vipCustomers = JSON.stringify(vips);
+    fbSave("vipCustomers", vips);
+
+    let vipRankChanged = (vipCustomerObj.rankIndex > oldRank);
+    let vipNewRank = VIP_RANKS[vipCustomerObj.rankIndex];
+
+    // ── فرصة كود خصم (نفس منطق عملية الشراء العادية) ──
+    let generatedCoupon = null;
+    let dEnabled   = settings.discountEnabled === true;
+    let baseChance = settings.discountChance !== undefined ? settings.discountChance : 25;
+    let activeVipRank = (vipEnabled && vipNewRank) ? vipNewRank : null;
+    let finalChance   = baseChance + (activeVipRank ? activeVipRank.chance : 0);
+
+    if (dEnabled && Math.random() * 100 <= finalChance) {
+        let dMin = settings.discountMin !== undefined ? settings.discountMin : 10;
+        let dMax = settings.discountMax !== undefined ? settings.discountMax : 20;
+        let vMin = settings.validityMin !== undefined ? settings.validityMin : 15;
+        let vMax = settings.validityMax !== undefined ? settings.validityMax : 45;
+        let pct  = Math.floor(Math.random() * (dMax - dMin + 1)) + dMin + (activeVipRank ? activeVipRank.discount : 0);
+        let days = Math.floor(Math.random() * (vMax - vMin + 1)) + vMin + (activeVipRank ? activeVipRank.days : 0);
+        let uses = activeVipRank ? activeVipRank.uses : 1;
+
+        let dList = safeJSON(store.discounts, []);
+        let code;
+        do { code = Math.floor(100000000 + Math.random() * 900000000).toString(); }
+        while (dList.some(x => x.code === code));
+
+        generatedCoupon = {
+            id: 'id_' + Date.now().toString(), code: code, customer: customer || "عميل", phone: phone || "-",
+            service: service || "رهن", percentage: pct, expiry: new Date().getTime() + (days * 86400000),
+            days: days, maxUses: uses, usedCount: 0, notified: false
+        };
+        dList.unshift(generatedCoupon);
+        store.discounts = JSON.stringify(dList);
+        fbSave("discounts", dList);
+    }
+
+    let showVipNotif = vipEnabled && vipRankChanged && vipCustomerObj.rankIndex > 0;
+    if (generatedCoupon && showVipNotif) {
+        showCouponModal(generatedCoupon, phone, () => {
+            setTimeout(() => { showVipUpgradeModal(vipCustomerObj, vipNewRank, phone); }, 5000);
+        });
+    } else if (generatedCoupon) {
+        showCouponModal(generatedCoupon, phone, null);
+    } else if (showVipNotif) {
+        showVipUpgradeModal(vipCustomerObj, vipNewRank, phone);
+    }
 }
 
 function refreshPledges() {
@@ -12986,12 +13372,13 @@ function refreshPledges() {
                 (termNorm && (pPhoneNorm.includes(termNorm) || (p.phone||'').replace(/\D/g,'').includes(termNorm))) ||
                 (p.service||'').toLowerCase().includes(term) ||
                 String(p.totalCount||'').includes(term) ||
+                String(p.amount||'').includes(term) ||
                 String(p.duration||'').includes(term);
         });
     }
 
     if(pledges.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted)"><i class="fas fa-handshake" style="font-size:32px; opacity:0.3; display:block; margin-bottom:10px;"></i>لا توجد مرهونات بعد</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted)"><i class="fas fa-handshake" style="font-size:32px; opacity:0.3; display:block; margin-bottom:10px;"></i>لا توجد مرهونات بعد</td></tr>`;
         return;
     }
 
@@ -13012,6 +13399,7 @@ function refreshPledges() {
                 </div>
             </td>
             <td>${esc(p.duration)} ${p.duration !== '-' ? 'شهر' : ''}</td>
+            <td style="text-align:center;">${_pledgeAmountCellHTML(p)}</td>
             ${(currentUser && currentUser.role === 'admin') ? `<td><button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="deletePledge('${p.id}')"><i class="fas fa-trash"></i></button></td>` : ''}
         </tr>`;
     });
@@ -13023,6 +13411,31 @@ function refreshPledges() {
         if(currentUser && currentUser.role === 'admin' && pledges.length > 0) btnDel.classList.remove("hidden");
         else btnDel.classList.add("hidden");
     }
+}
+
+// خلية المبلغ في جدول المرهونات: يظهر المبلغ الكامل، وعند التأشير عليه يظهر المتبقي
+function _pledgeAmountCellHTML(p) {
+    let isAdmin = currentUser && currentUser.role === 'admin';
+    // رهن قديم (قبل التحديث): لا يحمل مبلغاً — يستطيع الأدمن تعيينه الآن
+    if (_plgIsLegacy(p)) {
+        return isAdmin
+            ? `<button class="btn" onclick="openPledgeAmountModal('${p.id}')" title="رهن قديم بلا مبلغ مسجّل — اضغط لتعيينه" style="padding:5px 10px; font-size:11px; font-weight:800; background:rgba(245,158,11,0.12); color:var(--accent); border:1px dashed var(--accent);"><i class="fas fa-plus"></i> تعيين المبلغ</button>`
+            : `<span style="color:var(--text-muted)" title="رهن قديم بلا مبلغ مسجّل">-</span>`;
+    }
+    let amt = _plgAmount(p);
+    if (!(amt > 0)) return `<span style="color:var(--text-muted)">0</span>${isAdmin ? ` <i class="fas fa-pen" onclick="openPledgeAmountModal('${p.id}')" style="cursor:pointer; font-size:10px; color:var(--text-muted); margin-right:6px;"></i>` : ''}`;
+    let cur     = _plgCurrency(p);
+    let total   = _plgTotalCount(p);
+    let used    = _plgUsedCount(p);
+    let perAcc  = _plgPerAccount(p);
+    let remain  = _plgRemainingAmount(p);
+    let consumed = Math.round((amt - remain) * 100) / 100;
+    let color = remain <= 0 ? 'var(--danger)' : (remain < amt ? 'var(--accent)' : 'var(--success)');
+    let tip = `المتبقي: ${fix(remain)}${cur}  |  المستهلك: ${fix(consumed)}${cur}  |  حصة الحساب: ${fix(perAcc)}${cur}  |  الحسابات: ${used}/${total}`;
+    let editIcon = isAdmin ? `<i class="fas fa-pen" onclick="openPledgeAmountModal('${p.id}')" title="تعديل المبلغ" style="cursor:pointer; font-size:10px; color:var(--text-muted); margin-right:6px;"></i>` : '';
+    return `<span class="plg-amount" title="${tip.replace(/"/g,'&quot;')}"
+        onclick="notify('المبلغ المتبقي: ${fix(remain)}${cur} (${Math.max(0,total-used)} حساب متبقٍ)')"
+        style="cursor:help; font-weight:800; direction:ltr; display:inline-block; border-bottom:1px dashed ${color}; color:${color};">${fix(amt)}${cur}</span>${editIcon}`;
 }
 
 async function deletePledge(id) {
@@ -13056,7 +13469,72 @@ function togglePledgeField() {
     let checked = document.getElementById("usePledge").checked;
     let wrap = document.getElementById("pledgeSelectWrap");
     wrap.style.display = checked ? "block" : "none";
-    if(checked) loadPledgesIntoSelect();
+
+    // العميل دفع مسبقاً عند إضافة الرهن → نُخفي حقل المبلغ المقبوض واختيار العملة
+    // (إلا إذا كان رهناً قديماً بلا مبلغ مسجّل — تتكفّل onPledgeSelectChange بذلك)
+    let payGroup = document.getElementById("paidAmountGroup");
+    if (payGroup) payGroup.style.display = checked ? "none" : "";
+
+    if(checked) {
+        loadPledgesIntoSelect();
+        onPledgeSelectChange();
+    } else {
+        let info = document.getElementById("pledgePayInfo");
+        if (info) { info.style.display = "none"; info.innerHTML = ""; }
+    }
+}
+
+// عند اختيار رهن: تعبئة بيانات العميل تلقائياً + عرض تفاصيل المبلغ المدفوع مسبقاً
+function onPledgeSelectChange() {
+    let info = document.getElementById("pledgePayInfo");
+    let sel  = document.getElementById("pledgeSelect");
+    if (!info || !sel) return;
+
+    let payGroup = document.getElementById("paidAmountGroup");
+    let p = safeJSON(store.pledges, []).find(x => x.id === sel.value);
+    if (!p) {
+        info.style.display = "none"; info.innerHTML = "";
+        if (payGroup) payGroup.style.display = "none";
+        return;
+    }
+
+    // ── رهن قديم (قبل التحديث): لا مبلغ مسجّل → نُظهر حقل المبلغ يدوياً ──
+    if (_plgIsLegacy(p)) {
+        if (payGroup) payGroup.style.display = "";
+        let custElL  = document.getElementById("customer");
+        let phoneElL = document.getElementById("customerPhone");
+        if (custElL)  custElL.value  = p.customer || "";
+        if (phoneElL) { phoneElL.value = p.phone || ""; if (typeof validatePhoneInput === 'function') validatePhoneInput(phoneElL); }
+        info.style.display = "block";
+        info.innerHTML = `
+            <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:10px; padding:10px 12px; font-size:12.5px; line-height:1.8; color:var(--text-muted);">
+                <div style="font-weight:800; color:var(--accent); margin-bottom:4px;"><i class="fas fa-triangle-exclamation"></i> رهن قديم بلا مبلغ مسجّل</div>
+                <div>أدخل المبلغ والعملة يدوياً لهذه العملية، أو عيّن مبلغ الرهن مرة واحدة من صفحة <b>المرهونات</b> (زر "تعيين المبلغ") ليُحسب تلقائياً بعدها.</div>
+            </div>`;
+        return;
+    }
+    if (payGroup) payGroup.style.display = "none";
+
+    // تعبئة اسم ورقم العميل من الرهن (حتى تظهر اشتراكاته تحت حسابه)
+    let custEl  = document.getElementById("customer");
+    let phoneEl = document.getElementById("customerPhone");
+    if (custEl)  custEl.value  = p.customer || "";
+    if (phoneEl) { phoneEl.value = p.phone || ""; if (typeof validatePhoneInput === 'function') validatePhoneInput(phoneEl); }
+
+    let cur    = _plgCurrency(p);
+    let perAcc = _plgPerAccount(p);
+    let remain = _plgRemainingAmount(p);
+    let remainAcc = Math.max(0, _plgTotalCount(p) - _plgUsedCount(p));
+
+    let cnt = parseInt(document.getElementById("purchaseProfilesCount")?.value) || 1;
+    let thisOp = Math.round(perAcc * cnt * 100) / 100;
+
+    info.style.display = "block";
+    info.innerHTML = `
+        <div style="background:rgba(99,102,241,0.07); border:1px solid rgba(99,102,241,0.25); border-radius:10px; padding:10px 12px; font-size:12.5px; line-height:1.9; color:var(--text-muted);">
+            <div><i class="fas fa-receipt" style="color:var(--accent)"></i> سيُسجَّل لهذه العملية: <b style="color:var(--success); direction:ltr; display:inline-block;">${fix(thisOp)}${cur}</b></div>
+            <div><i class="fas fa-wallet" style="color:var(--accent)"></i> المتبقي بعد هذه العملية: <b style="color:var(--text-main); direction:ltr; display:inline-block;">${fix(Math.max(0, remain - thisOp))}${cur}</b> (${Math.max(0, remainAcc - cnt)} حساب)</div>
+        </div>`;
 }
 
 function loadPledgesIntoSelect() {
@@ -13069,7 +13547,8 @@ function loadPledgesIntoSelect() {
     available.forEach(p => {
         let used = p.usedCount || 0;
         let total = p.totalCount || 0;
-        sel.innerHTML += `<option value="${p.id}">${esc(p.customer)} / ${esc(p.phone)} / ${esc(p.service)} (${used}/${total})</option>`;
+        let amtStr = _plgAmount(p) > 0 ? ` — متبقٍ ${fix(_plgRemainingAmount(p))}${_plgCurrency(p)}` : '';
+        sel.innerHTML += `<option value="${p.id}">${esc(p.customer)} / ${esc(p.phone)} / ${esc(p.service)} (${used}/${total})${amtStr}</option>`;
     });
 }
 
