@@ -10326,7 +10326,7 @@ function openRemoveBuyerModal() {
         list.innerHTML = item.buyers.map((b, idx) => `
             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:10px 14px;">
                 <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;">
-                    <span style="font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(b)}">${idx + 1}. ${esc(b)}</span>
+                    <span style="font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(b)}">${idx + 1}. ${esc(b)}</span>${_buyerTransferBadgeHTML(item, idx)}
                     ${_buyerSubInfoHTML(item, idx)}
                 </div>
                 <div style="display:flex; gap:6px; flex-shrink:0;">
@@ -10562,6 +10562,7 @@ async function removeBuyerFromStock(stockId, buyerIdx) {
     let _removedBuyerName = stock[idx].buyers[buyerIdx] || '';
     stock[idx].buyers.splice(buyerIdx, 1);
     if (Array.isArray(stock[idx].buyerDates)) stock[idx].buyerDates.splice(buyerIdx, 1); // إزالة التاريخ المقابل
+    if (Array.isArray(stock[idx].buyerTransfers)) stock[idx].buyerTransfers.splice(buyerIdx, 1); // إزالة معلومة النقل المقابلة
     stock[idx].soldProfiles = Math.max(0, (parseInt(stock[idx].soldProfiles) || 0) - 1);
 
     // إعادة حصة التكلفة للرصيد المتبقي (أسلوب باقي التكلفة) عند تحرير مقعد
@@ -10616,6 +10617,7 @@ async function removeBuyerFromSoldView(stockId, buyerIdx) {
     let removedBuyer = stock[idx].buyers[buyerIdx] || '';
     stock[idx].buyers.splice(buyerIdx, 1);
     if (Array.isArray(stock[idx].buyerDates)) stock[idx].buyerDates.splice(buyerIdx, 1); // إزالة التاريخ المقابل
+    if (Array.isArray(stock[idx].buyerTransfers)) stock[idx].buyerTransfers.splice(buyerIdx, 1); // إزالة معلومة النقل المقابلة
 
     // اشتراك مباع بالكامل: كلا العددين ينقصان → يبقى الاشتراك 11/11
     stock[idx].soldProfiles  = Math.max(0, (parseInt(stock[idx].soldProfiles)  || 0) - 1);
@@ -10666,6 +10668,25 @@ function _pushBuyerDate(item, dateStr) {
     let targetIdx = item.buyers.length - 1; // فهرس العميل الذي أُضيف للتو
     while (item.buyerDates.length < targetIdx) item.buyerDates.push(null); // املأ فجوات القدامى
     item.buyerDates[targetIdx] = dateStr; // ضع التاريخ في مكانه الصحيح بالضبط
+}
+
+// معلومات النقل (من أي حساب/إيميل انتقل هذا العميل) — بمحاذاة فهرس buyers نفسه.
+// بيانات قديمة/عملاء لم يُنقلوا أبداً = null، ولا نحاول استنتاج أي شيء لهم.
+function _pushBuyerTransferInfo(item, info) {
+    if (!item) return;
+    if (!Array.isArray(item.buyers)) item.buyers = [];
+    if (!Array.isArray(item.buyerTransfers)) item.buyerTransfers = [];
+    let targetIdx = item.buyers.length - 1;
+    while (item.buyerTransfers.length < targetIdx) item.buyerTransfers.push(null);
+    item.buyerTransfers[targetIdx] = info; // { email, name, date }
+}
+
+// شارة "منقول" حمراء — تظهر فقط إذا وصل هذا العميل عبر نقل، والتلميح يعرض إيميل الخدمة المصدر
+function _buyerTransferBadgeHTML(item, idx) {
+    let info = (item && Array.isArray(item.buyerTransfers)) ? item.buyerTransfers[idx] : null;
+    if (!info) return '';
+    let emailTxt = esc(info.email || '—');
+    return ` <span title="انتقل من: ${emailTxt}" style="color:var(--danger); font-weight:800; font-size:11px; text-decoration:underline dotted; text-underline-offset:3px; cursor:help; white-space:nowrap;"><i class="fas fa-right-left" style="font-size:9px;"></i> منقول</span>`;
 }
 
 // شارة تاريخ الاشتراك (تظهر فقط إن وُجد تاريخ)
@@ -10785,7 +10806,7 @@ function openClientsManagerModal(stockId) {
                 <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
                     <span style="font-size:13.5px; font-weight:700; color:var(--text-main);
                         overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
-                        title="${esc(b)}">${esc(b)}</span>
+                        title="${esc(b)}">${esc(b)}</span>${_buyerTransferBadgeHTML(item, idx)}
                     ${_buyerSubInfoHTML(item, idx)}
                 </div>
 
@@ -10842,14 +10863,14 @@ function openTransferBuyerModal(fromStockId, buyerIdx, fromActive = false) {
     document.getElementById("transferBuyerName").textContent    = buyerName;
     document.getElementById("transferFromSubName").textContent  = fromItem.displayName || fromItem.service;
 
-    // كل الاشتراكات غير المنتهية ما عدا الحالي
+    // كل الاشتراكات غير المنتهية ما عدا الحالي — الأحدث إضافة للمخزون أولاً (سواء نشط أو مباع بالكامل)
     _transferAllSubs = stock.filter(s => {
         if (s.id === fromStockId) return false;
         let dur = parseInt(s.duration);
         if (dur === 0) return true; // بدون مدة — لا ينتهي
         let expiry = _addMonths30(new Date(s.timestamp), dur);
         return expiry.getTime() > new Date().getTime();
-    });
+    }).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
     document.getElementById("buyerTransferSearch").value = "";
     renderBuyerTransferList(_transferAllSubs);
@@ -10973,6 +10994,7 @@ async function executeBuyerTransfer(toStockId) {
     // ── إزالة من المصدر ──────────────────────────────────────────
     stock[fromIdx].buyers.splice(_transferBuyerIdx, 1);
     if (Array.isArray(stock[fromIdx].buyerDates)) stock[fromIdx].buyerDates.splice(_transferBuyerIdx, 1);
+    if (Array.isArray(stock[fromIdx].buyerTransfers)) stock[fromIdx].buyerTransfers.splice(_transferBuyerIdx, 1);
     let isSoldSrc = stock[fromIdx].status === 'sold';
     if (isSoldSrc) {
         // اشتراك مباع بالكامل → كلاهما ينقصان (12/12 → 11/11)
@@ -10992,6 +11014,11 @@ async function executeBuyerTransfer(toStockId) {
     if (!stock[toIdx].buyerDates) stock[toIdx].buyerDates = [];
     stock[toIdx].buyers.push(buyerName);
     _pushBuyerDate(stock[toIdx], _movedDate || null); // نفس تاريخ الاشتراك الأصلي في الفهرس الصحيح
+    _pushBuyerTransferInfo(stock[toIdx], {
+        email: stock[fromIdx].email || '',
+        name:  stock[fromIdx].displayName || stock[fromIdx].service || '',
+        date:  new Date().toISOString().slice(0,10)
+    });
 
     let toAvail = (parseInt(stock[toIdx].totalProfiles) || 1) - (parseInt(stock[toIdx].soldProfiles) || 0);
     if (toAvail <= 0) {
