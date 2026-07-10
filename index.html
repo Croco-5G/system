@@ -310,6 +310,12 @@
         .badge-info { background: rgba(59, 130, 246, 0.15); color: var(--info); }
         .badge-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
         .badge-warning { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+        /* شارة بأيقونة فقط — هالة دائرية مضغوطة */
+        .badge-icon { padding: 0; width: 22px; height: 22px; gap: 0; justify-content: center; font-size: 11px; vertical-align: middle; }
+        /* اشتراك ملغي في السجل المالي */
+        tr.history-cancelled td { opacity: .55; text-decoration: line-through; text-decoration-thickness: 1px; }
+        tr.history-cancelled td .badge { text-decoration: none; opacity: 1; }
+        tr.history-cancelled td .badge i { text-decoration: none; }
 
         /* --- MODAL STYLES --- */
         .modal-overlay { 
@@ -459,7 +465,7 @@
 
         /* --- OTHER COMPONENTS --- */
         @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-        #notification { position: fixed; bottom: 30px; left: 30px; padding: 16px 25px; border-radius: 16px; color: white; font-weight: 700; z-index: 6000; display: none; animation: slideIn 0.3s ease-out; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.3); align-items: center; gap: 10px; }
+        #notification { position: fixed; bottom: 30px; left: 30px; padding: 16px 25px; border-radius: 16px; color: white; font-weight: 700; z-index: 100003; display: none; animation: slideIn 0.3s ease-out; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.3); align-items: center; gap: 10px; }
         #syncStatus { position: fixed; top: 10px; left: 30px; padding: 8px 16px; border-radius: 50px; font-size: 13px; font-weight: 700; z-index: 1001; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 8px; transition: all 0.3s; cursor: pointer; }
         .theme-switch-container { display: flex; justify-content: center; align-items: center; padding-bottom: 10px; gap: 10px; font-size: 14px; color: #94a3b8; }
         .theme-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
@@ -1192,6 +1198,24 @@
     </div>
 </div>
 
+<div id="newCustomerModal" class="dialog-modal" style="display:none; z-index:6300;">
+    <div class="dialog-box" style="text-align:center; max-width:400px">
+        <div style="font-size:50px; color:var(--primary); margin-bottom:15px"><i class="fas fa-user-plus"></i></div>
+        <h3 style="margin-top:0;">عميل جديد</h3>
+        <p id="newCustomerModalMsg" style="color:var(--text-muted); font-size:14px; margin-bottom:18px"></p>
+
+        <div style="background:var(--bg-input); border:2px dashed var(--primary); padding:15px; border-radius:12px; margin-bottom:16px;">
+            <div id="newCustomerModalName" style="font-weight:800; font-size:16px;"></div>
+            <div id="newCustomerModalPhone" class="eng-num" dir="ltr" style="color:var(--text-muted); font-size:13px; margin-top:4px;"></div>
+            <div id="newCustomerModalSub" style="color:var(--text-muted); font-size:12px; margin-top:6px;"></div>
+        </div>
+
+        <div id="newCustomerModalNote" style="font-size:12px; color:var(--text-muted); margin-bottom:16px;"></div>
+
+        <button class="btn btn-primary" id="newCustomerModalOk" style="width:100%"><i class="fas fa-check"></i> تمام</button>
+    </div>
+</div>
+
 <div id="stockConfirmModal" class="dialog-modal" style="display:none;">
     <div class="dialog-box" style="text-align:right; max-width:460px; max-height:88vh; overflow-y:auto; padding:25px;">
         <div style="text-align:center; font-size:38px; margin-bottom:10px; color:var(--primary);"><i class="fas fa-cubes"></i></div>
@@ -1392,8 +1416,8 @@
             <label>نوع الشارة</label>
             <select id="svcBadge">
                 <option value="">بدون شارة</option>
-                <option value="hot">🔥 الأكثر طلباً</option>
-                <option value="new">✨ جديد</option>
+                <option value="hot">الأكثر طلباً</option>
+                <option value="new">جديد</option>
             </select>
         </div>
         <div class="input-group">
@@ -1740,10 +1764,32 @@
             <input type="number" id="eh_duration" placeholder="عدد الأشهر" min="0" max="120" step="1" oninput="_ehExpiryPreview()">
             <div id="eh_expiry_preview" style="font-size:12px; color:var(--text-muted); margin-top:6px;"></div>
         </div>
+        <div id="eh_cancelInfo" style="display:none; background:rgba(239,68,68,0.1); border:1px solid var(--danger); color:var(--danger); border-radius:10px; padding:12px; margin-top:14px; font-size:13px; font-weight:700; line-height:1.7;"></div>
         <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
             <button class="btn btn-primary" onclick="saveHistoryEdit()"><i class="fas fa-save"></i> حفظ التعديلات</button>
-            <button class="btn btn-danger" onclick="deleteHistoryRecord()"><i class="fas fa-trash"></i> حذف الاشتراك</button>
+            <button class="btn btn-danger" id="eh_cancelBtn"><i class="fas fa-ban"></i> إلغاء الاشتراك</button>
             <button class="btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);" onclick="closeEditHistoryModal()">خروج</button>
+        </div>
+    </div>
+</div>
+
+<div id="cancelSubModal" class="modal-overlay hidden" style="z-index:6700;">
+    <div class="modal-content" style="max-width:430px;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px;">
+            <i class="fas fa-ban" style="color:var(--danger)"></i> إلغاء الاشتراك
+        </h3>
+        <div style="font-size:13px; color:var(--text-muted); line-height:1.8; margin-bottom:14px;">
+            <i class="fas fa-circle-info"></i> الاشتراك <b>لن يُحذف</b> — سيبقى في السجل المالي موسوماً كـ«ملغي»، ولن تظهر تنبيهات انتهائه إلا إذا أعدت تفعيله.
+        </div>
+        <div class="input-group">
+            <label>سبب الإلغاء <span style="color:var(--danger)">*</span></label>
+            <textarea id="cs_reason" rows="3" placeholder="اكتب سبب إلغاء هذا الاشتراك..." style="width:100%; resize:vertical;"></textarea>
+            <div id="cs_error" style="display:none; font-size:12px; color:var(--danger); font-weight:700; margin-top:6px;"></div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:6px;"><i class="fas fa-circle-info"></i> يظهر السبب عند التأشير على الاشتراك في السجل المالي.</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:18px;">
+            <button class="btn btn-danger" onclick="confirmCancelSub()"><i class="fas fa-ban"></i> تأكيد الإلغاء</button>
+            <button class="btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);" onclick="closeCancelSubModal()">تراجع</button>
         </div>
     </div>
 </div>
@@ -3055,13 +3101,13 @@
 //  MEGA STORE SYSTEM — v5.0 (Atomic Race-Condition Fix)
 //  تاريخ الإصلاح: 2026-02-23
 //
-//  ✅ wallets + invest: جميع التحديثات المالية تستخدم
+//  - wallets + invest: جميع التحديثات المالية تستخدم
 //     FieldValue.increment() — عمليات ذرية على الخادم مباشرة،
 //     مستحيل يحدث Race Condition حتى مع 100 موظف متزامن
 //
-//  ✅ stock + purchases + logs: Subcollections بـ Diff algorithm
+//  - stock + purchases + logs: Subcollections بـ Diff algorithm
 //
-//  ✅ fbAtomicWalletInvest(): دالة مركزية لكل العمليات المالية
+//  - fbAtomicWalletInvest(): دالة مركزية لكل العمليات المالية
 // ═══════════════════════════════════════════════════════════════
 // --- GLOBAL DEFINITIONS & UTILS ---
 let migrationRun = false; 
@@ -3464,7 +3510,7 @@ function openCustomerDetails(phone, name) {
     // الاشتراكات التي لم تنتهِ بعد (expiry في المستقبل)
     let now = Date.now();
     let activeSubs = myItems
-        .filter(p => p.expiry && Number(p.expiry) > now)
+        .filter(p => p.expiry && Number(p.expiry) > now && !p.cancelled)
         .sort((a, b) => Number(a.expiry) - Number(b.expiry));
 
     // ترتيب الخدمات حسب الأكثر تكراراً
@@ -4160,7 +4206,7 @@ function runSilentMigration() {
 //  يعمل مرة واحدة فقط عند اكتشاف بيانات بالصيغة القديمة
 // ══════════════════════════════════════════════════════════════
 async function migrateToV2(oldData) {
-    console.log("⏳ بدء الترحيل إلى V2 (Subcollections)...");
+    console.log("[MIGRATION] بدء الترحيل إلى V2 (Subcollections)...");
     updateSyncStatus("جاري الترحيل...", "loading");
 
     try {
@@ -4205,12 +4251,12 @@ async function migrateToV2(oldData) {
         }
         await fbDocRef.update(cleanupObj);
 
-        console.log("✅ الترحيل إلى V2 اكتمل!");
+        console.log("[MIGRATION] الترحيل إلى V2 اكتمل!");
         runSilentMigration(); // تشغيل هجرة V1.1 بعد V2
         updateSyncStatus("تم الترحيل بنجاح", "success");
 
     } catch (e) {
-        console.error("❌ خطأ في الترحيل:", e);
+        console.error("[MIGRATION] خطأ في الترحيل:", e);
         updateSyncStatus("خطأ أثناء الترحيل", "error");
     }
 }
@@ -4389,6 +4435,9 @@ function initFirebase() {
                     lastServerState[key] = JSON.parse(JSON.stringify(arr));
                 }
 
+                // ─ تغيّر قائمة المستخدمين → أعد تقييم ظهور قسم إعدادات العمولة ─
+                if (key === 'users' && currentUser) syncEmpBonusSettingsVisibility();
+
                 // ─ التحقق من المستخدمين عند تغيّر جدول users ─
                 if (key === 'users' && !fromCache && !hasPendingWrites && currentUser) {
                     _validateCurrentUser();
@@ -4498,6 +4547,7 @@ const LOG_TYPE_AR = {
     // مبيعات ومشتريات
     purchase:'تسجيل عملية بيع', manual_sell:'بيع يدوي من المخزون', undo:'تراجع عن عملية شراء',
     stock_add:'شراء مخزون جديد', edit_history:'تعديل سجل مالي', delete_history:'حذف سجل مالي',
+    cancel_history:'إلغاء اشتراك', reactivate_history:'إعادة تفعيل اشتراك',
     // محافظ وأموال
     manual:'تعديل رصيد محفظة', set_wallet:'تعيين رصيد محفظة', manual_invest:'تعديل حصة شريك',
     transfer:'تحويل أرصدة', withdraw:'سحب أموال', create_wallet:'إنشاء محفظة جديدة',
@@ -4507,6 +4557,7 @@ const LOG_TYPE_AR = {
     discount_settings:'تعديل إعدادات أكواد الخصم',
     // عملاء مميزون (VIP)
     add_vip:'إضافة رتبة عميل مميز', delete_vip:'حذف رتبة عميل مميز', reset_all_vip:'إعادة تعيين كل العملاء المميزين',
+    new_customer:'عميل جديد (أول اشتراك)',
     vip_settings:'تعديل إعدادات نظام الرتب',
     // مستخدمون وأمان
     add_user:'إضافة مستخدم جديد', delete_user:'حذف مستخدم', user_edit:'تعديل بيانات مستخدم',
@@ -5801,7 +5852,7 @@ function checkExpiringOnLogin() {
     let now = new Date().getTime();
     let days7 = _getExpiryAlertMs();
     // نحسب المنتهية + القادمة خلال عدد الأيام المحدد في الإعدادات
-    let allAlerts = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && (x.expiry - now) < days7);
+    let allAlerts = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && !x.cancelled && (x.expiry - now) < days7);
     let expiredNow = allAlerts.filter(x => x.expiry <= now);
     let soonList  = allAlerts.filter(x => x.expiry > now);
     if(expiredNow.length > 0) {
@@ -5824,11 +5875,11 @@ function startExpiryPeriodicCheck() {
         let p = safeJSON(store.purchases, []);
         let now = new Date().getTime();
         let days7 = _getExpiryAlertMs();
-        let freshExpired = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp
+        let freshExpired = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && !x.cancelled
             && x.expiry <= now && x.expiry > now - 3600000); // انتهت خلال آخر ساعة
         if(freshExpired.length > 0) {
             freshExpired.forEach(item => {
-                notify(`🔴 انتهى اشتراك ${esc(item.customer)} - ${esc(item.sub)}`, "error", 7000);
+                notify(`انتهى اشتراك ${esc(item.customer)} - ${esc(item.sub)}`, "error", 7000, "fas fa-circle-exclamation");
             });
         }
         // تحديث badge
@@ -6322,6 +6373,23 @@ function getRoleName(role) {
     return 'مشاهد عادي'; 
 }
 
+/* هل يوجد مستخدم واحد على الأقل برتبة "موظف"؟ */
+function hasAnyEmployee() {
+    try {
+        let all = safeJSON(store.users, []);
+        return Array.isArray(all) && all.some(u => u && u.role === 'employee');
+    } catch (e) { return false; }
+}
+
+/* قسم "إعدادات عمولة الموظف" — للأدمن وفقط عند وجود موظف واحد على الأقل */
+function syncEmpBonusSettingsVisibility() {
+    let el = document.getElementById("sec-emp-bonus-settings");
+    if (!el) return;
+    let isAdmin = currentUser && currentUser.role === 'admin';
+    if (isAdmin && hasAnyEmployee()) el.classList.remove("hidden");
+    else el.classList.add("hidden");
+}
+
 function applyRBAC() {
     const role = currentUser.role;
     
@@ -6392,7 +6460,8 @@ function applyRBAC() {
         safeToggle("sec-manage-wallets", "remove");
         safeToggle("sec-rename-wallet", "remove");
         safeToggle("sec-profit-settings", "remove");
-        safeToggle("sec-emp-bonus-settings", "remove");
+        // إعدادات العمولة: لا تظهر إلا إذا كان هناك موظف واحد على الأقل
+        safeToggle("sec-emp-bonus-settings", hasAnyEmployee() ? "remove" : "add");
         safeToggle("sec-discount-settings", "remove");
         safeToggle("sec-vip-settings", "remove");
         safeToggle("sec-manage-services", "remove");
@@ -6450,8 +6519,7 @@ function applyRBAC() {
         safeToggle("thDiscountsDelete", "add");
         safeToggle("thPledgesDelete", "add");
         safeToggle("thVipAction", "add");
-        let _hasEmpNow = (() => { try { let uu = safeJSON(store.users, []); return Array.isArray(uu) && uu.some(u => u && u.role === 'employee'); } catch(e){ return false; } })();
-        safeToggle("statCardEmployeeBonus", _hasEmpNow ? "remove" : "add");
+        safeToggle("statCardEmployeeBonus", hasAnyEmployee() ? "remove" : "add");
         // ملاحظة: صندوق التعديل اليدوي (empBonusAdminBox) للأدمن فقط — تتكفّل refreshEmployeeBonus بإخفائه عن الموظف
         refreshEmployeeBonus();
     }
@@ -6958,16 +7026,17 @@ function toggleDarkMode() {
 
 let _notifyQueue = [];
 let _notifyBusy = false;
-function notify(msg, type="success", duration=2800) {
-    _notifyQueue.push({msg, type, duration});
+function notify(msg, type="success", duration=2800, icon=null) {
+    _notifyQueue.push({msg, type, duration, icon});
     if(!_notifyBusy) _processNotifyQueue();
 }
 function _processNotifyQueue() {
     if(_notifyQueue.length === 0) { _notifyBusy = false; return; }
     _notifyBusy = true;
-    let {msg, type, duration} = _notifyQueue.shift();
+    let {msg, type, duration, icon} = _notifyQueue.shift();
     let n = document.getElementById("notification");
-    n.innerHTML = (type==='success' ? '<i class="fas fa-check-circle"></i> ' : '<i class="fas fa-exclamation-triangle"></i> ') + msg;
+    let _nIcon = icon || (type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle');
+    n.innerHTML = `<i class="${_nIcon}"></i> ` + msg;
     n.style.background = type === "success" ? "#10b981" : type === "warning" ? "#f59e0b" : "#ef4444";
     n.style.display = "flex";
     setTimeout(() => { n.style.display = "none"; setTimeout(_processNotifyQueue, 200); }, duration || 2800);
@@ -7308,7 +7377,7 @@ function _updateEmpTierRanges() {
         nameEl.textContent = 'الشريحة ' + (idx + 1);
         if (next && !isNaN(next.start)) {
             let end = next.start - 1;
-            if (end < start) rangeEl.textContent = `⚠ تتعارض مع الشريحة التالية`;
+            if (end < start) rangeEl.innerHTML = `<i class="fas fa-triangle-exclamation"></i> تتعارض مع الشريحة التالية`;
             else if (end === start) rangeEl.textContent = `العملية رقم ${start} فقط`;
             else rangeEl.textContent = `من العملية ${start} إلى ${end}`;
         } else {
@@ -7471,6 +7540,96 @@ function _consumeProfileCost(stItem) {
     return cost;
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  كشف العميل الجديد (أول مرة يشترك معنا)
+//  المرجع: قائمة عملائنا (vipCustomers) + السجل المالي (purchases)
+// ═══════════════════════════════════════════════════════════════
+
+/* مفتاح موحّد للمقارنة بين الأرقام (أرقام فقط بعد التطبيع) */
+function _phoneKey(raw) {
+    if (!raw) return '';
+    return normalizePhone(raw).replace(/\D/g, '');
+}
+
+/* هل الرقم موجود مسبقاً في قائمة عملائنا أو في السجل المالي؟ */
+function isKnownCustomerPhone(phone) {
+    let ph = _phoneKey(phone);
+    if (!ph) return true; // بلا رقم → لا يمكن الحكم، نتعامل معه كعميل معروف
+
+    // 1) قائمة عملائنا / العملاء المميزين
+    let vips = safeJSON(store.vipCustomers, {});
+    for (let k in vips) {
+        if (_phoneKey(k) === ph) return true;
+    }
+
+    // 2) أي عملية سابقة في السجل المالي بنفس الرقم
+    let purchases = safeJSON(store.purchases, []);
+    if (purchases.some(p => _phoneKey(p.phone) === ph)) return true;
+
+    return false;
+}
+
+/* عميل جديد = له رقم + غير موجود في أي من المصدرين */
+function isNewCustomerPhone(phone) {
+    let ph = _phoneKey(phone);
+    if (!ph) return false;
+    return !isKnownCustomerPhone(ph);
+}
+
+/* نافذة تنبيه "عميل جديد" */
+function showNewCustomerModal(name, phone, service, isPledge, onClose = null) {
+    let m = document.getElementById("newCustomerModal");
+    if (!m) { if (onClose) onClose(); return; }
+
+    document.getElementById("newCustomerModalMsg").textContent = isPledge
+        ? "هذا العميل يتعامل معنا لأول مرة (عن طريق رهن)."
+        : "هذا العميل يشترك معنا لأول مرة.";
+    document.getElementById("newCustomerModalName").textContent  = name || "عميل";
+    document.getElementById("newCustomerModalPhone").textContent = phone || "-";
+    document.getElementById("newCustomerModalSub").textContent   = service ? ("الخدمة: " + service) : "";
+    document.getElementById("newCustomerModalNote").innerHTML = isPledge
+        ? '<i class="fas fa-circle-info"></i> سُحب حساب من رهن — وُسمت العملية في السجل المالي كأول اشتراك لهذا العميل.'
+        : '<i class="fas fa-circle-info"></i> تم وسم هذه العملية في السجل المالي كأول اشتراك لهذا العميل.';
+
+    const close = () => { m.style.display = 'none'; if (onClose) onClose(); };
+    document.getElementById("newCustomerModalOk").onclick = close;
+    m.style.display = "flex";
+}
+
+/* طابع زمني تقريبي من معرّف العملية (للترتيب) */
+function _purchaseTs(p) {
+    return (p && p.id) ? (parseInt(String(p.id).split('_')[1]) || 0) : 0;
+}
+
+/*
+  السجلات القديمة (قبل هذه الميزة) لا تحمل حقل isNewCustomer.
+  لكي تظهر العلامة عليها أيضاً، نستنتج أول عملية لكل رقم جوال.
+  أي رقم يملك سجلاً واحداً على الأقل بالنظام الجديد → نعتمد الحقل المحفوظ ولا نستنتج شيئاً.
+*/
+function _buildLegacyFirstPurchaseIds(list) {
+    let byPhone = {};
+    (list || []).forEach(p => {
+        let ph = _phoneKey(p.phone);
+        if (!ph) return;
+        (byPhone[ph] = byPhone[ph] || []).push(p);
+    });
+    let ids = new Set();
+    Object.keys(byPhone).forEach(ph => {
+        let arr = byPhone[ph];
+        if (arr.some(x => x.isNewCustomer !== undefined)) return; // بيانات جديدة
+        arr.sort((a, b) => (a.date || '').localeCompare(b.date || '') || (_purchaseTs(a) - _purchaseTs(b)));
+        if (arr[0]) ids.add(arr[0].id);
+    });
+    return ids;
+}
+
+/* هل هذه العملية هي أول اشتراك لصاحبها؟ (للعرض في السجل المالي) */
+function _isFirstPurchaseRow(item, legacyIds) {
+    if (item.isFirstPurchase === true) return true;
+    if (item.isNewCustomer !== undefined) return false;
+    return !!(legacyIds && legacyIds.has(item.id));
+}
+
 function addPurchase(){
     if(currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') return;
 
@@ -7545,6 +7704,9 @@ function addPurchase(){
         }
     }
 
+    // ─── كشف: هل هذا العميل جديد (أول مرة يشترك معنا)؟ ───
+    let _isNewCustomer = isNewCustomerPhone(customerPhoneVal);
+
     // ─── العملة والمبلغ ───────────────────────────────────────────
     // في الرهن: العملة هي عملة الرهن، والمبلغ = (مبلغ الرهن ÷ عدد الحسابات المرهونة) × عدد البروفايلات
     let paidCur;
@@ -7606,6 +7768,7 @@ function addPurchase(){
         <div style="display:grid; gap:8px;">
             <div><i class="fas fa-tag"></i> <b>الخدمة:</b> ${esc(cleanName)}</div>
             <div><i class="fas fa-user"></i> <b>العميل:</b> ${esc(customerVal)||'—'} ${customerPhoneVal?'('+esc(customerPhoneVal)+')':''}</div>
+            ${_isNewCustomer ? `<div style="color:var(--primary); font-weight:bold; text-align:center; padding:6px; border:1px dashed var(--primary); border-radius:6px; margin:5px 0;"><i class="fas fa-user-plus"></i> عميل جديد — هذه أول عملية اشتراك له معنا</div>` : ''}
             <div><i class="fas fa-calendar"></i> <b>المدة:</b> ${duration === 0 ? 'بدون مدة' : duration + ' شهر'}</div>
             ${profilesCount > 1 ? `<div><i class="fas fa-layer-group"></i> <b>عدد البروفايلات:</b> ${profilesCount}</div>` : ''}
             <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color)">
@@ -7621,11 +7784,12 @@ function addPurchase(){
     document.getElementById("purchaseConfirmModal").style.display = "flex";
     document.getElementById("purchaseConfirmOkBtn").onclick = () => {
         document.getElementById("purchaseConfirmModal").style.display = "none";
-        _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge, profilesCount);
+        _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge, profilesCount, _isNewCustomer);
     };
 }
 
-function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge, profilesCount) {
+function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge, profilesCount, isNewCustomer) {
+    isNewCustomer = !!isNewCustomer;
     let invest = safeJSON(store.invest, {}), purchases = safeJSON(store.purchases, []);
     profilesCount = parseInt(profilesCount) || 1; // عدد البروفايلات التي يأخذها هذا العميل في هذه العملية
 
@@ -7782,6 +7946,8 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
         investDelta: _undoDelta,
         isComp: isComp,
         isPledge: !!selectedPledge,
+        isNewCustomer: isNewCustomer,                             // أول تعامل لهذا الرقم معنا
+        isFirstPurchase: isNewCustomer,                           // العلامة التي تظهر في السجل المالي (تشمل الرهن)
         usedDiscountObj: usedDiscountObj,
         purchaseNotes: (document.getElementById("purchaseNotes")?.value.trim()) || "",
         generatedCouponId: null,
@@ -7899,17 +8065,31 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     
     // تسلسل النوافذ المنبثقة للـ VIP والكود
     let showVipNotif = vipEnabled && vipRankChanged && vipCustomerObj.rankIndex > 0;
-    
-    if (generatedCoupon && showVipNotif) {
-        showCouponModal(generatedCoupon, customerPhoneVal, () => {
-            setTimeout(() => {
-                showVipUpgradeModal(vipCustomerObj, vipNewRank, customerPhoneVal);
-            }, 5000);
+
+    const _runPostSaleModals = () => {
+        if (generatedCoupon && showVipNotif) {
+            showCouponModal(generatedCoupon, customerPhoneVal, () => {
+                setTimeout(() => {
+                    showVipUpgradeModal(vipCustomerObj, vipNewRank, customerPhoneVal);
+                }, 5000);
+            });
+        } else if (generatedCoupon) {
+            showCouponModal(generatedCoupon, customerPhoneVal, null);
+        } else if (showVipNotif) {
+            showVipUpgradeModal(vipCustomerObj, vipNewRank, customerPhoneVal);
+        }
+    };
+
+    // ─── عميل جديد: إشعار + نافذة تنبيه (تظهر أولاً ثم بقية النوافذ) ───
+    if (isNewCustomer) {
+        notify(`عميل جديد — أول اشتراك لـ ${esc(customerVal || "عميل")} معنا`, "warning", 7000, "fas fa-user-plus");
+        logAction(`عميل جديد: ${customerVal || "عميل"} — أول تعامل معنا`, 'general', {
+            type: 'new_customer', customer: customerVal || "عميل", customerPhone: customerPhoneVal || "-",
+            sub: cleanName, isPledge: !!selectedPledge
         });
-    } else if (generatedCoupon) {
-        showCouponModal(generatedCoupon, customerPhoneVal, null);
-    } else if (showVipNotif) {
-        showVipUpgradeModal(vipCustomerObj, vipNewRank, customerPhoneVal);
+        showNewCustomerModal(customerVal, customerPhoneVal, cleanName, !!selectedPledge, _runPostSaleModals);
+    } else {
+        _runPostSaleModals();
     }
 
     currentPage.history = 1;
@@ -8096,7 +8276,7 @@ function refreshAll(){
     let expiryBadge2 = document.getElementById("expiryBadge");
     if(expiryBadge2) {
         // المنتهية + القادمة خلال يوم واحد — بدون حد زمني للإخفاء
-        let expiringCount2 = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && (x.expiry - nowMs2) < days3).length;
+        let expiringCount2 = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && !x.cancelled && (x.expiry - nowMs2) < days3).length;
         expiryBadge2.textContent = expiringCount2;
         expiryBadge2.style.display = expiringCount2 > 0 ? "inline-flex" : "none";
     }
@@ -8186,7 +8366,7 @@ function refreshExpiring() {
     
     // نُظهر: المنتهية + يلي باقيلها يوم واحد أو أقل — بدون أي حد زمني للإخفاء التلقائي
     let filtered = p.map((d, i) => ({ d, i })).filter(x => 
-        x.d.expiry && !x.d.expiryDismissed && !x.d.isComp && 
+        x.d.expiry && !x.d.expiryDismissed && !x.d.isComp && !x.d.cancelled && 
         (x.d.expiry - now) < days7  // ينتهي خلال يوم واحد أو انتهى بالفعل
     );
     filtered.sort((a, b) => a.d.expiry - b.d.expiry);
@@ -8241,7 +8421,7 @@ function markAsReminded(id) {
 async function deleteExpired() { 
     if(currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') return; 
     let p = safeJSON(store.purchases, []), now = new Date().getTime();
-    let expiredCount = p.filter(x => x.expiry && x.expiry < now && !x.expiryDismissed && !x.isComp).length;
+    let expiredCount = p.filter(x => x.expiry && x.expiry < now && !x.expiryDismissed && !x.isComp && !x.cancelled).length;
     if(expiredCount === 0) return notify("لا توجد اشتراكات منتهية لإخفائها", "error");
     let ok = await showConfirm(
         "إخفاء الاشتراكات المنتهية",
@@ -8251,7 +8431,7 @@ async function deleteExpired() {
     if(!ok) return;
     // نضيف علامة إخفاء فقط — بدون حذف من السجل المالي
     p = p.map(x => {
-        if(x.expiry && x.expiry < now && !x.expiryDismissed && !x.isComp) {
+        if(x.expiry && x.expiry < now && !x.expiryDismissed && !x.isComp && !x.cancelled) {
             return { ...x, expiryDismissed: true };
         }
         return x;
@@ -8379,6 +8559,8 @@ function refreshHistory(){
     let paginated = filtered.slice((currentPage.history - 1) * ITEMS_PER_PAGE, currentPage.history * ITEMS_PER_PAGE);
     
     let rows = "";
+    // معرّفات أول عملية لكل عميل (للسجلات القديمة التي لا تحمل الحقل)
+    let _legacyFirstIds = _buildLegacyFirstPurchaseIds(p);
     paginated.forEach(item => {
         let isViewerRole = currentUser && (currentUser.role === 'viewer' || currentUser.role === 'viewer_plus');
         let isEmployeeRole = currentUser && currentUser.role === 'employee';
@@ -8413,8 +8595,20 @@ function refreshHistory(){
         let durStr = (parsedDur === 0) ? "بدون مدة" : (isNaN(parsedDur) ? "-" : parsedDur + " شهر");
         let durBadge = (parsedDur === 0) ? "badge-success" : "badge-warning";
         
-        let rowTitle = item.purchaseNotes ? `الملاحظات: ${item.purchaseNotes.replace(/"/g, '&quot;')}` : 'لا يوجد ملاحظات';
-        rows+=`<tr class="history-row" data-histid="${item.id}" style="cursor:pointer;" title="${rowTitle}"><td>${item.date}</td><td style="${colorStyle}"><b>${esc(item.customer)}</b></td><td style="${colorStyle}">${phoneD}</td><td>${subD}</td><td><span class="badge ${durBadge}">${durStr}</span></td><td style="color:var(--success)">${paidD}</td>${isEmployeeRole ? '' : `<td style="color:var(--danger)">${costD}</td><td>${profitD}</td>`}</tr>`;
+        // التلميح: سبب الإلغاء له الأولوية على الملاحظات
+        let _isCancelled = !!item.cancelled;
+        let rowTitle = _isCancelled
+            ? `سبب الإلغاء: ${String(item.cancelReason || '—').replace(/"/g, '&quot;')}`
+            : (item.purchaseNotes ? `الملاحظات: ${item.purchaseNotes.replace(/"/g, '&quot;')}` : 'لا يوجد ملاحظات');
+        // علامة "أول اشتراك" — أيقونة داخل هالة دائرية (النص في التلميح)
+        let firstBadge = _isFirstPurchaseRow(item, _legacyFirstIds)
+            ? ` <span class="badge badge-success badge-icon" title="أول اشتراك لهذا العميل معنا"><i class="fas fa-user-plus"></i></span>`
+            : '';
+        // شارة "ملغي"
+        let cancelBadge = _isCancelled
+            ? ` <span class="badge badge-danger" style="font-size:10px; padding:2px 7px;"><i class="fas fa-ban"></i> ملغي</span>`
+            : '';
+        rows+=`<tr class="history-row${_isCancelled ? ' history-cancelled' : ''}" data-histid="${item.id}" style="cursor:pointer;" title="${rowTitle}"><td>${item.date}</td><td style="${colorStyle}"><b>${esc(item.customer)}</b>${firstBadge}</td><td style="${colorStyle}">${phoneD}</td><td>${subD}${cancelBadge}</td><td><span class="badge ${durBadge}">${durStr}</span></td><td style="color:var(--success)">${paidD}</td>${isEmployeeRole ? '' : `<td style="color:var(--danger)">${costD}</td><td>${profitD}</td>`}</tr>`;
     });
     document.getElementById("historyBody").innerHTML = rows || `<tr><td colspan='8' style='text-align:center; padding:20px; color:var(--text-muted)'>لا توجد بيانات</td></tr>`;
     _attachTapHandler(document.getElementById("historyBody"), 'tr.history-row', 'histid', openEditHistoryModal);
@@ -8463,8 +8657,34 @@ function openEditHistoryModal(id) {
     document.getElementById("eh_duration").value = (parseInt(item.duration) || 0);
     document.getElementById("eh_baseTs").value = _historyBaseDate(item);
     _ehExpiryPreview();
+    _ehApplyCancelState(item);
     
     document.getElementById("editHistoryModal").classList.remove("hidden");
+}
+
+/* يبدّل زر (إلغاء الاشتراك ⇄ تفعيل الاشتراك) حسب حالة السجل */
+function _ehApplyCancelState(item) {
+    let btn = document.getElementById("eh_cancelBtn");
+    let bar = document.getElementById("eh_cancelInfo");
+    if (!btn) return;
+
+    if (item.cancelled) {
+        btn.className = "btn btn-success";
+        btn.innerHTML = '<i class="fas fa-rotate-right"></i> تفعيل الاشتراك';
+        btn.onclick = reactivateHistoryRecord;
+        if (bar) {
+            let _who = item.cancelledBy ? ` — بواسطة ${esc(item.cancelledBy)}` : '';
+            let _when = item.cancelledAt ? new Date(item.cancelledAt).toLocaleDateString('ar-EG') : '';
+            bar.style.display = "block";
+            bar.innerHTML = `<i class="fas fa-ban"></i> اشتراك ملغي${_when ? ' بتاريخ ' + _when : ''}${_who}`
+                          + `<div style="margin-top:6px; font-weight:400;">السبب: ${esc(item.cancelReason || '—')}</div>`;
+        }
+    } else {
+        btn.className = "btn btn-danger";
+        btn.innerHTML = '<i class="fas fa-ban"></i> إلغاء الاشتراك';
+        btn.onclick = cancelHistoryRecord;
+        if (bar) { bar.style.display = "none"; bar.innerHTML = ""; }
+    }
 }
 
 function closeEditHistoryModal() {
@@ -8547,36 +8767,110 @@ async function saveHistoryEdit() {
     notify("تم حفظ التعديلات بنجاح");
 }
 
-async function deleteHistoryRecord() {
+// ═══════════════════════════════════════════════════════════════
+//  إلغاء / إعادة تفعيل اشتراك — بدون حذف نهائي من السجل المالي
+//  • الملغي: يبقى في السجل موسوماً «ملغي» ولا يظهر في التنبيهات
+//  • التفعيل: يعيده نشطاً وتعود تنبيهات انتهائه من جديد
+// ═══════════════════════════════════════════════════════════════
+let _cancelTargetId = null;
+
+/* الخطوة 1: فتح نافذة كتابة سبب الإلغاء (السبب إجباري) */
+function cancelHistoryRecord() {
     let id = document.getElementById("eh_id").value;
-    
-    // 1. إغلاق نافذة التعديل أولاً لتظهر نافذة التأكيد بوضوح
+    if (!id) return;
+    _cancelTargetId = id;
+    document.getElementById("cs_reason").value = "";
+    document.getElementById("cs_reason").style.borderColor = "";
+    let _ce = document.getElementById("cs_error");
+    if (_ce) { _ce.style.display = "none"; _ce.textContent = ""; }
     closeEditHistoryModal();
+    document.getElementById("cancelSubModal").classList.remove("hidden");
+    setTimeout(() => { let el = document.getElementById("cs_reason"); if (el) el.focus(); }, 120);
+}
 
-    // 2. إظهار نافذة التأكيد
-    let ok = await showConfirm(
-        "إلغاء وحذف الاشتراك",
-        "أنت على وشك حذف هذا الاشتراك نهائياً.\nسيتم إزالته من السجل ولن يظهر في التنبيهات.\n(ملاحظة: لن يتأثر مسار الميزانية).\n\nهل أنت متأكد؟",
-        "نعم، احذف", "إلغاء",
-        '<i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i>'
-    );
+/* التراجع → نعيد فتح نافذة التعديل */
+function closeCancelSubModal() {
+    document.getElementById("cancelSubModal").classList.add("hidden");
+    let id = _cancelTargetId;
+    _cancelTargetId = null;
+    if (id) openEditHistoryModal(id);
+}
 
-    // 3. إذا تراجع المستخدم، نعيد فتح نافذة التعديل له
-    if(!ok) {
-        openEditHistoryModal(id);
-        return;
-    }
+/* الخطوة 2: تنفيذ الإلغاء (تأشير فقط — لا حذف) */
+function confirmCancelSub() {
+    let reason = document.getElementById("cs_reason").value.trim();
+    let errEl  = document.getElementById("cs_error");
+    const _fail = (m) => {
+        if (errEl) { errEl.textContent = m; errEl.style.display = "block"; }
+        document.getElementById("cs_reason").style.borderColor = "var(--danger)";
+        notify(m, "error");
+    };
+    if (!reason)            return _fail("سبب الإلغاء مطلوب — لا يمكن الإلغاء بدونه");
+    if (reason.length < 3)  return _fail("سبب الإلغاء قصير جداً — اكتب سبباً واضحاً");
+    if (errEl) errEl.style.display = "none";
+    document.getElementById("cs_reason").style.borderColor = "";
 
-    // 4. تنفيذ عملية الحذف الفعلية
+    let id = _cancelTargetId;
     let purchases = safeJSON(store.purchases, []);
-    purchases = purchases.filter(x => x.id !== id);
-    
+    let idx = purchases.findIndex(x => x.id === id);
+    if (idx === -1) { notify("السجل غير موجود", "error"); return; }
+
+    purchases[idx].cancelled     = true;
+    purchases[idx].cancelReason  = reason;
+    purchases[idx].cancelledAt   = Date.now();
+    purchases[idx].cancelledBy   = (currentUser && currentUser.username) || "";
+
     store.purchases = JSON.stringify(purchases);
     fbSave("purchases", purchases);
-    
-    logAction(`إلغاء وحذف اشتراك من السجل المالي`, 'danger', { type: 'delete_history', id: id });
+
+    logAction(`إلغاء اشتراك: ${purchases[idx].sub} للعميل ${purchases[idx].customer}`, 'danger', {
+        type: 'cancel_history', id: id, customer: purchases[idx].customer,
+        sub: purchases[idx].sub, reason: reason
+    });
+
+    document.getElementById("cancelSubModal").classList.add("hidden");
+    _cancelTargetId = null;
     refreshAll();
-    notify("تم حذف الاشتراك بنجاح");
+    notify("تم إلغاء الاشتراك — لا يزال محفوظاً في السجل المالي", "warning", 5000, "fas fa-ban");
+}
+
+/* إعادة التفعيل (مع تأكيد) — تعود تنبيهات الانتهاء من جديد */
+async function reactivateHistoryRecord() {
+    let id = document.getElementById("eh_id").value;
+    if (!id) return;
+    closeEditHistoryModal();
+
+    let ok = await showConfirm(
+        "تفعيل الاشتراك",
+        "سيعود هذا الاشتراك نشطاً في السجل المالي،\nوستظهر تنبيهات انتهائه من جديد.\n\nهل أنت متأكد؟",
+        "نعم، فعّله", "تراجع",
+        '<i class="fas fa-rotate-right" style="color:var(--success)"></i>'
+    );
+    if (!ok) { openEditHistoryModal(id); return; }
+
+    let purchases = safeJSON(store.purchases, []);
+    let idx = purchases.findIndex(x => x.id === id);
+    if (idx === -1) return notify("السجل غير موجود", "error");
+
+    let oldReason = purchases[idx].cancelReason || "—";
+    purchases[idx].cancelled = false;
+    delete purchases[idx].cancelReason;
+    delete purchases[idx].cancelledAt;
+    delete purchases[idx].cancelledBy;
+    // تعود تنبيهات الانتهاء للعمل من جديد
+    purchases[idx].reminded         = false;
+    purchases[idx].expiryDismissed  = false;
+
+    store.purchases = JSON.stringify(purchases);
+    fbSave("purchases", purchases);
+
+    logAction(`إعادة تفعيل اشتراك: ${purchases[idx].sub} للعميل ${purchases[idx].customer}`, 'financial', {
+        type: 'reactivate_history', id: id, customer: purchases[idx].customer,
+        sub: purchases[idx].sub, reason: oldReason
+    });
+
+    refreshAll();
+    notify("تم تفعيل الاشتراك من جديد", "success", 4000, "fas fa-rotate-right");
 }
 
 function refreshInvestment(){
@@ -10725,7 +11019,7 @@ async function executeBuyerTransfer(toStockId) {
     });
 
     closeBuyerTransferConfirmModal();
-    notify("✅ تم نقل العميل بنجاح");
+    notify("تم نقل العميل بنجاح");
     refreshStock();
 
     // تحديث الواجهة خلف النافذة حسب مصدر النقل
@@ -13646,11 +13940,10 @@ function _monthLabelAr(monthKey) {
 
 function refreshEmployeeBonus() {
     // إظهار واجهة الراتب فقط عند وجود مستخدم واحد على الأقل برتبة موظف
-    let _hasEmployees = false;
-    try {
-        let _allUsers = safeJSON(store.users, []);
-        _hasEmployees = Array.isArray(_allUsers) && _allUsers.some(u => u && u.role === 'employee');
-    } catch(e) { _hasEmployees = false; }
+    let _hasEmployees = hasAnyEmployee();
+
+    // قسم إعدادات العمولة في صفحة الإعدادات — يظهر/يختفي فوراً مع تغيّر الموظفين
+    syncEmpBonusSettingsVisibility();
 
     // صندوق تعديل راتب الموظف (في صفحة سحب الأموال) — للأدمن وفقط عند وجود موظفين
     let _adminBox = document.getElementById('empBonusAdminBox');
