@@ -15937,8 +15937,7 @@ window.onload = init;
         const cb = document.getElementById('finPrivacyFeatureToggle');
         if (cb) cb.checked = _finEnabled;
 
-        if (_finEnabled) _enableFeature(true); // عند تحميل الصفحة: استعِد آخر حالة كان عليها المستخدم
-        // إذا غير مفعّل: لا نفعل شيئاً — الأرقام ظاهرة بشكل طبيعي
+        if (_finEnabled) _enableFeature(true); 
     }
 
     if (document.readyState === 'loading')
