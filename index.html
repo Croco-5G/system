@@ -7602,9 +7602,14 @@ function _purchaseTs(p) {
 }
 
 /*
-  السجلات القديمة (قبل هذه الميزة) لا تحمل حقل isNewCustomer.
-  لكي تظهر العلامة عليها أيضاً، نستنتج أول عملية لكل رقم جوال.
-  أي رقم يملك سجلاً واحداً على الأقل بالنظام الجديد → نعتمد الحقل المحفوظ ولا نستنتج شيئاً.
+  ملاحظة مهمة: لا نعتمد على حقل isFirstPurchase/isNewCustomer المحفوظ وقت إنشاء
+  العملية لتحديد "أول عملية" عند العرض، لأنه قيمة مجمّدة ثابتة قد تُحسب خطأ لحظة
+  الإضافة (مثلاً إن لم تكن كل عمليات هذا الرقم قد تحمّلت محلياً بعد من فايرستور)،
+  وأي خطأ فيها يبقى ملازماً للسجل للأبد.
+  بدلاً من ذلك، نحسب "أول عملية" ديناميكياً في كل مرة يُعرض فيها الجدول: نجمع كل
+  عمليات نفس رقم الجوال من السجل الكامل الحالي ونختار الأقدم تاريخاً فعلياً. هذا
+  يضمن أن العلامة الخضراء تبقى دائماً على أول عملية حقيقية لكل عميل، حتى لو
+  سُجّلت بعدها عمليات جديدة، ويصحّح تلقائياً أي بيانات قديمة كانت قد تعلّمت خطأ.
 */
 function _buildLegacyFirstPurchaseIds(list) {
     let byPhone = {};
@@ -7616,17 +7621,14 @@ function _buildLegacyFirstPurchaseIds(list) {
     let ids = new Set();
     Object.keys(byPhone).forEach(ph => {
         let arr = byPhone[ph];
-        if (arr.some(x => x.isNewCustomer !== undefined)) return; // بيانات جديدة
         arr.sort((a, b) => (a.date || '').localeCompare(b.date || '') || (_purchaseTs(a) - _purchaseTs(b)));
         if (arr[0]) ids.add(arr[0].id);
     });
     return ids;
 }
 
-/* هل هذه العملية هي أول اشتراك لصاحبها؟ (للعرض في السجل المالي) */
+/* هل هذه العملية هي أول اشتراك لصاحبها؟ (للعرض في السجل المالي) — تُحسب ديناميكياً دائماً */
 function _isFirstPurchaseRow(item, legacyIds) {
-    if (item.isFirstPurchase === true) return true;
-    if (item.isNewCustomer !== undefined) return false;
     return !!(legacyIds && legacyIds.has(item.id));
 }
 
