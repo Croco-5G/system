@@ -1198,6 +1198,19 @@
     </div>
 </div>
 
+<div id="stockAgeChoiceModal" class="dialog-modal" style="display:none;">
+    <div class="dialog-box" style="text-align:right; max-width:500px">
+        <div style="text-align:center; font-size:48px; margin-bottom:15px; color:var(--yellow-text);"><i class="fas fa-hourglass-half"></i></div>
+        <h3 style="text-align:center; margin-top:0; margin-bottom:5px;">هذا الاشتراك بالمخزون ليس جديداً</h3>
+        <div id="stockAgeChoiceBody" style="background:var(--bg-input); border-radius:14px; padding:20px; margin:15px 0; font-size:14px; line-height:1.8; border:1px dashed var(--border-color);"></div>
+        <div class="dialog-actions" style="flex-direction:column; gap:10px;">
+            <button class="btn btn-primary" id="stockAgeFullBtn" style="width:100%;"><i class="fas fa-redo"></i> منح العميل مدة كاملة جديدة من اليوم</button>
+            <button class="btn" id="stockAgeRemainingBtn" style="width:100%; background:var(--bg-input); border:1px solid var(--border-color); color:var(--text-main);"><i class="fas fa-hourglass-end"></i> اشتراك العميل ينتهي مع نهاية اشتراك المخزون</button>
+            <button class="btn btn-danger" style="width:100%;" onclick="document.getElementById('stockAgeChoiceModal').style.display='none'">إلغاء العملية</button>
+        </div>
+    </div>
+</div>
+
 <div id="newCustomerModal" class="dialog-modal" style="display:none; z-index:6300;">
     <div class="dialog-box" style="text-align:center; max-width:400px">
         <div style="font-size:50px; color:var(--primary); margin-bottom:15px"><i class="fas fa-user-plus"></i></div>
@@ -7766,31 +7779,67 @@ function addPurchase(){
 
     // (تم التحقق من الحساب المرهون في بداية الدالة)
 
-    document.getElementById("purchaseConfirmBody").innerHTML = `
-        <div style="display:grid; gap:8px;">
-            <div><i class="fas fa-tag"></i> <b>الخدمة:</b> ${esc(cleanName)}</div>
-            <div><i class="fas fa-user"></i> <b>العميل:</b> ${esc(customerVal)||'—'} ${customerPhoneVal?'('+esc(customerPhoneVal)+')':''}</div>
-            ${_isNewCustomer ? `<div style="color:var(--primary); font-weight:bold; text-align:center; padding:6px; border:1px dashed var(--primary); border-radius:6px; margin:5px 0;"><i class="fas fa-user-plus"></i> عميل جديد — هذه أول عملية اشتراك له معنا</div>` : ''}
-            <div><i class="fas fa-calendar"></i> <b>المدة:</b> ${duration === 0 ? 'بدون مدة' : duration + ' شهر'}</div>
-            ${profilesCount > 1 ? `<div><i class="fas fa-layer-group"></i> <b>عدد البروفايلات:</b> ${profilesCount}</div>` : ''}
-            <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color)">
-                <span style="color:var(--success)"><i class="fas fa-money-bill-wave"></i> مدفوع: ${paid}${paidCur}</span>
-                ${selectedPledge ? `<span style="font-size:11px; color:var(--text-muted); display:block; margin-top:4px;">(مدفوع مسبقاً ضمن الرهن — حصة ${profilesCount} حساب من أصل ${selectedPledge.totalCount})</span>` : ''}
-            </div>
-            ${isComp ? `<div style="color:var(--danger); font-weight:bold; text-align:center; padding:5px; background:var(--yellow-bg); border-radius:5px; margin:5px 0;"><i class="fas fa-exclamation-circle"></i> عملية تعويض (المتجر سيتحمل تكلفة ${profilesCount > 1 ? 'هذه البروفايلات' : 'هذا البروفايل'})</div>` : ''}
-            ${appliedDiscountPct > 0 ? `<div style="color:var(--success); font-weight:bold; text-align:center; padding:5px; border:1px solid var(--success); border-radius:5px; margin:5px 0;"><i class="fas fa-ticket-alt"></i> تم تطبيق كود خصم: ${appliedDiscountPct}%</div>` : ''}
-            ${selectedPledge ? `<div style="color:var(--primary); font-weight:bold; text-align:center; padding:5px; border:1px solid var(--primary); border-radius:5px; margin:5px 0;"><i class="fas fa-handshake"></i> سيتم خصم حساب مرهون من: ${esc(selectedPledge.customer)} / ${esc(selectedPledge.service)} (${selectedPledge.usedCount||0}/${selectedPledge.totalCount})</div>` : ''}
-            <div><i class="fas fa-info-circle"></i> <b>حالة الدفع:</b> <span style="color:var(--danger)">سيتم خصم ${fix(calculatedCost * profilesCount)} ${paidCur} كتكلفة ${profilesCount > 1 ? `لـ ${profilesCount} بروفايلات` : 'لهذا البروفايل'}</span></div>
-        </div>`;
-    
-    document.getElementById("purchaseConfirmModal").style.display = "flex";
-    document.getElementById("purchaseConfirmOkBtn").onclick = () => {
-        document.getElementById("purchaseConfirmModal").style.display = "none";
-        _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge, profilesCount, _isNewCustomer);
-    };
+    function _showPurchaseConfirm(useRemainingTimeForShared) {
+        document.getElementById("purchaseConfirmBody").innerHTML = `
+            <div style="display:grid; gap:8px;">
+                <div><i class="fas fa-tag"></i> <b>الخدمة:</b> ${esc(cleanName)}</div>
+                <div><i class="fas fa-user"></i> <b>العميل:</b> ${esc(customerVal)||'—'} ${customerPhoneVal?'('+esc(customerPhoneVal)+')':''}</div>
+                ${_isNewCustomer ? `<div style="color:var(--primary); font-weight:bold; text-align:center; padding:6px; border:1px dashed var(--primary); border-radius:6px; margin:5px 0;"><i class="fas fa-user-plus"></i> عميل جديد — هذه أول عملية اشتراك له معنا</div>` : ''}
+                <div><i class="fas fa-calendar"></i> <b>المدة:</b> ${duration === 0 ? 'بدون مدة' : duration + ' شهر'}</div>
+                ${useRemainingTimeForShared ? `<div style="color:var(--yellow-text); font-weight:bold; text-align:center; padding:6px; border:1px dashed var(--yellow-border); border-radius:6px; margin:5px 0;"><i class="fas fa-hourglass-end"></i> سينتهي اشتراك العميل مع نهاية اشتراك المخزون (وقت متبقٍ فعلي، وليس مدة كاملة)</div>` : ''}
+                ${profilesCount > 1 ? `<div><i class="fas fa-layer-group"></i> <b>عدد البروفايلات:</b> ${profilesCount}</div>` : ''}
+                <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color)">
+                    <span style="color:var(--success)"><i class="fas fa-money-bill-wave"></i> مدفوع: ${paid}${paidCur}</span>
+                    ${selectedPledge ? `<span style="font-size:11px; color:var(--text-muted); display:block; margin-top:4px;">(مدفوع مسبقاً ضمن الرهن — حصة ${profilesCount} حساب من أصل ${selectedPledge.totalCount})</span>` : ''}
+                </div>
+                ${isComp ? `<div style="color:var(--danger); font-weight:bold; text-align:center; padding:5px; background:var(--yellow-bg); border-radius:5px; margin:5px 0;"><i class="fas fa-exclamation-circle"></i> عملية تعويض (المتجر سيتحمل تكلفة ${profilesCount > 1 ? 'هذه البروفايلات' : 'هذا البروفايل'})</div>` : ''}
+                ${appliedDiscountPct > 0 ? `<div style="color:var(--success); font-weight:bold; text-align:center; padding:5px; border:1px solid var(--success); border-radius:5px; margin:5px 0;"><i class="fas fa-ticket-alt"></i> تم تطبيق كود خصم: ${appliedDiscountPct}%</div>` : ''}
+                ${selectedPledge ? `<div style="color:var(--primary); font-weight:bold; text-align:center; padding:5px; border:1px solid var(--primary); border-radius:5px; margin:5px 0;"><i class="fas fa-handshake"></i> سيتم خصم حساب مرهون من: ${esc(selectedPledge.customer)} / ${esc(selectedPledge.service)} (${selectedPledge.usedCount||0}/${selectedPledge.totalCount})</div>` : ''}
+                <div><i class="fas fa-info-circle"></i> <b>حالة الدفع:</b> <span style="color:var(--danger)">سيتم خصم ${fix(calculatedCost * profilesCount)} ${paidCur} كتكلفة ${profilesCount > 1 ? `لـ ${profilesCount} بروفايلات` : 'لهذا البروفايل'}</span></div>
+            </div>`;
+
+        document.getElementById("purchaseConfirmModal").style.display = "flex";
+        document.getElementById("purchaseConfirmOkBtn").onclick = () => {
+            document.getElementById("purchaseConfirmModal").style.display = "none";
+            _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge, profilesCount, _isNewCustomer, useRemainingTimeForShared);
+        };
+    }
+
+    // ─── هذا الاشتراك (مشترك/متعدد البروفايلات) موجود بالمخزون منذ فترة؟ ───
+    // إن مرّ عليه أكثر من 3 أيام، نسأل قبل نافذة التأكيد: مدة كاملة جديدة، أم مطابقة الوقت المتبقي فعلياً بالمخزون؟
+    // (الاشتراكات الفردية totalProfiles=1 تُحتسب أصلاً من الوقت الفعلي المتبقي بالمخزون، فلا داعي للسؤال عنها)
+    let _isSharedStockItem = (parseInt(stItem.totalProfiles) || 1) > 1;
+    let _stockAgeDays = stItem.timestamp ? (new Date().getTime() - new Date(stItem.timestamp).getTime()) / 86400000 : 0;
+
+    if (duration > 0 && _isSharedStockItem && stItem.timestamp && _stockAgeDays > 3) {
+        let _stockExpiry = _addMonths30(new Date(stItem.timestamp), duration);
+        let _msLeftOnStock = _stockExpiry.getTime() - new Date().getTime();
+        let _remainingLabel = _formatTimeLeft(_msLeftOnStock) || 'أقل من ساعة';
+        let _fullDurationDays = duration * 30;
+
+        document.getElementById("stockAgeChoiceBody").innerHTML = `
+            <div style="display:grid; gap:8px;">
+                <div><i class="fas fa-tag"></i> <b>الخدمة:</b> ${esc(cleanName)}</div>
+                <div>مرّ على هذا الاشتراك بالمخزون <b>${Math.floor(_stockAgeDays)} يوم</b> منذ إضافته، ولم يتبقَّ منه فعلياً سوى <b style="color:var(--danger)">${_remainingLabel}</b> — بدلاً من المدة الكاملة (${_fullDurationDays} يوم).</div>
+                <div style="margin-top:5px;">كيف تريد احتساب انتهاء اشتراك هذا العميل؟</div>
+            </div>`;
+
+        document.getElementById("stockAgeChoiceModal").style.display = "flex";
+        document.getElementById("stockAgeFullBtn").onclick = () => {
+            document.getElementById("stockAgeChoiceModal").style.display = "none";
+            _showPurchaseConfirm(false);
+        };
+        document.getElementById("stockAgeRemainingBtn").onclick = () => {
+            document.getElementById("stockAgeChoiceModal").style.display = "none";
+            _showPurchaseConfirm(true);
+        };
+        return; // ننتظر اختيار المستخدم قبل المتابعة لنافذة التأكيد
+    }
+
+    _showPurchaseConfirm(false);
 }
 
-function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge, profilesCount, isNewCustomer) {
+function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, calculatedCost, rate, usedDiscountObj, appliedDiscountPct, isComp, customerVal, customerPhoneVal, walletVal, selectedPledge, profilesCount, isNewCustomer, useRemainingTimeForShared = false) {
     isNewCustomer = !!isNewCustomer;
     let invest = safeJSON(store.invest, {}), purchases = safeJSON(store.purchases, []);
     profilesCount = parseInt(profilesCount) || 1; // عدد البروفايلات التي يأخذها هذا العميل في هذه العملية
@@ -7833,18 +7882,18 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     let nddStr = nd.getDate().toString().padStart(2,'0');
 
     // ─── حساب تاريخ الانتهاء ─────────────────────────────────────
-    // • Shared (totalProfiles > 1): المدة تبدأ من يوم الشراء الفعلي (اليوم)
+    // • Shared (totalProfiles > 1): المدة تبدأ من يوم الشراء الفعلي (اليوم) بشكل افتراضي
     //   ← العميل يأخذ مدة كاملة بغضّ النظر عن كم بقي في المخزون
     //   مثال: اشتراك شهر، باقي منه 20 يوم → انتهاء العميل بعد 30 يوم من اليوم
-    // • فردي (totalProfiles = 1): المدة تُحسب من تاريخ شراء المخزون (الوقت المتبقي الحقيقي)
+    //   إلا إذا اختار المستخدم useRemainingTimeForShared، فتُحتسب من تاريخ المخزون (الوقت المتبقي فعلياً)
+    // • فردي (totalProfiles = 1): المدة تُحسب دائماً من تاريخ شراء المخزون (الوقت المتبقي الحقيقي)
     // • duration = 0 → لا انتهاء
     let exp = null;
     if (duration > 0) {
         let isShared = (parseInt(stItem.totalProfiles) || 1) > 1;
         let baseDate;
         if (isShared) {
-            // مشترك: العميل يستحق مدة كاملة من يوم اشتراكه
-            baseDate = new Date(nd);
+            baseDate = (useRemainingTimeForShared && stItem.timestamp) ? new Date(stItem.timestamp) : new Date(nd);
         } else if (stItem.timestamp) {
             // فردي: نستخدم تاريخ المخزون (ما تبقّى فعلاً)
             baseDate = new Date(stItem.timestamp);
