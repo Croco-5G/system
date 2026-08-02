@@ -1724,6 +1724,19 @@
     </div>
 </div>
 
+<div id="churnedDetailsModal" class="dialog-modal" style="display:none; z-index: 6150;">
+    <div class="dialog-box custom-scroll" style="text-align:right; max-width:600px; width:95%; max-height:90vh; overflow-y:auto;">
+        <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:15px; margin-bottom:18px;">
+            <div>
+                <h3 style="margin:0;"><i class="fas fa-user-clock" style="color:var(--danger)"></i> <span id="chdName">تفاصيل العميل</span></h3>
+                <div id="chdPhone" style="font-size:12px; color:var(--text-muted); margin-top:4px;"></div>
+            </div>
+            <button class="btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:6px 12px;" onclick="document.getElementById('churnedDetailsModal').style.display='none'"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="chdContent"></div>
+    </div>
+</div>
+
 <div id="addVipModal" class="dialog-modal" style="display:none; z-index: 6000;">
     <div class="dialog-box" style="text-align:right; max-width:400px">
         <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:15px;"><i class="fas fa-star" style="color:var(--primary)"></i> إضافة رتبة عميل يدوياً</h3>
@@ -1826,6 +1839,7 @@
         <button onclick="showPage('discounts', this)" id="btnDiscounts"><i class="fas fa-ticket-alt"></i> الخصومات <span id="discountBadge" style="background:var(--accent); color:white; padding:2px 6px; border-radius:10px; font-size:10px; display:none; margin-right:4px;"></span></button>
         <button onclick="showPage('pledges', this)" id="btnPledges"><i class="fas fa-handshake"></i> مرهونات</button>
         <button onclick="showPage('vip', this)" id="btnVip"><i class="fas fa-star"></i> العملاء المميزين</button>
+        <button onclick="showPage('churned', this)" id="btnChurned"><i class="fas fa-user-clock"></i> عملاء منقطعون</button>
         <button onclick="showPage('history', this)" id="btnHistory"><i class="fas fa-history"></i> السجل المالي</button>
         <button onclick="showPage('analytics', this)" id="btnAnalytics"><i class="fas fa-chart-pie"></i> الإحصائيات</button>
         <button onclick="showPage('investment', this)" id="btnInvestment"><i class="fas fa-money-bill-wave"></i> سحب الأموال</button>
@@ -1940,7 +1954,7 @@
         </div>
         <div class="input-group" style="margin-bottom:20px;">
             <div style="position:relative;">
-                <input id="discountSearch" onkeyup="currentPage.discounts=1; refreshDiscounts()" placeholder="بحث بكود الخصم أو اسم العميل..." style="padding-right: 40px;">
+                <input id="discountSearch" onkeyup="currentPage.discounts=1; refreshDiscounts()" placeholder="بحث بكود الخصم أو اسم العميل أو رقم الجوال..." style="padding-right: 40px;">
                 <i class="fas fa-search" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
             </div>
         </div>
@@ -2074,6 +2088,31 @@
             </table>
         </div>
         <div id="expiringPagination" class="pagination"></div>
+    </div>
+
+    <div id="churned" class="card hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
+            <h3 style="margin-bottom:0"><i class="fas fa-user-clock" style="color:var(--danger)"></i> عملاء منقطعون</h3>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
+            <div style="position:relative; flex:1; min-width:220px;">
+                <i class="fas fa-search" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
+                <input id="churnedSearch" onkeyup="currentPage.churned=1; refreshChurned()" placeholder="بحث باسم العميل، الجوال، الخدمة..." style="padding-right: 40px;">
+            </div>
+            <select id="churnedFilter" onchange="currentPage.churned=1; refreshChurned()" style="width:auto; min-width:220px;">
+                <option value="all">كل العملاء المنقطعين</option>
+                <option value="full">تركوني تماماً (كل اشتراكاتهم منتهية)</option>
+                <option value="partial">منقطعين عن خدمة معينة، بس نشطين بخدمة تانية</option>
+            </select>
+        </div>
+        <div id="churnedStats" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;"></div>
+        <div class="table-container">
+            <table>
+                <thead><tr><th>العميل</th><th>رقم الجوال</th><th>منتهي منذ</th><th>الحالة</th><th>تفاصيل</th></tr></thead>
+                <tbody id="churnedBody"></tbody>
+            </table>
+        </div>
+        <div id="churnedPagination" class="pagination"></div>
     </div>
 
     <div id="stock" class="card hidden">
@@ -3323,7 +3362,7 @@ let isDemoMode = false;
 
 let currentStockTab = 'active';
 let currentLogsTab = 'financial';
-let currentPage = { logs: 1, expiring: 1, stock: 1, history: 1, discounts: 1, vip: 1, orders: 1 };
+let currentPage = { logs: 1, expiring: 1, stock: 1, history: 1, discounts: 1, vip: 1, orders: 1, churned: 1 };
 const ITEMS_PER_PAGE = 50;
 const VIP_RANKS = [
     { id: 'normal',   name: 'زبون عادي',    min: 1,  color: '#94a3b8', chance: 0,  discount: 0,  days: 0,  uses: 1, icon: '<i class="fas fa-user"></i>' },
@@ -3775,7 +3814,7 @@ async function deleteAllVips() {
 // ARRAY:  يُخزَّن كـ Subcollection — كل عنصر وثيقة Firestore مستقلة
 // services: مصفوفة strings بسيطة ← تُخزَّن كحقل في المستند الرئيسي (Scalar)
 // لا تحتوي على IDs فلا تصلح كـ Subcollection
-const SCALAR_KEYS = ["wallets", "settings", "invest", "services", "vipCustomers", "employeeBonus", "adminNotifications"];
+const SCALAR_KEYS = ["wallets", "settings", "invest", "services", "vipCustomers", "employeeBonus", "adminNotifications", "churnedDismissed"];
 const ARRAY_KEYS  = ["purchases", "stock", "users", "activityLog",
                      "todoList", "generalNotes", "discounts", "budgetHistory", "pledges"];
 const STORE_KEYS  = [...SCALAR_KEYS, ...ARRAY_KEYS];
@@ -5531,6 +5570,7 @@ function tryAutoLogin() {
       checkExpiredCouponsOnLogin();
         checkAdminNotificationOnLogin();
         startExpiryPeriodicCheck();
+        startChurnedLiveCheck();
         startCardReminderCheck();
         setTimeout(checkCardRemovalReminders, 1200);        setTimeout(checkCustomReminders, 1400);
         _startChatOnLogin();
@@ -5786,6 +5826,7 @@ async function attemptLogin() {
         checkExpiredCouponsOnLogin();
         checkAdminNotificationOnLogin();
         startExpiryPeriodicCheck();
+        startChurnedLiveCheck();
         startCardReminderCheck();
         setTimeout(checkCardRemovalReminders, 1200);        setTimeout(checkCustomReminders, 1400);
         btn.classList.remove('loading');
@@ -5831,6 +5872,7 @@ async function attemptLogin() {
           checkExpiredCouponsOnLogin();
         checkAdminNotificationOnLogin();
         startExpiryPeriodicCheck();
+        startChurnedLiveCheck();
         startCardReminderCheck();
         setTimeout(checkCardRemovalReminders, 1200);        setTimeout(checkCustomReminders, 1400);
           _startChatOnLogin();
@@ -5858,6 +5900,17 @@ async function attemptLogin() {
     }
     
     btn.classList.remove('loading'); 
+}
+
+// ─── فحص دوري كل 5 ثواني لتحديث صفحة "عملاء منقطعون" وهي مفتوحة ───
+let _churnedLiveInterval = null;
+function startChurnedLiveCheck() {
+    if (_churnedLiveInterval) clearInterval(_churnedLiveInterval);
+    _churnedLiveInterval = setInterval(() => {
+        if (!currentUser) { clearInterval(_churnedLiveInterval); return; }
+        let churnedPage = document.getElementById('churned');
+        if (churnedPage && !churnedPage.classList.contains('hidden')) refreshChurned();
+    }, 5000);
 }
 
 function checkExpiringOnLogin() {
@@ -6985,6 +7038,7 @@ function showPage(id, btn){
     if(id === 'history') { refreshHistory(); initDatePickers(); }
     if(id === 'wallets') { loadWallets(); refreshWallets(); }
     if(id === 'expiring') refreshExpiring();
+    if(id === 'churned') refreshChurned();
     if(id === 'discounts') refreshDiscounts();
     if(id === 'pledges') refreshPledges();
     if(id === 'vip') refreshVip();
@@ -8341,10 +8395,14 @@ function refreshAll(){
 
 function refreshDiscounts() {
     let list = safeJSON(store.discounts, []);
-    let search = document.getElementById("discountSearch").value.toLowerCase();
-    
+    let rawSearch = document.getElementById("discountSearch").value;
+    let search = rawSearch.toLowerCase();
+    let searchNorm = normalizePhone(rawSearch).replace(/\D/g,''); // أرقام فقط للمقارنة برقم الجوال
+
     let filtered = list.filter(item => {
-        return ((item.usedCount || 0) < (item.maxUses || 1)) && (!search || item.customer.toLowerCase().includes(search) || item.code.includes(search));
+        let phoneNorm = normalizePhone(item.phone||'').replace(/\D/g,'');
+        let matchesPhone = searchNorm && (phoneNorm.includes(searchNorm) || (item.phone||'').replace(/\D/g,'').includes(searchNorm));
+        return ((item.usedCount || 0) < (item.maxUses || 1)) && (!search || item.customer.toLowerCase().includes(search) || item.code.includes(search) || (item.phone||'').toLowerCase().includes(search) || matchesPhone);
     });
 
     renderPagination(filtered.length, 'discounts', refreshDiscounts, 'discountsPagination');
@@ -8493,6 +8551,231 @@ async function deleteExpired() {
     currentPage.expiring = 1; 
     refreshAll();
     notify(`تم إخفاء ${expiredCount} اشتراك منتهي من التنبيهات`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  عملاء منقطعون — كشف العملاء يلي ما جددولنا اشتراكهم
+//  فكرة الحساب: نجمع كل عمليات الشراء حسب رقم الجوال، وبعدين حسب
+//  الخدمة (sub). لكل عميل+خدمة نأخذ آخر عملية (أبعد تاريخ انتهاء).
+//  - لو كل خدمات العميل منتهية/ملغاة  → "تركني تماماً"
+//  - لو عنده خدمة منتهية وخدمة تانية لسا فعالة → "منقطع عن خدمة معينة"
+// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+//  عملاء منقطعون — كشف العملاء يلي ما جددولنا اشتراكهم
+//  فكرة الحساب: نجمع كل عمليات الشراء حسب رقم الجوال، وبعدين حسب
+//  الخدمة (sub). لكل عميل+خدمة نأخذ آخر عملية (أبعد تاريخ انتهاء).
+//  - سجل واحد بس لكل عميل (رقم جوال).
+//  - لو كل خدماته منتهية/ملغاة        → "full" (تركنا تماماً)
+//  - لو عنده خدمة منتهية وخدمة فعالة  → "partial" (ترك خدمة)
+// ═══════════════════════════════════════════════════════════════
+function computeChurnCustomers() {
+    let purchases = safeJSON(store.purchases, []);
+    let now = Date.now();
+    let byPhone = {};
+    let dismissed = new Set(safeJSON(store.churnedDismissed, []));
+
+    purchases.forEach(p => {
+        if (p.isComp) return;               // عمليات التعويض مو اشتراك حقيقي
+        if (!p.expiry) return;               // بلا تاريخ انتهاء ما فينا نحكم عليها
+        let ph = _phoneKey(p.phone);
+        if (!ph) return;                     // بلا رقم جوال ما فينا نربط العميل بعملياته
+
+        if (!byPhone[ph]) byPhone[ph] = { phone: p.phone, name: p.customer, services: {}, lastTs: 0 };
+
+        let ts = _purchaseTs(p);
+        if (ts >= byPhone[ph].lastTs) { byPhone[ph].name = p.customer || byPhone[ph].name; byPhone[ph].lastTs = ts; }
+
+        let svcName = p.sub || 'غير محدد';
+        let effExpiry = p.cancelled ? Math.min(p.expiry, p.cancelledAt || now) : p.expiry;
+        let existing = byPhone[ph].services[svcName];
+        if (!existing || effExpiry > existing.effExpiry) {
+            byPhone[ph].services[svcName] = { effExpiry, realExpiry: p.expiry, cancelled: !!p.cancelled, id: p.id, churnRemindedAt: p.churnRemindedAt || null };
+        }
+    });
+
+    let customers = [];
+    Object.keys(byPhone).forEach(ph => {
+        let cust = byPhone[ph];
+        let list = Object.keys(cust.services)
+            .map(name => ({ name, ...cust.services[name] }))
+            .filter(s => !dismissed.has(s.id)); // استبعاد يلي المستخدم حذفهم يدوياً
+        let active = list.filter(s => !s.cancelled && s.effExpiry >= now).sort((a, b) => b.effExpiry - a.effExpiry);
+        let lapsed = list.filter(s => s.cancelled || s.effExpiry < now).sort((a, b) => b.effExpiry - a.effExpiry);
+        if (lapsed.length === 0) return; // ولا خدمة منتهية بدون تجديد → مش من ضمن التقرير
+
+        // لو تم إرسال تذكير لكل الخدمات المنقطعة، منخفي العميل بعد دقيقة بالزبط من آخر تذكير
+        // (محسوبة من التوقيت المحفوظ، مش تايمر حي بالمتصفح، فبتشتغل حتى لو تسكّر الصفحة قبل ما تكمل الدقيقة)
+        let allLapsedReminded = lapsed.every(s => !!s.churnRemindedAt);
+        if (allLapsedReminded) {
+            let latestRemind = Math.max(...lapsed.map(s => s.churnRemindedAt));
+            if (now - latestRemind >= 60000) return; // خلص وقتها → منخفيه تماماً
+        }
+
+        customers.push({
+            phone: cust.phone,
+            name: cust.name,
+            type: active.length === 0 ? 'full' : 'partial',
+            lastLapseExpiry: lapsed[0].effExpiry,
+            active,
+            lapsed
+        });
+    });
+
+    customers.sort((a, b) => b.lastLapseExpiry - a.lastLapseExpiry); // الأحدث انقطاعاً أولاً
+    return customers;
+}
+
+/* تسجيل إرسال تذكير لخدمة منقطعة معينة — بيلوّن السجل أخضر ولو انرسل لكل الخدمات المنقطعة بيختفي العميل بعد دقيقة */
+function markChurnReminded(id) {
+    let purchases = safeJSON(store.purchases, []);
+    let idx = purchases.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    purchases[idx].churnRemindedAt = Date.now();
+    store.purchases = JSON.stringify(purchases);
+    fbSave("purchases", purchases);
+    logAction(`إرسال تذكير للعميل المنقطع: ${purchases[idx].customer}`, 'general', { type: 'whatsapp', customer: purchases[idx].customer, service: purchases[idx].sub || '' });
+    if (_churnedDetailPhone) openChurnedDetails(_churnedDetailPhone);
+    refreshChurned();
+}
+
+/* حذف سجل معين من تقرير المنقطعين (مثلاً "ChatGPT" منفصل غلط عن "ChatGPT Plus") */
+async function dismissChurnRow(id, customerName, serviceName) {
+    let ok = await showConfirm(
+        "حذف من قائمة المنقطعين",
+        `سيتم حذف سجل "${serviceName}" الخاص بالعميل ${customerName} من هاي القائمة فقط.\nما رح يتأثر السجل المالي أو باقي بيانات العميل إطلاقاً.`,
+        "حذف", "إلغاء", '<i class="fas fa-trash"></i>'
+    );
+    if (!ok) return;
+    let dismissed = safeJSON(store.churnedDismissed, []);
+    if (!dismissed.includes(id)) dismissed.push(id);
+    store.churnedDismissed = JSON.stringify(dismissed);
+    fbSave("churnedDismissed", dismissed);
+    notify("تم حذف السجل من قائمة المنقطعين");
+    if (_churnedDetailPhone) openChurnedDetails(_churnedDetailPhone, true);
+    refreshChurned();
+}
+
+function refreshChurned() {
+    let body = document.getElementById("churnedBody");
+    if (!body) return;
+
+    let allCustomers = computeChurnCustomers();
+    let fullCount = allCustomers.filter(r => r.type === 'full').length;
+    let partialCount = allCustomers.filter(r => r.type === 'partial').length;
+
+    let statsEl = document.getElementById("churnedStats");
+    if (statsEl) {
+        statsEl.innerHTML = `
+            <div class="badge badge-danger" style="padding:8px 14px; font-size:13px;"><i class="fas fa-user-times"></i> تركوني تماماً: <b class="eng-num">${fullCount}</b></div>
+            <div class="badge badge-warning" style="padding:8px 14px; font-size:13px;"><i class="fas fa-user-clock"></i> تركوا خدمة: <b class="eng-num">${partialCount}</b></div>
+        `;
+    }
+
+    let filterVal = document.getElementById("churnedFilter")?.value || 'all';
+    let searchVal = (document.getElementById("churnedSearch")?.value || '').trim().toLowerCase();
+
+    let filtered = allCustomers.filter(r => {
+        if (filterVal !== 'all' && r.type !== filterVal) return false;
+        if (searchVal) {
+            let serviceNames = [...r.lapsed.map(s => s.name), ...r.active.map(s => s.name)].join(' ');
+            let hay = `${r.name} ${r.phone} ${serviceNames}`.toLowerCase();
+            if (!hay.includes(searchVal)) return false;
+        }
+        return true;
+    });
+
+    renderPagination(filtered.length, 'churned', refreshChurned, 'churnedPagination');
+    let paginated = filtered.slice((currentPage.churned - 1) * ITEMS_PER_PAGE, currentPage.churned * ITEMS_PER_PAGE);
+
+    let isRestricted = currentUser ? (currentUser.role === 'viewer') : true;
+    let now = Date.now();
+
+    let rows = "";
+    paginated.forEach(item => {
+        let daysAgo = Math.max(0, Math.floor((now - item.lastLapseExpiry) / 86400000));
+        let agoStr = daysAgo <= 0 ? 'اليوم' : (daysAgo === 1 ? 'من يوم' : `من ${daysAgo} يوم`);
+
+        let statusBadge = item.type === 'full'
+            ? `<span class="badge badge-danger">تركنا تماماً</span>`
+            : `<span class="badge badge-warning">ترك خدمة</span>`;
+
+        let phoneDisplay = isRestricted ? '----' : esc(item.phone);
+
+        let detailsBtn = `<button class="btn" style="padding:4px 10px; font-size:12px; background:var(--primary); color:#fff;" title="عرض تفاصيل العميل" onclick="openChurnedDetails('${esc(item.phone)}')"><i class="fas fa-eye"></i></button>`;
+
+        rows += `<tr><td>${esc(item.name)}</td><td>${phoneDisplay}</td><td>${agoStr}</td><td>${statusBadge}</td><td>${detailsBtn}</td></tr>`;
+    });
+
+    body.innerHTML = rows || "<tr><td colspan='5' style='text-align:center; padding:30px; color:var(--text-muted)'><i class='fas fa-circle-check' style='color:var(--success); margin-left:6px;'></i> لا يوجد عملاء منقطعون حالياً</td></tr>";
+}
+
+/* ═══════════════ نافذة تفاصيل العميل المنقطع ═══════════════ */
+let _churnedDetailPhone = null;
+
+function openChurnedDetails(phone) {
+    _churnedDetailPhone = phone;
+    let customers = computeChurnCustomers();
+    let cust = customers.find(c => _phoneKey(c.phone) === _phoneKey(phone));
+    let modal = document.getElementById("churnedDetailsModal");
+    if (!modal) return;
+
+    if (!cust) { // كل شي عنده اتحذف/اتجدد — ما عاد ظاهر بالتقرير
+        modal.style.display = 'none';
+        notify("ما عاد عند هذا العميل اشتراكات منقطعة");
+        refreshChurned();
+        return;
+    }
+
+    document.getElementById("chdName").textContent = `تفاصيل: ${cust.name || cust.phone}`;
+    document.getElementById("chdPhone").textContent = cust.phone || '-';
+
+    let isViewer = currentUser ? (currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') : true;
+    let currentHour = new Date().getHours();
+    let greeting = currentHour < 12 ? 'صباح الخير' : 'مساء الخير';
+    let otherActiveNames = cust.active.map(a => a.name).join('، ');
+
+    let activeHtml = cust.active.length
+        ? cust.active.map(s => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--yellow-item-bg); border:1px solid var(--success); border-radius:10px; margin-bottom:8px;">
+                <span><i class="fas fa-check-circle" style="color:var(--success)"></i> <b>${esc(s.name)}</b></span>
+                <span style="font-size:12px; color:var(--text-muted);">ينتهي: ${new Date(s.effExpiry).toLocaleDateString('ar-EG')}</span>
+            </div>`).join('')
+        : `<div style="color:var(--text-muted); font-size:13px;">لا يوجد اشتراكات فعالة حالياً</div>`;
+
+    let lapsedHtml = cust.lapsed.map(s => {
+        let cleanPhone = (cust.phone || '').replace(/\D/g, '');
+        let waMsg = `${greeting} ${cust.name}\nلاحظنا انه اشتراكك في ${s.name} انتهى من فترة بدون تجديد، وحبّينا نتواصل معك\nإذا كان في أي سبب خلاك توقف اشتراكك، أو في تجربة حسّيت إنها كانت ممكن تكون أفضل، حابين نسمع ملاحظاتك\nوإذا قررت ترجع بأي وقت، هنكون جاهزين دايما لخدمتك كالعادة`;
+        let wa = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMsg)}`;
+        let remindBtn = isViewer ? '' : `<a href="${wa}" target="_blank" onclick="markChurnReminded('${esc(s.id)}')" class="btn btn-whatsapp" style="padding:6px 10px; width:auto;" title="إرسال تذكير"><i class="fab fa-whatsapp"></i></a>`;
+        let deleteBtn = isViewer ? '' : `<button class="btn btn-danger" style="padding:6px 10px; width:auto;" title="حذف من هاي القائمة" onclick="dismissChurnRow('${esc(s.id)}','${esc(cust.name)}','${esc(s.name)}')"><i class="fas fa-trash"></i></button>`;
+
+        let isReminded = !!s.churnRemindedAt;
+        let boxStyle = isReminded
+            ? 'background:rgba(16,185,129,0.1); border:1px solid var(--success);'
+            : 'background:var(--yellow-bg); border:1px solid var(--yellow-border);';
+        let remindedNote = isReminded
+            ? `<div style="font-size:11px; color:var(--success); margin-top:4px;"><i class="fas fa-check-circle"></i> تم إرسال تذكير — ${new Date(s.churnRemindedAt).toLocaleString('ar-EG')}</div>`
+            : '';
+
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 14px; ${boxStyle} border-radius:10px; margin-bottom:8px; flex-wrap:wrap;">
+                <div>
+                    <div><i class="fas fa-times-circle" style="color:var(--danger)"></i> <b>${esc(s.name)}</b></div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">${s.cancelled ? 'مُلغى بتاريخ' : 'انتهى بتاريخ'}: ${new Date(s.effExpiry).toLocaleDateString('ar-EG')}</div>
+                    ${remindedNote}
+                </div>
+                <div style="display:flex; gap:6px;">${remindBtn}${deleteBtn}</div>
+            </div>`;
+    }).join('');
+
+    document.getElementById("chdContent").innerHTML = `
+        <h4 style="margin:0 0 10px 0; font-size:14px; color:var(--success);"><i class="fas fa-star"></i> الاشتراكات الفعالة</h4>
+        ${activeHtml}
+        <h4 style="margin:18px 0 10px 0; font-size:14px; color:var(--danger);"><i class="fas fa-hourglass-end"></i> اشتراكات منتهية وما تجددت</h4>
+        ${lapsedHtml}
+    `;
+
+    modal.style.display = 'flex';
 }
 
 function refreshWallets(_pPre, _bPre) {
@@ -10041,7 +10324,7 @@ async function exportData(){
     if(currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') return;
     let exportObj = {};
     // كل مفاتيح store — scalar + array بما فيها المفقودة سابقاً
-    ["wallets","invest","settings","services","vipCustomers","employeeBonus","adminNotifications",
+    ["wallets","invest","settings","services","vipCustomers","employeeBonus","adminNotifications","churnedDismissed",
      "users","purchases","generalNotes","todoList","activityLog","stock","discounts","budgetHistory","pledges"
     ].forEach(k => { if(store[k]) exportObj[k] = store[k]; });
     // تصدير الدردشة من Firestore
@@ -10076,7 +10359,7 @@ function importData(){
             );
             if(!ok) return;
             
-            const SCALAR_IMPORT = ["wallets","invest","settings","services","vipCustomers","employeeBonus","adminNotifications"];
+            const SCALAR_IMPORT = ["wallets","invest","settings","services","vipCustomers","employeeBonus","adminNotifications","churnedDismissed"];
             const ARRAY_IMPORT  = ["users","purchases","generalNotes","todoList","activityLog","stock","discounts","budgetHistory","pledges"];
             
             // حفظ الحقول القياسية في المستند الرئيسي
