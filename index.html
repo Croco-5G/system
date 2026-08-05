@@ -1912,18 +1912,18 @@
         </div>
         
         <div class="grid-2" style="margin-top:10px; padding-top:20px; border-top:1px dashed var(--border-color)">
-            <div class="input-group">
+            <div class="input-group" id="compensationGroup">
                 <div style="display: flex; align-items: center; gap: 10px; margin-top: 32px;">
-                    <input type="checkbox" id="isCompensation" style="width:20px; height:20px; margin:0; accent-color:var(--danger)">
+                    <input type="checkbox" id="isCompensation" style="width:20px; height:20px; margin:0; accent-color:var(--danger)" onchange="toggleCompensation()">
                     <label for="isCompensation" style="margin:0; color:var(--danger); font-weight:800; cursor:pointer">تسجيل كتعويض</label>
                 </div>
             </div>
-            <div class="input-group">
+            <div class="input-group" id="discountCodeGroup">
                 <label>كود الخصم (إن وجد)</label>
                 <input id="discountCodeInput" placeholder="أدخل الكود المكون من 9 أرقام" style="border-color:var(--accent)" autocomplete="off">
             </div>
         </div>
-        <div style="margin-top:10px; padding-top:15px; border-top:1px dashed var(--border-color)">
+        <div id="pledgeMainWrap" style="margin-top:10px; padding-top:15px; border-top:1px dashed var(--border-color)">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom:15px;">
                 <input type="checkbox" id="usePledge" style="width:20px; height:20px; margin:0; accent-color:var(--primary)" onchange="togglePledgeField()">
                 <label for="usePledge" style="margin:0; color:var(--primary); font-weight:800; cursor:pointer"><i class="fas fa-handshake"></i> استخدام حساب مرهون</label>
@@ -2565,6 +2565,21 @@
                         <span style="color:var(--text-muted); font-size:13px; flex-shrink:0;">أيام (افتراضي: 1)</span>
                         <button class="btn btn-primary" onclick="saveAlertSettings()" style="flex-shrink:0;">حفظ</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="sec-churn-settings" style="margin-bottom:20px; margin-top:20px;">
+            <h3><i class="fas fa-user-clock" style="color:var(--danger)"></i> إعدادات العملاء المنقطعين</h3>
+            <div class="inner-box" style="margin-bottom:20px;">
+                <div class="input-group" style="margin-bottom:0;">
+                    <label>الحد الأدنى لأيام الانقطاع لإظهار العميل كـ "منقطع"</label>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <input type="number" id="setChurnMinDays" placeholder="مثلاً 10" min="1" step="1" style="max-width:130px;">
+                        <span style="color:var(--text-muted); font-size:13px; flex-shrink:0;">أيام (افتراضي: 10)</span>
+                        <button class="btn btn-primary" onclick="saveChurnSettings()" style="flex-shrink:0;">حفظ</button>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:6px;"><i class="fas fa-info-circle"></i> العملاء الذين انتهت اشتراكاتهم منذ أقل من هذا العدد من الأيام لن يظهروا في قائمة المنقطعين.</div>
                 </div>
             </div>
         </div>
@@ -6744,7 +6759,9 @@ function refreshLogs() {
     let role = currentUser ? currentUser.role : 'viewer';
 
     if (currentLogsTab === 'orderActivity') {
-        let filtered = orderActivityCache.filter(a => !search ||
+        // طبّق فلتر "وقت في الصفحة" للعرض فقط (بدون أي حذف من Firebase)
+        let displayCache = _filterTimeOnPageForDisplay(orderActivityCache);
+        let filtered = displayCache.filter(a => !search ||
             (a.ip||'').includes(search)||(a.browser||'').toLowerCase().includes(search)||
             (a.country||'').toLowerCase().includes(search)||(a.eventType||'').toLowerCase().includes(search)||
             (a.city||'').toLowerCase().includes(search)||(a.device||'').toLowerCase().includes(search)
@@ -7269,6 +7286,8 @@ function loadProfitSettings(){
     document.getElementById("setValidityMax").value = s.validityMax ?? 45;
     let _alertDaysEl = document.getElementById("setExpiryAlertDays");
     if (_alertDaysEl) _alertDaysEl.value = s.expiryAlertDays ?? 1;
+    let _churnDaysEl = document.getElementById("setChurnMinDays");
+    if (_churnDaysEl) _churnDaysEl.value = s.churnMinDays ?? 10;
 
     // ── تحميل إعدادات عمولة الموظف (النظام الديناميكي) ──
     if (typeof renderEmpTiers === 'function') renderEmpTiers();
@@ -7282,6 +7301,17 @@ function saveAlertSettings() {
     sObj.expiryAlertDays = days;
     store.settings = JSON.stringify(sObj); fbSave("settings", sObj);
     notify("تم حفظ إعدادات التنبيه");
+}
+
+function saveChurnSettings() {
+    if (currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
+    let days = parseInt(document.getElementById("setChurnMinDays").value);
+    if (isNaN(days) || days < 1) return notify("أدخل عدد أيام صحيح (1 أو أكثر)", "error");
+    let sObj = safeJSON(store.settings, {});
+    sObj.churnMinDays = days;
+    store.settings = JSON.stringify(sObj); fbSave("settings", sObj);
+    notify("تم حفظ إعدادات العملاء المنقطعين");
+    refreshChurned();
 }
 
 // دالة مساعدة: تُعيد عدد الميلي ثانية بناءً على إعداد عدد أيام التنبيه
@@ -8204,6 +8234,11 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     document.getElementById("paidAmount").value=""; document.getElementById("customer").value=""; document.getElementById("sub").value=""; document.getElementById("customerPhone").value=""; document.getElementById("discountCodeInput").value=""; document.getElementById("isCompensation").checked = false; document.getElementById("customerPhone").style.borderColor = ""; document.getElementById("purchaseNotes").value = ""; document.getElementById("purchaseProfilesCount").value = "0"; document.getElementById("purchaseProfilesCount").removeAttribute('max');
     // ── إرجاع كل خيارات الشراء للوضع الافتراضي بعد إتمام العملية ──
     document.getElementById("paidCurrency").value = "";            // العملة ترجع إلى (اختر العملة)
+    // إعادة إظهار الحقول المخفية (compensation / pledge / discount)
+    let _dcG = document.getElementById("discountCodeGroup"); if (_dcG) _dcG.style.display = "";
+    let _cgG = document.getElementById("compensationGroup"); if (_cgG) _cgG.style.display = "";
+    let _pmW = document.getElementById("pledgeMainWrap");    if (_pmW) _pmW.style.display = "";
+    let _pgG = document.getElementById("paidAmountGroup");   if (_pgG) _pgG.style.display = "";
     let _upEl = document.getElementById("usePledge");             // إلغاء تفعيل الحساب المرهون
     if (_upEl) { _upEl.checked = false; togglePledgeField(); }
     let _psEl = document.getElementById("pledgeSelect");
@@ -8573,6 +8608,9 @@ function computeChurnCustomers() {
     let now = Date.now();
     let byPhone = {};
     let dismissed = new Set(safeJSON(store.churnedDismissed, []));
+    let settings = safeJSON(store.settings, {});
+    let churnMinDays = parseInt(settings.churnMinDays) || 10;
+    let churnMinMs = churnMinDays * 86400000;
 
     purchases.forEach(p => {
         if (p.isComp) return;               // عمليات التعويض مو اشتراك حقيقي
@@ -8602,6 +8640,9 @@ function computeChurnCustomers() {
         let active = list.filter(s => !s.cancelled && s.effExpiry >= now).sort((a, b) => b.effExpiry - a.effExpiry);
         let lapsed = list.filter(s => s.cancelled || s.effExpiry < now).sort((a, b) => b.effExpiry - a.effExpiry);
         if (lapsed.length === 0) return; // ولا خدمة منتهية بدون تجديد → مش من ضمن التقرير
+        // فلتر الأيام الدنيا: لا يظهر العميل إلا إذا انقطع منذ churnMinDays يوم أو أكثر
+        let latestLapseExpiry = Math.max(...lapsed.map(s => s.effExpiry));
+        if (now - latestLapseExpiry < churnMinMs) return;
 
         // لو تم إرسال تذكير لكل الخدمات المنقطعة، منخفي العميل بعد دقيقة بالزبط من آخر تذكير
         // (محسوبة من التوقيت المحفوظ، مش تايمر حي بالمتصفح، فبتشتغل حتى لو تسكّر الصفحة قبل ما تكمل الدقيقة)
@@ -12144,19 +12185,41 @@ let _editServicePriceOnRequest = false;
 let orderActivityCache = [];
 let _actUnsubscribe = null;
 
+/* ═══════════════════════════════════════════════════════════════
+   تصفية "وقت في الصفحة" للعرض فقط — لا تمس Firebase أبداً.
+   السبب: أي حذف داخل onSnapshot يُطلق snapshot جديداً → حلقة لا نهائية.
+   المنطق: list مرتّبة desc → أول time_on_page لكل جهاز في كل سلسلة
+           متتالية هو الأحدث → نبقّيه ونتجاهل ما بعده في نفس السلسلة.
+   ═══════════════════════════════════════════════════════════════ */
+function _filterTimeOnPageForDisplay(list) {
+    let result = [];
+    let activeStreak = {}; // visitorId → true إذا مررنا بـ time_on_page بدون كسر
+    for (let item of list) {
+        let vid = item.visitorId || item.deviceId || null;
+        if (item.eventType === 'time_on_page' && vid) {
+            if (activeStreak[vid]) continue; // زيادة في نفس السلسلة → تجاهل للعرض
+            activeStreak[vid] = true;
+        } else {
+            if (vid) activeStreak[vid] = false; // حدث آخر كسر السلسلة
+        }
+        result.push(item);
+    }
+    return result;
+}
+
+let _actRefreshTimer = null;
 function _initOrderActivityListener() {
     if (_actUnsubscribe || !dbOrder) return;
     const applySnap = snap => {
         orderActivityCache = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
         orderActivityCache.sort((a,b) => (b.timestamp||'').localeCompare(a.timestamp||''));
-        // حذف السجلات الزائدة إذا تجاوز الحجم 1GB (نظرياً — نحتفظ بأحدث 5000)
-        if (orderActivityCache.length > 5000) {
-            let toDelete = orderActivityCache.splice(5000);
-            toDelete.forEach(d => { try { dbOrder.collection("orderActivity").doc(d._docId).delete(); } catch(e){} });
-        }
-        if (currentLogsTab === 'orderActivity' && !document.getElementById("logs").classList.contains("hidden")) {
-            refreshLogs();
-        }
+        // debounce الرسم: لا نُحدِّث الواجهة إلا بعد هدوء الـ snapshots بـ 800ms
+        clearTimeout(_actRefreshTimer);
+        _actRefreshTimer = setTimeout(() => {
+            if (currentLogsTab === 'orderActivity' && !document.getElementById("logs").classList.contains("hidden")) {
+                refreshLogs();
+            }
+        }, 800);
     };
     _actUnsubscribe = dbOrder.collection("orderActivity")
         .orderBy("timestamp", "desc").limit(2000)
@@ -14078,19 +14141,16 @@ function _pledgeAmountCellHTML(p) {
             : `<span style="color:var(--text-muted)" title="رهن قديم بلا مبلغ مسجّل">-</span>`;
     }
     let amt = _plgAmount(p);
-    if (!(amt > 0)) return `<span style="color:var(--text-muted)">0</span>${isAdmin ? ` <i class="fas fa-pen" onclick="openPledgeAmountModal('${p.id}')" style="cursor:pointer; font-size:10px; color:var(--text-muted); margin-right:6px;"></i>` : ''}`;
-    let cur     = _plgCurrency(p);
-    let total   = _plgTotalCount(p);
-    let used    = _plgUsedCount(p);
-    let perAcc  = _plgPerAccount(p);
-    let remain  = _plgRemainingAmount(p);
-    let consumed = Math.round((amt - remain) * 100) / 100;
-    let color = remain <= 0 ? 'var(--danger)' : (remain < amt ? 'var(--accent)' : 'var(--success)');
-    let tip = `المتبقي: ${fix(remain)}${cur}  |  المستهلك: ${fix(consumed)}${cur}  |  حصة الحساب: ${fix(perAcc)}${cur}  |  الحسابات: ${used}/${total}`;
-    let editIcon = isAdmin ? `<i class="fas fa-pen" onclick="openPledgeAmountModal('${p.id}')" title="تعديل المبلغ" style="cursor:pointer; font-size:10px; color:var(--text-muted); margin-right:6px;"></i>` : '';
-    return `<span class="plg-amount" title="${tip.replace(/"/g,'&quot;')}"
+    if (!(amt > 0)) return `<span style="color:var(--text-muted)">0</span>`;
+    let cur    = _plgCurrency(p);
+    let total  = _plgTotalCount(p);
+    let used   = _plgUsedCount(p);
+    let remain = _plgRemainingAmount(p);
+    let color  = remain <= 0 ? 'var(--danger)' : (remain < amt ? 'var(--accent)' : 'var(--success)');
+    let tip    = `المتبقي: ${fix(remain)}${cur}`;
+    return `<span class="plg-amount" title="${tip}"
         onclick="notify('المبلغ المتبقي: ${fix(remain)}${cur} (${Math.max(0,total-used)} حساب متبقٍ)')"
-        style="cursor:help; font-weight:800; direction:ltr; display:inline-block; border-bottom:1px dashed ${color}; color:${color};">${fix(amt)}${cur}</span>${editIcon}`;
+        style="cursor:help; font-weight:800; direction:ltr; display:inline-block; border-bottom:1px dashed ${color}; color:${color};">${fix(amt)}${cur}</span>`;
 }
 
 async function deletePledge(id) {
@@ -14130,12 +14190,50 @@ function togglePledgeField() {
     let payGroup = document.getElementById("paidAmountGroup");
     if (payGroup) payGroup.style.display = checked ? "none" : "";
 
+    // عند تفعيل الرهن: إخفاء كود الخصم وتسجيل التعويض (لا يجتمعان مع الرهن)
+    let discountGroup = document.getElementById("discountCodeGroup");
+    let compensationGroup = document.getElementById("compensationGroup");
+    if (discountGroup) discountGroup.style.display = checked ? "none" : "";
+    if (compensationGroup) compensationGroup.style.display = checked ? "none" : "";
+    if (!checked) {
+        // عند إلغاء الرهن: أعد تطبيق حالة التعويض (قد يكون مفعّلاً)
+        let isComp = document.getElementById("isCompensation");
+        if (isComp && isComp.checked) toggleCompensation();
+    }
+
     if(checked) {
+        // إلغاء تفعيل التعويض إن كان مفعّلاً
+        let isComp = document.getElementById("isCompensation");
+        if (isComp) isComp.checked = false;
         loadPledgesIntoSelect();
         onPledgeSelectChange();
     } else {
         let info = document.getElementById("pledgePayInfo");
         if (info) { info.style.display = "none"; info.innerHTML = ""; }
+    }
+}
+
+// عند تفعيل "تسجيل كتعويض": إخفاء الرهن وكود الخصم وحقل الدفع
+function toggleCompensation() {
+    let isComp = document.getElementById("isCompensation").checked;
+    let pledgeWrap = document.getElementById("pledgeMainWrap");
+    let discountGroup = document.getElementById("discountCodeGroup");
+    let payGroup = document.getElementById("paidAmountGroup");
+
+    if (isComp) {
+        // إلغاء الرهن إن كان مفعّلاً
+        let usePledge = document.getElementById("usePledge");
+        if (usePledge && usePledge.checked) {
+            usePledge.checked = false;
+            togglePledgeField();
+        }
+        if (pledgeWrap) pledgeWrap.style.display = "none";
+        if (discountGroup) discountGroup.style.display = "none";
+        if (payGroup) payGroup.style.display = "none";
+    } else {
+        if (pledgeWrap) pledgeWrap.style.display = "";
+        if (discountGroup) discountGroup.style.display = "";
+        if (payGroup) payGroup.style.display = "";
     }
 }
 
