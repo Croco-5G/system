@@ -317,6 +317,12 @@
         tr.history-cancelled td .badge { text-decoration: none; opacity: 1; }
         tr.history-cancelled td .badge i { text-decoration: none; }
 
+        /* اشتراك مباع معطل في المخزون — نفس شكل الملغي في السجل المالي */
+        tr.stock-disabled td { opacity: .55; text-decoration: line-through; text-decoration-thickness: 1px; }
+        tr.stock-disabled td .badge { text-decoration: none; opacity: 1; }
+        tr.stock-disabled td .badge i { text-decoration: none; }
+        tr.stock-disabled td .btn { text-decoration: none; opacity: 1; }
+
         /* --- MODAL STYLES --- */
         .modal-overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -4635,6 +4641,7 @@ const LOG_TYPE_AR = {
     remove_buyer:'حذف عميل من بروفايل', remove_buyer_sold:'حذف عميل من اشتراك مباع',
     transfer_buyer:'نقل عميل بين اشتراكات', adjust_profiles:'تعديل عدد البروفايلات',
     return_sold_stock:'إرجاع اشتراك مباع', delete_sold_stock:'حذف اشتراك مباع',
+    disable_sold_stock:'تعطيل اشتراك مباع', reactivate_sold_stock:'إعادة تفعيل اشتراك مباع',
     delete_expired_stock:'حذف اشتراك منتهٍ من المخزون', archive_test_stock:'أرشفة اشتراك تجريبي',
     archive_partial_stock:'أرشفة اشتراك منتهٍ جزئياً', update_stock_note:'تحديث ملاحظات مخزون',
     card_removed:'تأكيد إزالة بطاقة', card_ignored:'تجاهل تذكير بطاقة',
@@ -11858,9 +11865,18 @@ function refreshStock() {
         } else {
             let viewBtn = `<button class="btn btn-primary" style="padding:5px 10px" onclick="viewSoldDetails('${item.id}')"><i class="fas fa-eye"></i></button>`;
             let delCell = isAdmin ? `<td><button class="btn btn-danger" style="padding:5px 10px" onclick="deleteSoldStock('${item.id}')"><i class="fas fa-trash-alt"></i></button></td>` : '';
-            
-            rows += `<tr>
-                <td><span class="badge badge-info">${esc(item.displayName || item.service)}</span></td>
+
+            // شارة "معطل" — بنفس شكل شارة "ملغي" في السجل المالي
+            let isDisabledItem = !!item.disabled;
+            let disabledBadge = isDisabledItem
+                ? ` <span class="badge badge-danger" style="font-size:10px; padding:2px 7px;"><i class="fas fa-ban"></i> معطل</span>`
+                : '';
+            let rowTitle = isDisabledItem
+                ? `title="معطل${item.disabledAt ? ' بتاريخ ' + new Date(item.disabledAt).toLocaleDateString('ar-EG') : ''}${item.disabledBy ? ' — بواسطة ' + esc(item.disabledBy) : ''}"`
+                : '';
+
+            rows += `<tr class="${isDisabledItem ? 'stock-disabled' : ''}" ${rowTitle}>
+                <td><span class="badge badge-info">${esc(item.displayName || item.service)}</span>${disabledBadge}</td>
                 <td class="wide-col" title="${esc(item.email)}">${esc(item.email)}</td>
                 <td class="eng-num" style="font-weight:bold;">${profStr}</td>
                 <td class="eng-num">${item.soldDate || '-'}</td>
@@ -12109,15 +12125,89 @@ async function returnSoldStock(id) {
 }
 
 async function deleteSoldStock(id) {
-    let ok = await showConfirm("حذف نهائي", "هل أنت متأكد من حذف هذا السجل من الأرشيف؟ لا يمكن التراجع.", "حذف", "إلغاء", '<i class="fas fa-trash-alt"></i>');
-    if(!ok) return;
-    
     let stock = safeJSON(store.stock, []);
-    let deletedSoldItem = stock.find(x => x.id === id);
+    let item = stock.find(x => x.id === id);
+    if (!item) return;
+
+    // زر ثالث بين الحذف والإلغاء: "تعطيل" إن كان نشطاً، أو "إعادة تفعيل" إن كان معطلاً بالفعل
+    let isDisabled = !!item.disabled;
+    let thirdText = isDisabled
+        ? '<i class="fas fa-rotate-right"></i> إعادة تفعيل'
+        : '<i class="fas fa-ban"></i> تعطيل';
+
+    let ok = await showConfirm(
+        "حذف نهائي",
+        "هل أنت متأكد من حذف هذا السجل من الأرشيف؟ لا يمكن التراجع.",
+        "حذف", "إلغاء", '<i class="fas fa-trash-alt"></i>',
+        thirdText
+    );
+
+    if (ok === 'third') {
+        if (isDisabled) reactivateSoldStock(id);
+        else disableSoldStock(id);
+        return;
+    }
+    if (!ok) return;
+
+    let deletedSoldItem = item;
     stock = stock.filter(x => x.id !== id);
     store.stock = JSON.stringify(stock); fbSave("stock", stock);
     logAction("حذف سجل مباع من المخزون", 'danger', { type: 'delete_sold_stock', stockName: deletedSoldItem?.displayName || deletedSoldItem?.service || '', soldDate: deletedSoldItem?.soldDate || '', buyers: deletedSoldItem?.buyers?.join(' | ') || '' });
     refreshStock();  notify("تم الحذف");
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  تعطيل / إعادة تفعيل اشتراك مباع من المخزون — بدون حذف نهائي
+//  • المعطل: يبقى في المخزون موسوماً «معطل» بنفس شكل الملغي بالسجل المالي
+//  • إعادة التفعيل: يعيده لحالته الأصلية
+// ═══════════════════════════════════════════════════════════════
+async function disableSoldStock(id) {
+    let stock = safeJSON(store.stock, []);
+    let idx = stock.findIndex(x => x.id === id);
+    if (idx === -1) return;
+
+    let ok = await showConfirm(
+        "تعطيل الاشتراك",
+        `هل تريد تعيين هذا الاشتراك (${stock[idx].displayName || stock[idx].service}) كـ«معطل»؟`,
+        "نعم، عطّله", "تراجع",
+        '<i class="fas fa-ban" style="color:var(--danger)"></i>'
+    );
+    if (!ok) return;
+
+    stock[idx].disabled    = true;
+    stock[idx].disabledAt  = Date.now();
+    stock[idx].disabledBy  = (currentUser && currentUser.username) || "";
+
+    store.stock = JSON.stringify(stock);
+    fbSave("stock", stock);
+
+    logAction(`تعطيل اشتراك مباع: ${stock[idx].displayName || stock[idx].service}`, 'danger', {
+        type: 'disable_sold_stock', stockName: stock[idx].displayName || stock[idx].service
+    });
+
+    refreshStock();
+    notify("تم تعطيل الاشتراك", "warning", 4000, "fas fa-ban");
+}
+
+async function reactivateSoldStock(id) {
+    let stock = safeJSON(store.stock, []);
+    let idx = stock.findIndex(x => x.id === id);
+    if (idx === -1) return;
+
+    let oldWho = stock[idx].disabledBy || "—";
+    stock[idx].disabled = false;
+    delete stock[idx].disabledAt;
+    delete stock[idx].disabledBy;
+
+    store.stock = JSON.stringify(stock);
+    fbSave("stock", stock);
+
+    logAction(`إعادة تفعيل اشتراك مباع: ${stock[idx].displayName || stock[idx].service}`, 'general', {
+        type: 'reactivate_sold_stock', stockName: stock[idx].displayName || stock[idx].service, previouslyDisabledBy: oldWho
+    });
+
+    refreshStock();
+    notify("تم تفعيل الاشتراك من جديد", "success", 4000, "fas fa-rotate-right");
 }
 
 async function sellStock(id) {
