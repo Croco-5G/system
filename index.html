@@ -5940,7 +5940,7 @@ function checkExpiringOnLogin() {
     let now = new Date().getTime();
     let days7 = _getExpiryAlertMs();
     // نحسب المنتهية + القادمة خلال عدد الأيام المحدد في الإعدادات
-    let allAlerts = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && !x.cancelled && (x.expiry - now) < days7);
+    let allAlerts = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && !x.isPledge && !x.cancelled && (x.expiry - now) < days7);
     let expiredNow = allAlerts.filter(x => x.expiry <= now);
     let soonList  = allAlerts.filter(x => x.expiry > now);
     if(expiredNow.length > 0) {
@@ -5963,7 +5963,7 @@ function startExpiryPeriodicCheck() {
         let p = safeJSON(store.purchases, []);
         let now = new Date().getTime();
         let days7 = _getExpiryAlertMs();
-        let freshExpired = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && !x.cancelled
+        let freshExpired = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && !x.isPledge && !x.cancelled
             && x.expiry <= now && x.expiry > now - 3600000); // انتهت خلال آخر ساعة
         if(freshExpired.length > 0) {
             freshExpired.forEach(item => {
@@ -8423,7 +8423,7 @@ function refreshAll(){
     let expiryBadge2 = document.getElementById("expiryBadge");
     if(expiryBadge2) {
         // المنتهية + القادمة خلال يوم واحد — بدون حد زمني للإخفاء
-        let expiringCount2 = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && !x.cancelled && (x.expiry - nowMs2) < days3).length;
+        let expiringCount2 = p.filter(x => x.expiry && !x.expiryDismissed && !x.reminded && !x.isComp && !x.isPledge && !x.cancelled && (x.expiry - nowMs2) < days3).length;
         expiryBadge2.textContent = expiringCount2;
         expiryBadge2.style.display = expiringCount2 > 0 ? "inline-flex" : "none";
     }
@@ -8517,7 +8517,7 @@ function refreshExpiring() {
     
     // نُظهر: المنتهية + يلي باقيلها يوم واحد أو أقل — بدون أي حد زمني للإخفاء التلقائي
     let filtered = p.map((d, i) => ({ d, i })).filter(x => 
-        x.d.expiry && !x.d.expiryDismissed && !x.d.isComp && !x.d.cancelled && 
+        x.d.expiry && !x.d.expiryDismissed && !x.d.isComp && !x.d.isPledge && !x.d.cancelled && 
         (x.d.expiry - now) < days7  // ينتهي خلال يوم واحد أو انتهى بالفعل
     );
     filtered.sort((a, b) => a.d.expiry - b.d.expiry);
@@ -8572,7 +8572,7 @@ function markAsReminded(id) {
 async function deleteExpired() { 
     if(currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') return; 
     let p = safeJSON(store.purchases, []), now = new Date().getTime();
-    let expiredCount = p.filter(x => x.expiry && x.expiry < now && !x.expiryDismissed && !x.isComp && !x.cancelled).length;
+    let expiredCount = p.filter(x => x.expiry && x.expiry < now && !x.expiryDismissed && !x.isComp && !x.isPledge && !x.cancelled).length;
     if(expiredCount === 0) return notify("لا توجد اشتراكات منتهية لإخفائها", "error");
     let ok = await showConfirm(
         "إخفاء الاشتراكات المنتهية",
@@ -8582,7 +8582,7 @@ async function deleteExpired() {
     if(!ok) return;
     // نضيف علامة إخفاء فقط — بدون حذف من السجل المالي
     p = p.map(x => {
-        if(x.expiry && x.expiry < now && !x.expiryDismissed && !x.isComp && !x.cancelled) {
+        if(x.expiry && x.expiry < now && !x.expiryDismissed && !x.isComp && !x.isPledge && !x.cancelled) {
             return { ...x, expiryDismissed: true };
         }
         return x;
@@ -8908,8 +8908,8 @@ function refreshWallets(_pPre, _bPre) {
 }
 function refreshHistory(){
     let p = safeJSON(store.purchases, []);
-    let totalSales = p.filter(x => !x.isComp).length;
-    let totalComps = p.filter(x => x.isComp).length;
+    let totalSales = p.filter(x => !x.isComp && !x.hiddenFromHistory).length;
+    let totalComps = p.filter(x => x.isComp && !x.hiddenFromHistory).length;
     let bSales = document.getElementById("badgeTotalSales");
     let bComps = document.getElementById("badgeTotalComps");
     if (bSales) bSales.textContent = "إجمالي المبيعات: " + totalSales;
@@ -8922,6 +8922,7 @@ function refreshHistory(){
     let toDate = document.getElementById("historyToDate") ? document.getElementById("historyToDate").value : "";
     
     let filtered = p.slice().filter(item => {
+        if (item.hiddenFromHistory) return false; // إخفاء عمليات تعديل الرهن من السجل المالي
         let itemPhoneNorm = normalizePhone(item.phone||'').replace(/\D/g,'');
         let matchesSearch = !v || (item.customer||'').toLowerCase().includes(v) || (item.sub||'').toLowerCase().includes(v) || (item.phone||'').includes(v) || (vNorm && (itemPhoneNorm.includes(vNorm) || (item.phone||'').replace(/\D/g,'').includes(vNorm)));
         let matchesFrom = !fromDate || (item.date && item.date >= fromDate);
@@ -14201,7 +14202,7 @@ function refreshPledges() {
             <td dir="ltr" style="text-align:center;">${esc(p.phone)}</td>
             <td>${esc(p.service)}</td>
             <td>
-                <div style="font-weight:800; font-size:15px; color:${barColor};">${used}/${total}</div>
+                <div style="font-weight:800; font-size:15px; color:${barColor};"><span onclick="${(currentUser && currentUser.role === 'admin' && !_plgIsLegacy(p) && used > 0) ? `adjustPledgeUsed('${p.id}',-1)` : ''}" title="${(used > 0 && !_plgIsLegacy(p)) ? 'تقليل المستهلك — سحب مالي' : ''}" style="color:var(--danger); font-size:13px; margin-left:4px; ${(currentUser && currentUser.role === 'admin' && !_plgIsLegacy(p) && used > 0) ? 'cursor:pointer; opacity:0.7;' : 'visibility:hidden;'}">▼</span>${used}/${total}<span onclick="${(currentUser && currentUser.role === 'admin' && !_plgIsLegacy(p) && used < total) ? `adjustPledgeUsed('${p.id}',+1)` : ''}" title="${(used < total && !_plgIsLegacy(p)) ? 'زيادة المستهلك — عملية شراء' : ''}" style="color:var(--success); font-size:13px; margin-right:4px; ${(currentUser && currentUser.role === 'admin' && !_plgIsLegacy(p) && used < total) ? 'cursor:pointer; opacity:0.7;' : 'visibility:hidden;'}">▲</span></div>
                 <div style="width:100%; max-width:100px; margin:4px auto 0; background:var(--border-color); border-radius:10px; height:6px; overflow:hidden;">
                     <div style="width:${pct}%; height:100%; background:${barColor}; border-radius:10px; transition:width 0.3s;"></div>
                 </div>
@@ -14268,6 +14269,106 @@ async function deleteAllPledges() {
     refreshPledges();
     loadPledgesIntoSelect();
     notify("تم مسح جميع المرهونات");
+}
+
+// ── تعديل عدد المرهونات المستهلكة يدوياً (+1 / -1) ─────────────────────
+// عند الزيادة: تُسجَّل عملية شراء مخفية (تؤثر على الأرباح والإحصائيات بدون ظهور في السجل المالي)
+// عند التقليل: تُسجَّل عملية سحب مالي مخفية (تقلل الأرباح بدون ظهور في السجل المالي)
+async function adjustPledgeUsed(pledgeId, delta) {
+    if (!currentUser || currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
+    if (delta !== 1 && delta !== -1) return;
+
+    let pledges = safeJSON(store.pledges, []);
+    let plgIdx = pledges.findIndex(x => x.id === pledgeId);
+    if (plgIdx === -1) return notify("الرهن غير موجود", "error");
+
+    let p = pledges[plgIdx];
+    let used = parseInt(p.usedCount) || 0;
+    let total = parseInt(p.totalCount) || 0;
+
+    if (delta === 1 && used >= total) return notify("تم استنفاد جميع الحسابات المرهونة", "error");
+    if (delta === -1 && used <= 0) return notify("لا يوجد حسابات مستهلكة لتقليلها", "error");
+
+    // تأكيد العملية
+    let actionLabel = delta === 1 ? "زيادة المستهلك (+1) — ستُسجَّل عملية شراء" : "تقليل المستهلك (-1) — سيُسجَّل سحب مالي";
+    let ok = await showConfirm(
+        delta === 1 ? "زيادة المرهونات المستهلكة" : "تقليل المرهونات المستهلكة",
+        `${actionLabel}\nالعميل: ${p.customer} | الخدمة: ${p.service}\nالحالي: ${used}/${total} → الجديد: ${used + delta}/${total}`,
+        "تأكيد", "إلغاء",
+        delta === 1 ? '<i class="fas fa-plus"></i>' : '<i class="fas fa-minus"></i>'
+    );
+    if (!ok) return;
+
+    // حساب القيمة المالية (حصة الحساب الواحد)
+    let perAccount = _plgPerAccount(p);
+    let cur = _plgCurrency(p);
+    let paidAmount = Math.round(perAccount * 100) / 100;
+
+    // تحديث usedCount
+    pledges[plgIdx].usedCount = used + delta;
+    store.pledges = JSON.stringify(pledges);
+    fbSave("pledges", pledges);
+
+    // تسجيل عملية مخفية في purchases (تؤثر على الإحصائيات والأرباح لكن لا تظهر في السجل المالي)
+    let purchases = safeJSON(store.purchases, []);
+    let nd = new Date();
+    let dateISO = `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,'0')}-${String(nd.getDate()).padStart(2,'0')}`;
+    let settings = safeJSON(store.settings, {});
+    let rate = (settings.exchangeRate && settings.exchangeRate > 0) ? settings.exchangeRate : 3.5;
+
+    let purchaseRecord = {
+        id: 'pur_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+        date: dateISO,
+        customer: p.customer || "عميل",
+        phone: p.phone || "-",
+        sub: p.service || "رهن",
+        paid: (delta === 1 ? paidAmount : -paidAmount) + cur,
+        cost: "0" + cur,
+        profilesCount: 1,
+        duration: p.duration || "-",
+        rate: rate,
+        expiry: null,
+        isPledge: true,
+        isPledgeAdjust: true,
+        hiddenFromHistory: true,
+        isComp: false,
+        pledgeId: pledgeId,
+        purchaseNotes: delta === 1 ? "زيادة يدوية للمرهونات المستهلكة" : "تقليل يدوي للمرهونات المستهلكة"
+    };
+    purchases.push(purchaseRecord);
+    store.purchases = JSON.stringify(purchases);
+    fbSave("purchases", purchases);
+
+    // تسجيل حدث ميزانية (يؤثر على الأرباح)
+    let deltaUSD = cur === '$' ? (delta === 1 ? paidAmount : -paidAmount) : (delta === 1 ? paidAmount : -paidAmount) / rate;
+    recordBudgetEvent(
+        delta === 1 ? 'purchase' : 'withdrawal',
+        delta === 1
+            ? `شراء (تعديل رهن) ${p.service} للعميل ${p.customer}: ${paidAmount}${cur}`
+            : `سحب مالي (تعديل رهن) ${p.service} للعميل ${p.customer}: -${paidAmount}${cur}`,
+        deltaUSD,
+        {
+            type: delta === 1 ? 'pledge_adjust_add' : 'pledge_adjust_remove',
+            customer: p.customer,
+            sub: p.service,
+            paid: (delta === 1 ? paidAmount : -paidAmount) + cur,
+            pledgeId: pledgeId,
+            purchaseId: purchaseRecord.id
+        }
+    );
+
+    logAction(
+        delta === 1
+            ? `زيادة مستهلك رهن ${p.customer} (${p.service}): ${used} → ${used+1} — شراء ${paidAmount}${cur}`
+            : `تقليل مستهلك رهن ${p.customer} (${p.service}): ${used} → ${used-1} — سحب ${paidAmount}${cur}`,
+        'financial',
+        { type: delta === 1 ? 'pledge_adjust_add' : 'pledge_adjust_remove', customer: p.customer, service: p.service, pledgeId, oldUsed: used, newUsed: used + delta, amount: paidAmount + cur }
+    );
+
+    refreshPledges();
+    loadPledgesIntoSelect();
+    refreshAll();
+    notify(delta === 1 ? `تمت الزيادة — تم تسجيل عملية شراء بقيمة ${paidAmount}${cur}` : `تم التقليل — تم تسجيل سحب مالي بقيمة ${paidAmount}${cur}`);
 }
 
 function togglePledgeField() {
