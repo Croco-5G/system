@@ -1638,7 +1638,7 @@
             <i class="fas fa-hourglass-half"></i> يمكنك تأكيد الإزالة بعد: <span id="cardReminderCountdown">60</span> ثانية
         </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button id="btnConfirmCardRemoved" class="btn btn-success" style="flex:1; min-width:140px; justify-content:center; opacity:0.4; cursor:not-allowed;" onclick="confirmCardRemoved()" disabled><i class="fas fa-check"></i> قمت بالإزالة</button>
+            <button id="btnConfirmCardRemoved" class="btn btn-success" style="flex:1; min-width:140px; justify-content:center; opacity:0.4; cursor:not-allowed;" onclick="confirmCardRemoved()" ondblclick="forceSkipCardReminderCountdown()" data-locked="1"><i class="fas fa-check"></i> قمت بالإزالة</button>
             <button class="btn btn-warning" style="flex:1; min-width:140px; justify-content:center; color:#000;" onclick="snoozeCardReminder()"><i class="fas fa-clock"></i> ذكّرني بعد 5 دقائق</button>
             <button class="btn" style="flex:1; min-width:140px; justify-content:center; background:rgba(100,116,139,0.12); color:var(--text-muted); border:1px solid var(--border-color);" onclick="ignoreCardReminderForMe()"><i class="fas fa-eye-slash"></i> ليس من اختصاصي</button>
         </div>
@@ -1713,7 +1713,7 @@
             <i class="fas fa-hourglass-half"></i> يمكنك تأكيد الإنجاز بعد: <span id="customReminderCountdown">60</span> ثانية
         </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button id="btnConfirmCustomReminder" class="btn btn-success" style="flex:1; min-width:140px; justify-content:center; opacity:0.4; cursor:not-allowed;" onclick="confirmCustomReminder()" disabled><i class="fas fa-check"></i> تم الإنجاز</button>
+            <button id="btnConfirmCustomReminder" class="btn btn-success" style="flex:1; min-width:140px; justify-content:center; opacity:0.4; cursor:not-allowed;" onclick="confirmCustomReminder()" ondblclick="forceSkipCustomReminderCountdown()" data-locked="1"><i class="fas fa-check"></i> تم الإنجاز</button>
             <button class="btn btn-warning" style="flex:1; min-width:140px; justify-content:center; color:#000;" onclick="snoozeCustomReminder()"><i class="fas fa-clock"></i> ذكّرني بعد 5 دقائق</button>
             <button class="btn" style="flex:1; min-width:140px; justify-content:center; background:rgba(100,116,139,0.12); color:var(--text-muted); border:1px solid var(--border-color);" onclick="ignoreCustomReminderForMe()"><i class="fas fa-eye-slash"></i> ليس من اختصاصي</button>
         </div>
@@ -1996,6 +1996,7 @@
                     <th style="text-align:center;">الحسابات المرهونة</th>
                     <th style="text-align:center;">مدة كل حساب</th>
                     <th style="text-align:center;">المبلغ المدفوع</th>
+                    <th style="text-align:center;">آخر استخدام</th>
                     <th id="thPledgesDelete" style="text-align:center;">حذف</th>
                 </tr></thead>
                 <tbody id="pledgesBody"></tbody>
@@ -6017,7 +6018,7 @@ function _startCardCountdown() {
     
     let secs = 60;
     countdownEl.textContent = secs;
-    confirmBtn.disabled = true;
+    confirmBtn.dataset.locked = '1';
     confirmBtn.style.opacity = '0.4';
     confirmBtn.style.cursor = 'not-allowed';
     if (countdownBox) countdownBox.style.display = 'block';
@@ -6028,12 +6029,26 @@ function _startCardCountdown() {
         if (secs <= 0) {
             clearInterval(_cardCountdownInterval);
             _cardCountdownInterval = null;
-            confirmBtn.disabled = false;
+            confirmBtn.dataset.locked = '0';
             confirmBtn.style.opacity = '1';
             confirmBtn.style.cursor = 'pointer';
             if (countdownBox) countdownBox.style.display = 'none';
         }
     }, 1000);
+}
+
+// نقرتان متتاليتان (دبل-كليك) على زر التأكيد أثناء العدّ التنازلي = تخطٍّ إجباري للانتظار
+function forceSkipCardReminderCountdown() {
+    let confirmBtn = document.getElementById('btnConfirmCardRemoved');
+    if (!confirmBtn || confirmBtn.dataset.locked !== '1') return; // العداد منتهٍ أصلاً، لا حاجة للتخطي
+    if (_cardCountdownInterval) { clearInterval(_cardCountdownInterval); _cardCountdownInterval = null; }
+    confirmBtn.dataset.locked = '0';
+    confirmBtn.style.opacity = '1';
+    confirmBtn.style.cursor = 'pointer';
+    let countdownBox = document.getElementById('cardReminderCountdownBox');
+    if (countdownBox) countdownBox.style.display = 'none';
+    logAction("تخطٍّ إجباري لعداد تذكير إزالة البطاقة (نقر مزدوج)", 'general', { type: 'card_reminder_forced_skip', stockId: _cardReminderActiveId });
+    confirmCardRemoved();
 }
 
 function checkCardRemovalReminders() {
@@ -6064,7 +6079,7 @@ function checkCardRemovalReminders() {
 
 function confirmCardRemoved() {
     let confirmBtn = document.getElementById('btnConfirmCardRemoved');
-    if (confirmBtn && confirmBtn.disabled) return; // منع الضغط قبل انتهاء العداد
+    if (confirmBtn && confirmBtn.dataset.locked === '1') return; // منع الضغط قبل انتهاء العداد (إلا عبر تخطي النقر المزدوج)
     if (_cardCountdownInterval) { clearInterval(_cardCountdownInterval); _cardCountdownInterval = null; }
     if (!_cardReminderActiveId) { document.getElementById("cardRemovalReminderModal").style.display = "none"; return; }
     let stock = safeJSON(store.stock, []);
@@ -6294,7 +6309,7 @@ function _startCustomCountdown() {
 
     let secs = 60;
     countdownEl.textContent = secs;
-    confirmBtn.disabled = true;
+    confirmBtn.dataset.locked = '1';
     confirmBtn.style.opacity = '0.4';
     confirmBtn.style.cursor = 'not-allowed';
     if (countdownBox) countdownBox.style.display = 'block';
@@ -6305,12 +6320,26 @@ function _startCustomCountdown() {
         if (secs <= 0) {
             clearInterval(_customCountdownInterval);
             _customCountdownInterval = null;
-            confirmBtn.disabled = false;
+            confirmBtn.dataset.locked = '0';
             confirmBtn.style.opacity = '1';
             confirmBtn.style.cursor = 'pointer';
             if (countdownBox) countdownBox.style.display = 'none';
         }
     }, 1000);
+}
+
+// نقرتان متتاليتان (دبل-كليك) على زر التأكيد أثناء العدّ التنازلي = تخطٍّ إجباري للانتظار
+function forceSkipCustomReminderCountdown() {
+    let confirmBtn = document.getElementById('btnConfirmCustomReminder');
+    if (!confirmBtn || confirmBtn.dataset.locked !== '1') return; // العداد منتهٍ أصلاً، لا حاجة للتخطي
+    if (_customCountdownInterval) { clearInterval(_customCountdownInterval); _customCountdownInterval = null; }
+    confirmBtn.dataset.locked = '0';
+    confirmBtn.style.opacity = '1';
+    confirmBtn.style.cursor = 'pointer';
+    let countdownBox = document.getElementById('customReminderCountdownBox');
+    if (countdownBox) countdownBox.style.display = 'none';
+    logAction("تخطٍّ إجباري لعداد تذكير مخصّص (نقر مزدوج)", 'general', { type: 'custom_reminder_forced_skip', stockId: _customReminderActiveId });
+    confirmCustomReminder();
 }
 
 function checkCustomReminders() {
@@ -6345,7 +6374,7 @@ function checkCustomReminders() {
 
 function confirmCustomReminder() {
     let confirmBtn = document.getElementById('btnConfirmCustomReminder');
-    if (confirmBtn && confirmBtn.disabled) return; // منع الضغط قبل انتهاء العداد
+    if (confirmBtn && confirmBtn.dataset.locked === '1') return; // منع الضغط قبل انتهاء العداد (إلا عبر تخطي النقر المزدوج)
     if (_customCountdownInterval) { clearInterval(_customCountdownInterval); _customCountdownInterval = null; }
     if (!_customReminderActiveId) { document.getElementById("customReminderAlertModal").style.display = "none"; return; }
     let stock = safeJSON(store.stock, []);
@@ -8108,6 +8137,7 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
             // يُخصم عدد الحسابات المسحوبة فعلياً في هذه العملية (وليس حساباً واحداً دائماً)
             let _plgTot = parseInt(pledges[plgIdx].totalCount) || 0;
             pledges[plgIdx].usedCount = Math.min(_plgTot, (parseInt(pledges[plgIdx].usedCount) || 0) + profilesCount);
+            pledges[plgIdx].lastUsedAt = Date.now(); // تسجيل تاريخ آخر سحب حساب من هذا الرهن
             store.pledges = JSON.stringify(pledges);
             fbSave("pledges", pledges);
         }
@@ -14074,7 +14104,8 @@ function savePledge() {
         currency: currency,
         createdAt: nd.getTime(),
         dateISO: dateISO,
-        date: nd.toLocaleDateString('ar-EG')
+        date: nd.toLocaleDateString('ar-EG'),
+        lastUsedAt: null
     });
     store.pledges = JSON.stringify(pledges);
     fbSave("pledges", pledges);
@@ -14187,7 +14218,7 @@ function refreshPledges() {
     }
 
     if(pledges.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted)"><i class="fas fa-handshake" style="font-size:32px; opacity:0.3; display:block; margin-bottom:10px;"></i>لا توجد مرهونات بعد</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; color:var(--text-muted)"><i class="fas fa-handshake" style="font-size:32px; opacity:0.3; display:block; margin-bottom:10px;"></i>لا توجد مرهونات بعد</td></tr>`;
         return;
     }
 
@@ -14209,6 +14240,7 @@ function refreshPledges() {
             </td>
             <td>${esc(p.duration)} ${p.duration !== '-' ? 'شهر' : ''}</td>
             <td style="text-align:center;">${_pledgeAmountCellHTML(p)}</td>
+            <td style="text-align:center;">${_pledgeLastUsedHTML(p)}</td>
             ${(currentUser && currentUser.role === 'admin') ? `<td><button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="deletePledge('${p.id}')"><i class="fas fa-trash"></i></button></td>` : ''}
         </tr>`;
     });
@@ -14242,6 +14274,16 @@ function _pledgeAmountCellHTML(p) {
     return `<span class="plg-amount" title="${tip}"
         onclick="notify('المبلغ المتبقي: ${fix(remain)}${cur} (${Math.max(0,total-used)} حساب متبقٍ)')"
         style="cursor:help; font-weight:800; direction:ltr; display:inline-block; border-bottom:1px dashed ${color}; color:${color};">${fix(amt)}${cur}</span>`;
+}
+
+// خلية "آخر استخدام": تاريخ آخر مرة سُحب فيها حساب من هذا الرهن
+function _pledgeLastUsedHTML(p) {
+    if (!p || !p.lastUsedAt) return `<span style="color:var(--text-muted)">لم يُستخدم بعد</span>`;
+    let d = new Date(p.lastUsedAt);
+    if (isNaN(d.getTime())) return `<span style="color:var(--text-muted)">-</span>`;
+    let dateStr = d.toLocaleDateString('ar-EG');
+    let timeStr = d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    return `<span title="${dateStr} - ${timeStr}" style="font-weight:700; color:var(--text-main);">${dateStr}</span>`;
 }
 
 async function deletePledge(id) {
@@ -14306,6 +14348,7 @@ async function adjustPledgeUsed(pledgeId, delta) {
 
     // تحديث usedCount
     pledges[plgIdx].usedCount = used + delta;
+    if (delta === 1) pledges[plgIdx].lastUsedAt = Date.now(); // سحب حساب فعلي → تحديث تاريخ آخر استخدام
     store.pledges = JSON.stringify(pledges);
     fbSave("pledges", pledges);
 
