@@ -8034,6 +8034,8 @@ function _executePurchase(paid, paidCur, duration, settings, stItem, cleanName, 
     for (let _pc = 0; _pc < profilesCount; _pc++) {
         stItem.buyers.push(buyerInfo);
         _pushBuyerDate(stItem, _subDate); // تاريخ الاشتراك في الفهرس الصحيح (يتفادى مشكلة القدامى)
+        // إذا اختار المستخدم "ينتهي مع المخزون" → نحفظ تاريخ الانتهاء الفعلي (من تاريخ المخزون) في buyerExpiries
+        _pushBuyerExpiry(stItem, (useRemainingTimeForShared && exp) ? exp.getTime() : null);
         _consumeProfileCost(stItem); // خصم تكلفة هذا البروفايل من الرصيد المتبقي
         stItem.soldProfiles = (stItem.soldProfiles || 0) + 1;
         if(stItem.soldProfiles >= (stItem.totalProfiles || 1)) {
@@ -11083,6 +11085,17 @@ function _pushBuyerDate(item, dateStr) {
     item.buyerDates[targetIdx] = dateStr; // ضع التاريخ في مكانه الصحيح بالضبط
 }
 
+// حفظ تاريخ انتهاء مخصّص (timestamp) لعميل اختار "ينتهي مع المخزون"
+// بنفس أسلوب _pushBuyerDate — يحافظ على المحاذاة الصحيحة مع فهرس buyers
+function _pushBuyerExpiry(item, expiryTs) {
+    if (!item) return;
+    if (!Array.isArray(item.buyers)) item.buyers = [];
+    if (!Array.isArray(item.buyerExpiries)) item.buyerExpiries = [];
+    let targetIdx = item.buyers.length - 1;
+    while (item.buyerExpiries.length < targetIdx) item.buyerExpiries.push(null);
+    item.buyerExpiries[targetIdx] = expiryTs; // timestamp أو null
+}
+
 // معلومات النقل (من أي حساب/إيميل انتقل هذا العميل) — بمحاذاة فهرس buyers نفسه.
 // بيانات قديمة/عملاء لم يُنقلوا أبداً = null، ولا نحاول استنتاج أي شيء لهم.
 function _pushBuyerTransferInfo(item, info) {
@@ -11112,7 +11125,13 @@ function _buyerDateBadgeHTML(item, idx) {
 // ── تاريخ انتهاء اشتراك عميل داخل اشتراك المخزون (نفس منطق البيع) ──
 // • مشترك (totalProfiles > 1): المدة تبدأ من يوم اشتراك العميل نفسه
 // • فردي (totalProfiles = 1): المدة تبدأ من تاريخ شراء المخزون
+// • إذا اختار المستخدم "ينتهي مع المخزون" → buyerExpiries[idx] محفوظ مباشرة ويُستخدم كما هو
 function _buyerExpiryTs(item, idx) {
+    // أولوية: تاريخ انتهاء مخصّص محفوظ (حالة "ينتهي مع المخزون")
+    if (Array.isArray(item && item.buyerExpiries)) {
+        let saved = item.buyerExpiries[idx];
+        if (saved && typeof saved === 'number' && saved > 0) return saved;
+    }
     let dur = parseInt(item && item.duration) || 0;
     if (!dur) return null; // بدون مدة
     let d = _getBuyerDate(item, idx);
