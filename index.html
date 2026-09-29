@@ -1099,11 +1099,11 @@
 .mg-brand{display:flex;align-items:baseline;font-size:clamp(60px,17vw,140px);line-height:1}
 .mg-logo{height:.76em;width:auto;display:block;opacity:0;transform:scale(.82);filter:blur(8px);
   will-change:transform,opacity;animation:mgLogoIn 1.1s var(--mg-soft) .15s forwards}
-.mg-word{display:block;overflow:hidden;max-width:0;animation:mgExpand 1.2s var(--mg-ease) 1.3s forwards}
-.mg-word-inner{display:flex;padding-left:.04em;padding-right:.06em;white-space:nowrap;
+.mg-word{display:block;overflow:visible;clip-path:inset(-1em 0 -1em 0);max-width:0;animation:mgExpand 1.2s var(--mg-ease) 1.3s forwards}
+.mg-word-inner{display:flex;position:relative;top:-.07em;padding-left:.04em;padding-right:.06em;white-space:nowrap;
   font-family:"Poppins","Inter","Segoe UI",system-ui,sans-serif;font-weight:700;letter-spacing:-.02em;
-  padding-top:.12em;padding-bottom:.42em;margin:-.12em 0 -.42em;color:#fff}
-.mg-word i{font-style:normal;display:inline-block;opacity:0;transform:translateX(-.25em);filter:blur(6px);
+  color:#fff}
+.mg-word i{font-style:normal;display:inline-block;padding:.12em 0 .3em;margin:-.12em 0 -.3em;opacity:0;transform:translateX(-.25em);filter:blur(6px);
   animation:mgLetter .8s var(--mg-soft) calc(1.45s + var(--i)*.12s) forwards;
   background:linear-gradient(90deg,#ffd21f 0%,#ff8a3d 35%,#e04fe0 70%,#9b3cff 100%);background-size:300% 100%;
   background-position:calc((var(--i) - 1) * 50%) 0;-webkit-background-clip:text;background-clip:text;color:transparent}
