@@ -1107,7 +1107,7 @@
   animation:mgLetter .8s var(--mg-soft) calc(1.45s + var(--i)*.12s) forwards;
   background:linear-gradient(90deg,#ffd21f 0%,#ff8a3d 35%,#e04fe0 70%,#9b3cff 100%);background-size:300% 100%;
   background-position:calc((var(--i) - 1) * 50%) 0;-webkit-background-clip:text;background-clip:text;color:transparent}
-.mg-dots{display:flex;gap:14px;margin-top:clamp(28px,6vh,48px);opacity:0;animation:mgFade .6s ease 2.9s forwards}
+.mg-dots{display:flex;gap:14px;margin-top:clamp(28px,6vh,48px);opacity:0;animation:mgFade .6s ease 2.9s forwards} /* keep 2.9s in sync with __mgDotsMs */
 .mg-dots span{width:9px;height:9px;border-radius:50%;background:#fff;opacity:.2;
   animation:mgDot 1.4s ease-in-out infinite;will-change:opacity,transform}
 .mg-dots span:nth-child(2){animation-delay:.2s}.mg-dots span:nth-child(3){animation-delay:.4s}
@@ -1121,6 +1121,12 @@
 @keyframes mgFade{to{opacity:1}}
 @keyframes mgDot{0%,100%{opacity:.18;transform:scale(.85);box-shadow:none}
   40%{opacity:1;transform:scale(1.1);box-shadow:0 0 12px rgba(224,79,224,.75),0 0 4px rgba(255,255,255,.9)}}
+@media (max-width:600px){ /* mobile: bigger, bolder brand */
+  .mg-brand{font-size:25vw}
+  .mg-dots{gap:16px;margin-top:40px}
+  .mg-dots span{width:11px;height:11px}
+  .mg-loader{background:radial-gradient(ellipse at 50% 42%,#1a1532 0%,#07060d 70%)}}
+html.mg-lock,html.mg-lock body{overflow:hidden!important;touch-action:none}
 @media (prefers-reduced-motion:reduce){
   .mg-logo,.mg-word,.mg-word i,.mg-dots{animation-duration:.01s!important;animation-delay:0s!important}
   .mg-dots span{animation-duration:2.4s}}
@@ -1145,11 +1151,29 @@
 /* Mega loader: never hide before the brand intro has played */
 window.__mgIntroStart=performance.now();
 window.__mgIntroMs=matchMedia('(prefers-reduced-motion: reduce)').matches?300:3700;
+/* Moment the 3 dots become visible (matches .mg-dots animation-delay in CSS) */
+window.__mgDotsMs=matchMedia('(prefers-reduced-motion: reduce)').matches?100:2900;
+/* Run fn only once the page has loaded AND the dots are showing — the app does not start before that */
+window.__mgWhenDotsVisible=function(fn){
+  var wait=Math.max(0,window.__mgDotsMs-(performance.now()-window.__mgIntroStart));
+  setTimeout(fn,wait);
+};
+/* Freeze the whole site (no clicks, keyboard, focus or scroll) while the loader is up */
+document.documentElement.classList.add("mg-lock");
+document.addEventListener("DOMContentLoaded",function(){
+  Array.prototype.forEach.call(document.body.children,function(n){
+    if(n.id!=="systemLoadingScreen"&&n.tagName!=="SCRIPT"){n.setAttribute("inert","");n.dataset.mgInert="1";}
+  });
+});
 window.hideSystemLoadingScreen=function(){
   var el=document.getElementById("systemLoadingScreen");
   if(!el||el.dataset.hiding)return; el.dataset.hiding="1";
   var wait=Math.max(0,window.__mgIntroMs-(performance.now()-window.__mgIntroStart));
-  setTimeout(function(){el.classList.add("mg-exit");setTimeout(function(){el.style.display="none";},900);},wait);
+  setTimeout(function(){
+    document.querySelectorAll("[data-mg-inert]").forEach(function(n){n.removeAttribute("inert");delete n.dataset.mgInert;});
+    document.documentElement.classList.remove("mg-lock");
+    el.classList.add("mg-exit");setTimeout(function(){el.style.display="none";},900);
+  },wait);
 };
 </script>
 
@@ -16497,7 +16521,7 @@ function _startChatOnLogin(){
     if(adminSect) adminSect.style.display=(currentUser&&currentUser.role==='admin')?'':'none';
     _initActivityTracking();
 }
-window.onload = init;
+window.onload = function(){ window.__mgWhenDotsVisible(init); }; // التطبيق لا يبدأ إلا بعد ظهور النقاط الثلاث
 
 /* ════════════════════════════════════════════════════════════════
    نظام إخفاء الأرقام المالية (زر العين العائم)
