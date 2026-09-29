@@ -1097,17 +1097,16 @@
   transition:opacity .8s ease,transform .9s var(--mg-soft),visibility .8s;}
 .mg-loader.mg-exit{opacity:0;transform:scale(1.06);visibility:hidden;pointer-events:none}
 .mg-brand{display:flex;align-items:baseline;font-size:clamp(60px,17vw,140px);line-height:1}
-.mg-logo{height:.76em;width:auto;display:block;opacity:0;transform:scale(.82);filter:blur(8px);
-  will-change:transform,opacity;animation:mgLogoIn 1.1s var(--mg-soft) .15s forwards}
-.mg-word{display:block;overflow:visible;clip-path:inset(-1em 0 -1em 0);max-width:0;animation:mgExpand 1.2s var(--mg-ease) 1.3s forwards}
+.mg-logo{height:.76em;width:auto;display:block;opacity:1;transform:none;filter:none} /* اللوغو ظاهر ثابت من البداية، الحركة تبدأ بعد ثانيتين */
+.mg-word{display:block;overflow:visible;clip-path:inset(-1em 0 -1em 0);max-width:0;animation:mgExpand 1.2s var(--mg-ease) 2s forwards}
 .mg-word-inner{display:flex;position:relative;top:-.07em;padding-left:.04em;padding-right:.06em;white-space:nowrap;
   font-family:"Poppins","Inter","Segoe UI",system-ui,sans-serif;font-weight:700;letter-spacing:-.02em;
   color:#fff}
 .mg-word i{font-style:normal;display:inline-block;padding:.12em 0 .3em;margin:-.12em 0 -.3em;opacity:0;transform:translateX(-.25em);filter:blur(6px);
-  animation:mgLetter .8s var(--mg-soft) calc(1.45s + var(--i)*.12s) forwards;
+  animation:mgLetter .8s var(--mg-soft) calc(2.15s + var(--i)*.12s) forwards;
   background:linear-gradient(90deg,#ffd21f 0%,#ff8a3d 35%,#e04fe0 70%,#9b3cff 100%);background-size:300% 100%;
   background-position:calc((var(--i) - 1) * 50%) 0;-webkit-background-clip:text;background-clip:text;color:transparent}
-.mg-dots{display:flex;gap:14px;margin-top:clamp(28px,6vh,48px);opacity:0;animation:mgFade .6s ease 2.9s forwards} /* keep 2.9s in sync with __mgDotsMs */
+.mg-dots{display:flex;gap:14px;margin-top:clamp(28px,6vh,48px);opacity:0;animation:mgFade .6s ease 3.6s forwards} /* keep 3.6s in sync with __mgDotsMs */
 .mg-dots span{width:9px;height:9px;border-radius:50%;background:#fff;opacity:.2;
   animation:mgDot 1.4s ease-in-out infinite;will-change:opacity,transform}
 .mg-dots span:nth-child(2){animation-delay:.2s}.mg-dots span:nth-child(3){animation-delay:.4s}
@@ -1150,9 +1149,9 @@ html.mg-lock,html.mg-lock body{overflow:hidden!important;touch-action:none}
 <script>
 /* Mega loader: never hide before the brand intro has played */
 window.__mgIntroStart=performance.now();
-window.__mgIntroMs=matchMedia('(prefers-reduced-motion: reduce)').matches?300:3700;
+window.__mgIntroMs=matchMedia('(prefers-reduced-motion: reduce)').matches?300:4400;
 /* Moment the 3 dots become visible (matches .mg-dots animation-delay in CSS) */
-window.__mgDotsMs=matchMedia('(prefers-reduced-motion: reduce)').matches?100:2900;
+window.__mgDotsMs=matchMedia('(prefers-reduced-motion: reduce)').matches?100:3600;
 /* Run fn only once the page has loaded AND the dots are showing — the app does not start before that */
 window.__mgWhenDotsVisible=function(fn){
   var wait=Math.max(0,window.__mgDotsMs-(performance.now()-window.__mgIntroStart));
