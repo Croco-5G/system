@@ -1095,18 +1095,19 @@
   position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:radial-gradient(ellipse at 50% 45%,#16122a 0%,#07060d 62%);overflow:hidden;
   transition:opacity .8s ease,transform .9s var(--mg-soft),visibility .8s;}
+.mg-loader:not(.mg-go) .mg-word,.mg-loader:not(.mg-go) .mg-word i,.mg-loader:not(.mg-go) .mg-dots{animation:none!important}
 .mg-loader.mg-exit{opacity:0;transform:scale(1.06);visibility:hidden;pointer-events:none}
 .mg-brand{display:flex;align-items:baseline;font-size:clamp(60px,17vw,140px);line-height:1}
 .mg-logo{height:.76em;width:auto;display:block;opacity:1;transform:none;filter:none} /* اللوغو ظاهر ثابت من البداية، الحركة تبدأ بعد ثانيتين */
-.mg-word{display:block;overflow:visible;clip-path:inset(-1em 0 -1em 0);max-width:0;animation:mgExpand 1.2s var(--mg-ease) 2s forwards}
+.mg-word{display:block;overflow:visible;clip-path:inset(-1em 0 -1em 0);max-width:0;animation:mgExpand 1.2s var(--mg-ease) 0s forwards}
 .mg-word-inner{display:flex;position:relative;top:-.07em;padding-left:.04em;padding-right:.06em;white-space:nowrap;
   font-family:"Poppins","Inter","Segoe UI",system-ui,sans-serif;font-weight:700;letter-spacing:-.02em;
   color:#fff}
 .mg-word i{font-style:normal;display:inline-block;padding:.12em 0 .3em;margin:-.12em 0 -.3em;opacity:0;transform:translateX(-.25em);filter:blur(6px);
-  animation:mgLetter .8s var(--mg-soft) calc(2.15s + var(--i)*.12s) forwards;
+  animation:mgLetter .8s var(--mg-soft) calc(.15s + var(--i)*.12s) forwards;
   background:linear-gradient(90deg,#ffd21f 0%,#ff8a3d 35%,#e04fe0 70%,#9b3cff 100%);background-size:300% 100%;
   background-position:calc((var(--i) - 1) * 50%) 0;-webkit-background-clip:text;background-clip:text;color:transparent}
-.mg-dots{display:flex;gap:14px;margin-top:clamp(28px,6vh,48px);opacity:0;animation:mgFade .6s ease 3.6s forwards} /* keep 3.6s in sync with __mgDotsMs */
+.mg-dots{display:flex;gap:14px;margin-top:clamp(28px,6vh,48px);opacity:0;animation:mgFade .6s ease 1.6s forwards} /* keep 1.6s in sync with __mgDotsMs */
 .mg-dots span{width:9px;height:9px;border-radius:50%;background:#fff;opacity:.2;
   animation:mgDot 1.4s ease-in-out infinite;will-change:opacity,transform}
 .mg-dots span:nth-child(2){animation-delay:.2s}.mg-dots span:nth-child(3){animation-delay:.4s}
@@ -1130,6 +1131,99 @@ html.mg-lock,html.mg-lock body{overflow:hidden!important;touch-action:none}
   .mg-logo,.mg-word,.mg-word i,.mg-dots{animation-duration:.01s!important;animation-delay:0s!important}
   .mg-dots span{animation-duration:2.4s}}
 </style>
+<style id="cc-admin-css">
+/* ═════ دردشة العملاء (لوحة الإدارة) ═════ */
+#customerChat.card{padding:0!important;overflow:hidden;box-shadow:none!important;border:none!important;border-radius:0!important;margin:0!important;background:var(--bg-card)!important}
+body.cchat-active .stats-grid,body.cchat-active #syncStatus{display:none!important}
+body.cchat-active{overflow:hidden!important}
+html:has(body.cchat-active){overflow:hidden!important;height:100dvh!important}
+body.cchat-active #customerChat:not(.hidden){position:fixed;top:0;bottom:0;right:280px;left:0;z-index:1500;display:block}
+body.cchat-active .sidebar.active{z-index:1600!important}
+body.cchat-active .sidebar-overlay.active{z-index:1599!important}
+.cca{display:flex;height:100dvh;position:relative;background:var(--bg-card)}
+.cca-burger{display:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-main);cursor:pointer;flex-shrink:0;align-items:center;justify-content:center}
+.cca-side{width:330px;flex-shrink:0;display:flex;flex-direction:column;border-left:1px solid var(--border-color);background:var(--bg-card)}
+.cca-side-h{padding:16px;border-bottom:1px solid var(--border-color);display:flex;flex-direction:column;gap:12px}
+.cca-side-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cca-side-top h3{margin:0;font-size:17px;display:flex;align-items:center;gap:8px;color:var(--text-main)}
+.cca-new{border:none;border-radius:10px;padding:9px 14px;background:var(--primary);color:#fff;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap}
+.cca-new:hover{background:var(--primary-dark)}
+.cca-search{position:relative}
+.cca-search input{width:100%;padding:10px 38px 10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-input);color:var(--text-main);font-family:inherit;font-size:14px;outline:none;box-sizing:border-box}
+.cca-search input:focus{border-color:var(--primary)}
+.cca-search i{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px}
+.cca-list{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.cca-item{display:flex;gap:11px;padding:13px 16px;cursor:pointer;border-bottom:1px solid var(--border-color);transition:background .15s;position:relative}
+.cca-item:hover{background:var(--bg-input)}
+.cca-item.active{background:rgba(99,102,241,.1)}
+.cca-item.active::before{content:'';position:absolute;right:0;top:0;bottom:0;width:3px;background:var(--primary)}
+.cca-av{width:42px;height:42px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:15px}
+.cca-meta{flex:1;min-width:0}
+.cca-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cca-name{font-weight:800;font-size:14px;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cca-name small{font-weight:600;color:var(--text-muted);font-size:11px;margin-right:4px;direction:ltr;display:inline-block}
+.cca-time{font-size:11px;color:var(--text-muted);white-space:nowrap;direction:ltr}
+.cca-last{font-size:12.5px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;flex:1;min-width:0}
+.cca-item.unread .cca-last{color:var(--text-main);font-weight:700}
+.cca-unread{min-width:21px;height:21px;padding:0 6px;border-radius:11px;background:var(--danger);color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:3px}
+.cca-empty{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px}
+.cca-main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg-body)}
+.cca-main-h{display:flex;align-items:center;gap:11px;padding:12px 16px;background:var(--bg-card);border-bottom:1px solid var(--border-color);min-height:66px;box-sizing:border-box}
+.cca-back{display:none;width:36px;height:36px;border-radius:50%;border:none;background:var(--bg-input);color:var(--text-main);cursor:pointer;flex-shrink:0}
+.cca-main-h .cca-title{flex:1;min-width:0}
+.cca-main-h .cca-title b{display:block;font-size:15px;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cca-main-h .cca-title small{font-size:11.5px;color:var(--text-muted);direction:ltr;display:inline-block}
+.cca-hbtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-muted);cursor:pointer;flex-shrink:0}
+.cca-hbtn:hover{color:var(--primary);border-color:var(--primary)}
+.cca-msgs{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:7px;overscroll-behavior:contain}
+.cca-older{align-self:center;font-size:12px;color:var(--text-muted);padding:6px 12px}
+.cca-m{max-width:72%;padding:9px 13px;border-radius:15px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.cca-m .t{display:flex;gap:6px;justify-content:flex-end;font-size:10.5px;opacity:.7;margin-top:2px;direction:ltr}
+.cca-m.admin{align-self:flex-end;background:linear-gradient(135deg,var(--primary),#8b5cf6);color:#fff;border-bottom-left-radius:4px}
+.cca-m.customer{align-self:flex-start;background:var(--bg-card);color:var(--text-main);border:1px solid var(--border-color);border-bottom-right-radius:4px}
+.cca-m .by{font-size:10.5px;opacity:.8;font-weight:700}
+.cca-day{align-self:center;font-size:11px;color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border-color);border-radius:20px;padding:3px 12px;margin:8px 0}
+.cca-comp{display:flex;gap:9px;align-items:flex-end;padding:12px 14px;background:var(--bg-card);border-top:1px solid var(--border-color)}
+.cca-comp textarea,.cca-form textarea{flex:1;resize:none;min-height:46px;max-height:140px;padding:11px 13px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-input);color:var(--text-main);font-family:inherit;font-size:14.5px;line-height:1.6;outline:none;box-sizing:border-box}
+.cca-comp textarea:focus,.cca-form textarea:focus,.cca-form input:focus{border-color:var(--primary)}
+.cca-send{width:46px;height:46px;flex-shrink:0;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:16px;cursor:pointer}
+.cca-send:disabled{opacity:.4;cursor:not-allowed}
+.cca-placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted);gap:10px;text-align:center;padding:20px}
+.cca-placeholder i{font-size:46px;opacity:.35}
+.cca-modal{position:absolute;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.cca-modal.open{display:flex}
+.cca-form{width:100%;max-width:440px;background:var(--bg-card);border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:12px}
+.cca-form h4{margin:0 0 4px;font-size:17px;color:var(--text-main);display:flex;align-items:center;gap:8px}
+.cca-form label{font-size:13px;font-weight:800;color:var(--text-main)}
+.cca-form input{width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-input);color:var(--text-main);font-family:inherit;font-size:15px;outline:none;box-sizing:border-box;direction:ltr;text-align:left}
+.cca-form textarea{min-height:110px;width:100%}
+.cca-form .row{display:flex;gap:10px}
+.cca-form .row button{flex:1;padding:12px;border-radius:12px;border:none;font-weight:800;font-family:inherit;cursor:pointer;font-size:14px}
+.cca-form .ok{background:var(--primary);color:#fff}.cca-form .cancel{background:var(--bg-input);color:var(--text-main);border:1px solid var(--border-color)!important}
+.cca-tick{font-weight:900;letter-spacing:-3px;font-size:12px;opacity:.85}
+.cca-tick.seen{color:#4ade80;opacity:1;text-shadow:0 0 1px rgba(0,0,0,.35)}
+#ccAdminBadge{background:var(--danger);color:#fff;padding:2px 7px;border-radius:10px;font-size:10px;display:none;margin-right:4px;font-weight:800}
+.ord-confirm{padding:6px 12px;font-size:12px;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;background:var(--success);color:#fff;transition:opacity .2s}
+.ord-confirm:hover{opacity:.88}
+.ord-confirm.done{background:#064e3b;color:#a7f3d0;cursor:default;opacity:1}
+tr.ord-confirmed td{background:rgba(16,185,129,.13)!important}
+tr.ord-confirmed td:first-child{box-shadow:inset -4px 0 0 var(--success)}
+@media (max-width:768px){
+  body.cchat-active #customerChat:not(.hidden){right:0}
+  body.cchat-active .mobile-menu-btn{display:none!important}
+  .cca-burger{display:flex}
+  .cca-side-h{padding-top:calc(16px + env(safe-area-inset-top,0px))}
+  .cca-main-h{padding-top:calc(12px + env(safe-area-inset-top,0px))}
+  .cca-comp{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  .cca-side{width:100%;border-left:none}
+  .cca-main{display:none;position:absolute;inset:0;z-index:5}
+  .cca.show-conv .cca-main{display:flex}
+  .cca.show-conv .cca-side{visibility:hidden}
+  .cca-back{display:flex;align-items:center;justify-content:center}
+  .cca-m{max-width:85%}
+  .cca-comp textarea,.cca-search input,.cca-form input,.cca-form textarea{font-size:16px}
+}
+</style>
 </head>
 
 <body class="locked">
@@ -1148,14 +1242,33 @@ html.mg-lock,html.mg-lock body{overflow:hidden!important;touch-action:none}
 <!-- ===== /Mega Intro Loader ===== -->
 <script>
 /* Mega loader: never hide before the brand intro has played */
-window.__mgIntroStart=performance.now();
-window.__mgIntroMs=matchMedia('(prefers-reduced-motion: reduce)').matches?300:4400;
+window.__mgIntroStart=null; /* يبدأ العدّ فقط لحظة انطلاق الأنميشن */
+window.__mgIntroMs=matchMedia('(prefers-reduced-motion: reduce)').matches?300:2400;
 /* Moment the 3 dots become visible (matches .mg-dots animation-delay in CSS) */
-window.__mgDotsMs=matchMedia('(prefers-reduced-motion: reduce)').matches?100:3600;
-/* Run fn only once the page has loaded AND the dots are showing — the app does not start before that */
+window.__mgDotsMs=matchMedia('(prefers-reduced-motion: reduce)').matches?100:1600;
+/* اللوغو يبقى ثابتاً حتى يكتمل تحميل ملف الـ HTML بالكامل، ثم نصف ثانية، ثم يبدأ الأنميشن */
+window.__mgGoCbs=[];
+window.__mgOnGo=function(fn){ if(window.__mgIntroStart!==null) fn(); else window.__mgGoCbs.push(fn); };
+(function(){
+  var started=false;
+  function go(){
+    if(started)return; started=true;
+    setTimeout(function(){
+      var el=document.getElementById("systemLoadingScreen");
+      if(el){ void el.offsetWidth; el.classList.add("mg-go"); }
+      window.__mgIntroStart=performance.now();
+      var cbs=window.__mgGoCbs; window.__mgGoCbs=[];
+      cbs.forEach(function(f){ try{f();}catch(e){console.error(e);} });
+    },500);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go();
+})();
+/* Run fn only once the dots are showing — the app (Firebase data) does not start before that */
 window.__mgWhenDotsVisible=function(fn){
-  var wait=Math.max(0,window.__mgDotsMs-(performance.now()-window.__mgIntroStart));
-  setTimeout(fn,wait);
+  window.__mgOnGo(function(){
+    var wait=Math.max(0,window.__mgDotsMs-(performance.now()-window.__mgIntroStart));
+    setTimeout(fn,wait);
+  });
 };
 /* Freeze the whole site (no clicks, keyboard, focus or scroll) while the loader is up */
 document.documentElement.classList.add("mg-lock");
@@ -1167,12 +1280,14 @@ document.addEventListener("DOMContentLoaded",function(){
 window.hideSystemLoadingScreen=function(){
   var el=document.getElementById("systemLoadingScreen");
   if(!el||el.dataset.hiding)return; el.dataset.hiding="1";
+  window.__mgOnGo(function(){
   var wait=Math.max(0,window.__mgIntroMs-(performance.now()-window.__mgIntroStart));
   setTimeout(function(){
     document.querySelectorAll("[data-mg-inert]").forEach(function(n){n.removeAttribute("inert");delete n.dataset.mgInert;});
     document.documentElement.classList.remove("mg-lock");
     el.classList.add("mg-exit");setTimeout(function(){el.style.display="none";},900);
   },wait);
+  });
 };
 </script>
 
@@ -1919,6 +2034,7 @@ window.hideSystemLoadingScreen=function(){
         <button onclick="showPage('stock', this)" id="btnStock" class="hidden"><i class="fas fa-cubes"></i> المخزون</button>
         <button onclick="showPage('services_mgmt', this)" id="btnServicesMgmt"><i class="fas fa-tags"></i> الخدمات</button>
         <button onclick="showPage('orders', this)" id="btnOrders"><i class="fas fa-inbox"></i> الطلبات <span id="ordersBadge" style="background:var(--danger); color:white; padding:2px 6px; border-radius:10px; font-size:10px; display:none; margin-right:4px;"></span></button>
+        <button onclick="showPage('customerChat', this)" id="btnCustomerChat" class="hidden"><i class="fas fa-headset"></i> دردشة العملاء <span id="ccAdminBadge"></span></button>
         <button onclick="showPage('expiring', this)" id="btnExpiring"><i class="fas fa-hourglass-half"></i> التنبيهات <span id="expiryBadge" class="notif-badge" style="background:var(--danger); color:white; padding:2px 6px; border-radius:10px; font-size:10px; display:none"></span></button>
         <button onclick="showPage('discounts', this)" id="btnDiscounts"><i class="fas fa-ticket-alt"></i> الخصومات <span id="discountBadge" style="background:var(--accent); color:white; padding:2px 6px; border-radius:10px; font-size:10px; display:none; margin-right:4px;"></span></button>
         <button onclick="showPage('pledges', this)" id="btnPledges"><i class="fas fa-handshake"></i> مرهونات</button>
@@ -2238,18 +2354,17 @@ window.hideSystemLoadingScreen=function(){
         </div>
         <div class="input-group" style="margin-bottom:20px;">
             <div style="position:relative;">
-                <input id="ordersSearch" onkeyup="refreshOrders()" placeholder="بحث باسم العميل أو الرقم أو كود الخدمة..." style="padding-right:40px;">
+                <input id="ordersSearch" onkeyup="refreshOrders()" placeholder="بحث بالرقم أو كود الخدمة أو اسم الخدمة..." style="padding-right:40px;">
                 <i class="fas fa-search" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
             </div>
         </div>
         <div class="table-container">
             <table>
                 <thead><tr>
-                    <th>العميل</th>
                     <th>رقم الواتساب</th>
                     <th>كود الخدمة</th>
                     <th>السعر</th>
-                    <th>ملاحظات</th>
+                    <th>تأكيد</th>
                     <th id="thOrdersDelete">حذف</th>
                 </tr></thead>
                 <tbody id="ordersBody"></tbody>
@@ -2262,6 +2377,48 @@ window.hideSystemLoadingScreen=function(){
             </h3>
             <div id="bookingsContainer" style="display:grid; gap:20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
                 <div style="color:var(--text-muted); padding:20px;">لا يوجد حجوزات حالياً...</div>
+            </div>
+        </div>
+    </div>
+    <div id="customerChat" class="card hidden">
+        <div class="cca" id="ccaRoot">
+            <div class="cca-side">
+                <div class="cca-side-h">
+                    <div class="cca-side-top">
+                        <button class="cca-burger" onclick="toggleSidebar()" title="القائمة"><i class="fas fa-bars"></i></button>
+                        <h3 style="flex:1"><i class="fas fa-headset" style="color:var(--primary)"></i> دردشة العملاء</h3>
+                        <button class="cca-new" onclick="ccaOpenNew()"><i class="fas fa-paper-plane"></i> رسالة جديدة</button>
+                    </div>
+                    <div class="cca-search"><input id="ccaSearch" placeholder="بحث بالـ ID أو الاسم..." oninput="ccaRenderList()"><i class="fas fa-search"></i></div>
+                </div>
+                <div class="cca-list" id="ccaList"><div class="cca-empty">جاري التحميل...</div></div>
+            </div>
+            <div class="cca-main" id="ccaMain">
+                <div class="cca-placeholder" id="ccaPlaceholder"><i class="fas fa-comments"></i><div>اختر محادثة من القائمة أو أرسل رسالة جديدة لجهاز معيّن</div></div>
+                <div id="ccaConv" style="display:none; flex:1; flex-direction:column; min-height:0;">
+                    <div class="cca-main-h">
+                        <button class="cca-back" onclick="ccaBack()" title="رجوع"><i class="fas fa-arrow-right"></i></button>
+                        <div class="cca-av" id="ccaConvAv"></div>
+                        <div class="cca-title"><b id="ccaConvName"></b><small id="ccaConvId"></small></div>
+                        <button class="cca-hbtn" id="ccaRenameBtn" onclick="ccaRename()" title="تسمية الجهاز"><i class="fas fa-pen"></i></button>
+                        <button class="cca-hbtn" onclick="ccaCopyId()" title="نسخ الـ ID"><i class="fas fa-copy"></i></button>
+                    </div>
+                    <div class="cca-msgs" id="ccaMsgs"></div>
+                    <div class="cca-comp">
+                        <textarea id="ccaInput" rows="1" placeholder="اكتب رسالة للعميل..." maxlength="2000"></textarea>
+                        <button class="cca-send" id="ccaSendBtn" onclick="ccaSendCurrent()" disabled title="إرسال"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="cca-modal" id="ccaNewModal" onclick="if(event.target===this)ccaCloseNew()">
+                <div class="cca-form">
+                    <h4><i class="fas fa-paper-plane" style="color:var(--primary)"></i> رسالة جديدة لجهاز</h4>
+                    <label for="ccaNewId">ID الجهاز</label>
+                    <input id="ccaNewId" inputmode="numeric" placeholder="مثال: 4829301756" maxlength="40">
+                    <label for="ccaNewText">الرسالة</label>
+                    <textarea id="ccaNewText" placeholder="اكتب الرسالة التي ستظهر للعميل..." maxlength="2000"></textarea>
+                    <div class="row"><button class="ok" onclick="ccaSendNew()"><i class="fas fa-paper-plane"></i> إرسال</button><button class="cancel" onclick="ccaCloseNew()">إلغاء</button></div>
+                </div>
             </div>
         </div>
     </div>
@@ -6613,6 +6770,7 @@ function applyRBAC() {
     safeToggle("btnExportCSV", "add"); // <--- تم إخفاء زر التصدير كافتراضي
 
     safeToggle("btnSettings", "remove");
+    safeToggle("btnCustomerChat", "add");
     safeToggle("btnClearLogs", "add");
     safeToggle("btnVisLogs", "add");
     
@@ -6633,6 +6791,7 @@ function applyRBAC() {
 
     // 2. توزيع الصلاحياتتوزيع الصلاحيات
     if (role === 'admin') {
+        safeToggle("btnCustomerChat", "remove");
         safeToggle("btnSecurity", "remove");
         safeToggle("btnBackup", "remove");
         safeToggle("btnLogs", "remove"); 
@@ -6688,6 +6847,7 @@ function applyRBAC() {
         safeToggle("todoInputArea", "add");
         safeToggle("sec-manage-services", "remove"); 
         safeToggle("btnOrders", "remove");
+        safeToggle("btnCustomerChat", "remove");
         
         safeToggle("btnStock", "remove");
         safeToggle("btnUndo", "remove");
@@ -7145,6 +7305,7 @@ function showPage(id, btn){
     if(currentUser) {
         if((currentUser.role === 'viewer' || currentUser.role === 'viewer_plus') && (id === 'purchase' || id === 'security' || id === 'backup')) return notify("ليس لديك صلاحية", "error");
         if(currentUser.role === 'employee' && (id === 'security' || id === 'backup')) return notify("ليس لديك صلاحية", "error");
+        if(id === 'customerChat' && currentUser.role !== 'admin' && currentUser.role !== 'employee') return notify("ليس لديك صلاحية", "error");
         
         if(id === 'investment' && currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
         if(id === 'stock' && (currentUser.role === 'viewer' || currentUser.role === 'viewer_plus')) return notify("ليس لديك صلاحية", "error");
@@ -7170,12 +7331,14 @@ function showPage(id, btn){
     if(id === 'logs') refreshLogs();
     if(id === 'stock') refreshStock();
     if(id === 'orders') refreshOrders();
+    if(id === 'customerChat') { if(!ccaCanUse()) return notify("ليس لديك صلاحية", "error"); ccaOnOpen(); }
     if(id === 'modify') { refreshTodoList(); updateStorageUI(); loadProfitSettings(); }
     if(id === 'services_mgmt') { renderServicesMain(); renderCategoriesGrid(); }
     if(id === 'teamChat') { openTeamChat(); }
 
     // تفعيل/إلغاء وضع الدردشة (يخفي الإحصائيات ويملأ الشاشة)
     document.body.classList.toggle('chat-active', id === 'teamChat');
+    document.body.classList.toggle('cchat-active', id === 'customerChat');
 
     // منع سكرول الصفحة الكاملة عند فتح الدردشة (يشمل عنصر html على iOS)
     if (id === 'teamChat') {
@@ -12452,6 +12615,7 @@ function _initServicesListener() {
 }
 
 function _initOrdersListener() {
+    try { ccaInit(); } catch(e) { console.error(e); }
     if (_ordUnsubscribe || !dbOrder) return;
     _ordUnsubscribe = dbOrder.collection("orders").orderBy("timestamp", "desc").onSnapshot(snap => {
         ordersCache = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
@@ -12907,6 +13071,250 @@ function deleteService(idx) { notify("استخدم زر الحذف بجانب ك
 // ══════════════════════════════════════════════════════════════
 //  إدارة الطلبات (Firebase collection: "orders")
 // ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+//  دردشة العملاء — Firebase (dbOrder): customerChats/{visitorId}/messages
+// ══════════════════════════════════════════════════════════════
+const CCA = { chats: [], unsubList: null, current: null, unsubMsgs: null, msgs: new Map(), oldestMs: null, noMore: false, loadingOlder: false, prevUnread: {}, firstSnap: true, PAGE: 50 };
+function ccaCanUse() { return !!(currentUser && (currentUser.role === 'admin' || currentUser.role === 'employee')); }
+function ccaEsc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+function ccaColor(id) { let h = 0; String(id).split('').forEach(c => h = (h * 31 + c.charCodeAt(0)) % 360); return `linear-gradient(135deg,hsl(${h},65%,55%),hsl(${(h+40)%360},65%,45%))`; }
+function ccaLabel(c) { return (c && c.name) ? c.name : (c ? c.id : ''); }
+function ccaFmt(ms, full) {
+    if (!ms) return '';
+    let d = new Date(ms), now = new Date();
+    let hm = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    if (full) return hm;
+    if (d.toDateString() === now.toDateString()) return hm;
+    let y = new Date(now); y.setDate(now.getDate() - 1);
+    if (d.toDateString() === y.toDateString()) return 'أمس';
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+}
+let _ccaAudio = null;
+function ccaSound() {
+    try {
+        _ccaAudio = _ccaAudio || new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = _ccaAudio; if (ctx.state === 'suspended') ctx.resume();
+        const t = ctx.currentTime;
+        [[784, 0], [1175, 0.12], [1568, 0.24]].forEach(([f, d]) => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = 'sine'; o.frequency.value = f;
+            g.gain.setValueAtTime(0.0001, t + d); g.gain.exponentialRampToValueAtTime(0.2, t + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.3);
+            o.connect(g); g.connect(ctx.destination); o.start(t + d); o.stop(t + d + 0.35);
+        });
+    } catch(e) {}
+}
+['click','touchstart','keydown'].forEach(ev => document.addEventListener(ev, () => { try { _ccaAudio = _ccaAudio || new (window.AudioContext || window.webkitAudioContext)(); if (_ccaAudio.state === 'suspended') _ccaAudio.resume(); } catch(e) {} }, { once: true, passive: true }));
+
+function ccaIsOpen() { let el = document.getElementById('customerChat'); return el && !el.classList.contains('hidden'); }
+
+function ccaInit() {
+    let btn = document.getElementById('btnCustomerChat');
+    if (!ccaCanUse()) { if (btn) btn.classList.add('hidden'); return; }
+    if (btn) btn.classList.remove('hidden');
+    if (CCA.unsubList || !dbOrder) return;
+    CCA.unsubList = dbOrder.collection('customerChats').orderBy('lastMessageMs', 'desc').onSnapshot(snap => {
+        let play = false;
+        CCA.chats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        CCA.chats.forEach(c => {
+            let u = c.unreadForAdmin || 0, prev = CCA.prevUnread[c.id] || 0;
+            if (!CCA.firstSnap && u > prev) {
+                let viewing = ccaIsOpen() && CCA.current === c.id && document.visibilityState === 'visible';
+                if (viewing) dbOrder.collection('customerChats').doc(c.id).update({ unreadForAdmin: 0 }).catch(() => {});
+                play = true;
+            }
+            CCA.prevUnread[c.id] = u;
+        });
+        if (play) ccaSound();
+        CCA.firstSnap = false;
+        ccaUpdateBadge();
+        if (ccaIsOpen()) { ccaRenderList(); ccaRenderHeader(); }
+    }, err => console.error('customerChats listener:', err));
+}
+function ccaUpdateBadge() {
+    let b = document.getElementById('ccAdminBadge'); if (!b) return;
+    let total = CCA.chats.reduce((s, c) => s + (c.id === CCA.current && ccaIsOpen() ? 0 : (c.unreadForAdmin || 0)), 0);
+    b.textContent = total > 99 ? '99+' : total;
+    b.style.display = total > 0 ? 'inline' : 'none';
+}
+function ccaOnOpen() {
+    if (!ccaCanUse()) return;
+    ccaInit(); ccaRenderList();
+    if (CCA.current) { ccaMarkRead(CCA.current); ccaRenderHeader(); }
+    ccaUpdateBadge();
+}
+function ccaRenderList() {
+    let el = document.getElementById('ccaList'); if (!el) return;
+    let q = (document.getElementById('ccaSearch')?.value || '').trim().toLowerCase();
+    let list = CCA.chats.filter(c => !q || c.id.toLowerCase().includes(q) || (c.name || '').toLowerCase().includes(q));
+    if (!list.length) { el.innerHTML = `<div class="cca-empty">${q ? 'لا توجد نتائج مطابقة' : 'لا توجد محادثات بعد'}</div>`; return; }
+    el.innerHTML = list.map(c => {
+        let unread = (c.id === CCA.current && ccaIsOpen()) ? 0 : (c.unreadForAdmin || 0);
+        let last = (c.lastFrom === 'admin' ? 'أنت: ' : '') + (c.lastText || '');
+        let label = ccaLabel(c);
+        return `<div class="cca-item${c.id === CCA.current ? ' active' : ''}${unread ? ' unread' : ''}" onclick="ccaOpenConv('${ccaEsc(c.id)}')">
+            <div class="cca-av" style="background:${ccaColor(c.id)}">${ccaEsc(label.slice(0, 1).toUpperCase())}</div>
+            <div class="cca-meta">
+                <div class="cca-row"><div class="cca-name">${ccaEsc(label)}${c.name ? `<small>${ccaEsc(c.id)}</small>` : ''}</div><div class="cca-time">${ccaFmt(c.lastMessageMs)}</div></div>
+                <div class="cca-row"><div class="cca-last">${ccaEsc(last)}</div>${unread ? `<div class="cca-unread">${unread > 99 ? '99+' : unread}</div>` : ''}</div>
+            </div></div>`;
+    }).join('');
+}
+function ccaRenderHeader() {
+    if (!CCA.current) return;
+    let c = CCA.chats.find(x => x.id === CCA.current) || { id: CCA.current };
+    let label = ccaLabel(c);
+    document.getElementById('ccaConvName').textContent = label;
+    document.getElementById('ccaConvId').textContent = c.name ? 'ID: ' + c.id : 'جهاز بدون اسم';
+    let av = document.getElementById('ccaConvAv'); av.style.background = ccaColor(c.id); av.textContent = label.slice(0, 1).toUpperCase();
+    let rb = document.getElementById('ccaRenameBtn'); if (rb) rb.style.display = currentUser.role === 'admin' ? '' : 'none';
+}
+function ccaMarkRead(id) {
+    let c = CCA.chats.find(x => x.id === id);
+    if (c && c.unreadForAdmin) dbOrder.collection('customerChats').doc(id).update({ unreadForAdmin: 0 }).catch(() => {});
+}
+function ccaMsgsRef(id) { return dbOrder.collection('customerChats').doc(id).collection('messages'); }
+
+function ccaOpenConv(id) {
+    if (!ccaCanUse()) return;
+    if (CCA.unsubMsgs) { CCA.unsubMsgs(); CCA.unsubMsgs = null; }
+    CCA.current = id; CCA.msgs = new Map(); CCA.oldestMs = null; CCA.noMore = false; CCA.loadingOlder = false;
+    document.getElementById('ccaPlaceholder').style.display = 'none';
+    document.getElementById('ccaConv').style.display = 'flex';
+    document.getElementById('ccaRoot').classList.add('show-conv');
+    document.getElementById('ccaMsgs').innerHTML = '<div class="cca-older">جاري التحميل...</div>';
+    ccaRenderHeader(); ccaRenderList(); ccaMarkRead(id); ccaUpdateBadge();
+    let box = document.getElementById('ccaMsgs'); box.dataset.stick = '1';
+    // آخر 50 رسالة (مباشر)
+    CCA.unsubMsgs = ccaMsgsRef(id).orderBy('createdMs', 'desc').limit(CCA.PAGE).onSnapshot({ includeMetadataChanges: true }, snap => {
+        if (CCA.current !== id) return;
+        let first = CCA.oldestMs === null;
+        snap.docs.forEach(d => CCA.msgs.set(d.id, { id: d.id, ...d.data(), _pending: d.metadata.hasPendingWrites }));
+        snap.docChanges().forEach(ch => { if (ch.type === 'removed') CCA.msgs.delete(ch.doc.id); });
+        if (first) { CCA.noMore = snap.size < CCA.PAGE; }
+        let arr = [...CCA.msgs.values()];
+        CCA.oldestMs = arr.length ? Math.min(...arr.map(m => m.createdMs || 0)) : 0;
+        let nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+        ccaRenderMsgs();
+        if (first || nearBottom || box.dataset.stick === '1') { box.scrollTop = box.scrollHeight; box.dataset.stick = ''; }
+    }, err => { console.error('chat msgs:', err); box.innerHTML = '<div class="cca-older">تعذّر تحميل المحادثة</div>'; });
+    if (window.matchMedia('(pointer:fine)').matches) setTimeout(() => document.getElementById('ccaInput')?.focus(), 150);
+}
+function ccaRenderMsgs() {
+    let box = document.getElementById('ccaMsgs'); if (!box) return;
+    let arr = [...CCA.msgs.values()].sort((a, b) => (a.createdMs || 0) - (b.createdMs || 0));
+    let html = CCA.noMore ? '<div class="cca-older">بداية المحادثة</div>' : '<div class="cca-older"><i class="fas fa-arrow-up"></i> اسحب للأعلى لتحميل رسائل أقدم</div>';
+    let lastDay = '';
+    arr.forEach(m => {
+        let day = m.createdMs ? new Date(m.createdMs).toLocaleDateString('en-GB') : '';
+        if (day && day !== lastDay) { html += `<div class="cca-day">${day}</div>`; lastDay = day; }
+        let isAdmin = m.from === 'admin';
+        let tick = '';
+        if (isAdmin) {
+            if (m._pending) tick = '<span class="cca-tick" title="جاري الإرسال"><i class="far fa-clock"></i></span>';
+            else if (m.seen) tick = '<span class="cca-tick seen" title="شاهدها العميل">✓✓</span>';
+            else if (m.delivered) tick = '<span class="cca-tick" title="وصلت للعميل">✓✓</span>';
+            else tick = '<span class="cca-tick" title="تم الإرسال">✓</span>';
+        }
+        let by = isAdmin && m.sender ? `<span class="by">${ccaEsc(m.sender)}</span>` : '';
+        html += `<div class="cca-m ${isAdmin ? 'admin' : 'customer'}">${ccaEsc(m.text)}<span class="t">${by}${tick}<span>${ccaFmt(m.createdMs, true)}</span></span></div>`;
+    });
+    if (!arr.length) html = '<div class="cca-older">لا توجد رسائل بعد — اكتب أول رسالة</div>';
+    box.innerHTML = html;
+}
+async function ccaLoadOlder() {
+    if (!CCA.current || CCA.noMore || CCA.loadingOlder || !CCA.oldestMs) return;
+    CCA.loadingOlder = true;
+    let id = CCA.current, box = document.getElementById('ccaMsgs');
+    try {
+        let snap = await ccaMsgsRef(id).orderBy('createdMs', 'desc').where('createdMs', '<', CCA.oldestMs).limit(CCA.PAGE).get();
+        if (CCA.current !== id) return;
+        let prevH = box.scrollHeight, prevTop = box.scrollTop;
+        snap.docs.forEach(d => CCA.msgs.set(d.id, { id: d.id, ...d.data() }));
+        if (snap.size < CCA.PAGE) CCA.noMore = true;
+        let arr = [...CCA.msgs.values()]; CCA.oldestMs = Math.min(...arr.map(m => m.createdMs || 0));
+        ccaRenderMsgs();
+        box.scrollTop = box.scrollHeight - prevH + prevTop;   // الحفاظ على مكان القراءة
+    } catch(e) { console.error('older msgs', e); }
+    finally { CCA.loadingOlder = false; }
+}
+async function ccaSend(id, text) {
+    text = String(text || '').trim(); if (!id || !text) return false;
+    let now = Date.now(), ref = dbOrder.collection('customerChats').doc(id);
+    try {
+        await ref.collection('messages').add({ from: 'admin', text, createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdMs: now, seen: false, sender: currentUser.username });
+        await ref.set({ visitorId: id, lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(), lastMessageMs: now, lastText: text.slice(0, 200), lastFrom: 'admin' }, { merge: true });
+        return true;
+    } catch(e) { console.error(e); notify('تعذّر إرسال الرسالة', 'error'); return false; }
+}
+async function ccaSendCurrent() {
+    let inp = document.getElementById('ccaInput'), text = inp.value.trim();
+    if (!text || !CCA.current) return;
+    inp.value = ''; inp.style.height = ''; document.getElementById('ccaSendBtn').disabled = true;
+    document.getElementById('ccaMsgs').dataset.stick = '1';
+    let ok = await ccaSend(CCA.current, text);
+    if (!ok) { inp.value = text; document.getElementById('ccaSendBtn').disabled = false; }
+}
+function ccaOpenNew() {
+    document.getElementById('ccaNewId').value = ''; document.getElementById('ccaNewText').value = '';
+    document.getElementById('ccaNewModal').classList.add('open');
+    setTimeout(() => document.getElementById('ccaNewId').focus(), 100);
+}
+function ccaCloseNew() { document.getElementById('ccaNewModal').classList.remove('open'); }
+async function ccaSendNew() {
+    let id = document.getElementById('ccaNewId').value.trim().replace(/\s+/g, '');
+    let text = document.getElementById('ccaNewText').value.trim();
+    if (!id) return notify('أدخل ID الجهاز', 'error');
+    if (/[\/.#$\[\]]/.test(id) || id.length > 40) return notify('ID الجهاز غير صالح', 'error');
+    if (!text) return notify('اكتب الرسالة', 'error');
+    let ok = await ccaSend(id, text);
+    if (!ok) return;
+    ccaCloseNew(); notify('تم إرسال الرسالة ✓', 'success');
+    ccaOpenConv(id);
+}
+function ccaBack() {
+    document.getElementById('ccaRoot').classList.remove('show-conv');
+    if (CCA.unsubMsgs) { CCA.unsubMsgs(); CCA.unsubMsgs = null; }
+    CCA.current = null;
+    document.getElementById('ccaConv').style.display = 'none';
+    document.getElementById('ccaPlaceholder').style.display = 'flex';
+    ccaRenderList(); ccaUpdateBadge();
+}
+async function ccaRename() {
+    if (!currentUser || currentUser.role !== 'admin') return notify('للأدمن فقط', 'error');
+    let c = CCA.chats.find(x => x.id === CCA.current) || { id: CCA.current };
+    let val = await showPrompt('تسمية الجهاز', `ID: ${c.id} — اتركه فارغاً لإزالة الاسم`, c.name || 'اسم العميل', '<i class="fas fa-pen"></i>');
+    if (val === null || val === undefined) return;
+    val = String(val).trim().slice(0, 60);
+    try {
+        await dbOrder.collection('customerChats').doc(c.id).set({ visitorId: c.id, name: val ? val : firebase.firestore.FieldValue.delete() }, { merge: true });
+        notify(val ? 'تم حفظ الاسم' : 'تمت إزالة الاسم', 'success');
+    } catch(e) { notify('تعذّر حفظ الاسم', 'error'); }
+}
+function ccaCopyId() {
+    if (!CCA.current) return;
+    (navigator.clipboard ? navigator.clipboard.writeText(CCA.current) : Promise.reject()).then(() => notify('تم نسخ الـ ID', 'success')).catch(() => notify(CCA.current, 'info'));
+}
+(function(f){ if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', f); else f(); })(() => {
+    let box = document.getElementById('ccaMsgs'), inp = document.getElementById('ccaInput');
+    if (box) box.addEventListener('scroll', () => { if (box.scrollTop < 60) ccaLoadOlder(); }, { passive: true });
+    if (inp) {
+        inp.addEventListener('input', () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 140) + 'px'; document.getElementById('ccaSendBtn').disabled = !inp.value.trim(); });
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && window.matchMedia('(pointer:fine)').matches) { e.preventDefault(); ccaSendCurrent(); } });
+    }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ccaIsOpen() && CCA.current) { ccaMarkRead(CCA.current); ccaUpdateBadge(); } });
+});
+
+// ── تأكيد الطلب ──
+async function confirmOrder(docId) {
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'employee')) return notify('ليس لديك صلاحية', 'error');
+    let o = ordersCache.find(x => x._docId === docId);
+    if (!o || o.confirmed) return;
+    try {
+        await dbOrder.collection('orders').doc(docId).update({ confirmed: true, confirmedAt: firebase.firestore.FieldValue.serverTimestamp(), confirmedBy: currentUser.username });
+        notify('تم تأكيد الطلب ✓', 'success');
+    } catch(e) { console.error(e); notify('تعذّر تأكيد الطلب', 'error'); }
+}
+
 function refreshOrders() {
     let rawSearch = (document.getElementById("ordersSearch")?.value||"").trim();
     let search = rawSearch.toLowerCase();
@@ -12963,22 +13371,23 @@ function refreshOrders() {
 
         let codeCell = `<span style="cursor:pointer; color:var(--primary); font-weight:800; letter-spacing:1px; text-decoration:underline;" onclick="showBranchDetail('${esc(o.serviceCode||'')}','${esc(o.serviceName||'')}')">${esc(o.serviceCode||'—')}</span>`;
         let price = o.amount !== undefined ? `${o.amount}₪` : '—';
-        let notes = o.notes ? `<span title="${esc(o.notes)}" style="cursor:help; color:var(--text-muted);"><i class="fas fa-sticky-note"></i></span>` : '—';
+        let confirmBtn = o.confirmed
+            ? `<button class="ord-confirm done" disabled title="${esc(o.confirmedBy||'')}"><i class="fas fa-check-double"></i> تم</button>`
+            : `<button class="ord-confirm" onclick="confirmOrder('${o._docId}')"><i class="fas fa-check"></i> تأكيد</button>`;
         
         let isEmployee = currentUser && currentUser.role === 'employee';
         let delBtn = isAdmin ? `<button class="btn btn-danger" style="padding:5px 10px; font-size:12px;" onclick="deleteOrder('${o._docId}')"><i class="fas fa-trash"></i></button>` : '—';
         
-        rows += `<tr>
-            <td style="font-weight:bold;">${esc(o.customerName||'—')}</td>
-            <td dir="ltr">${esc(o.phone||'—')}</td>
+        rows += `<tr class="${o.confirmed ? 'ord-confirmed' : ''}">
+            <td dir="ltr" style="font-weight:bold;">${esc(o.phone||'—')}</td>
             <td>${codeCell}</td>
             <td style="color:var(--accent); font-weight:800;">${price}</td>
-            <td>${notes}</td>
+            <td>${confirmBtn}</td>
             ${isEmployee ? '' : `<td>${delBtn}</td>`}
         </tr>`;
     });
     
-    tbody.innerHTML = rows || `<tr><td colspan='6' style='text-align:center; padding:20px; color:var(--text-muted);'>لا توجد طلبات حالياً</td></tr>`;
+    tbody.innerHTML = rows || `<tr><td colspan='5' style='text-align:center; padding:20px; color:var(--text-muted);'>لا توجد طلبات حالياً</td></tr>`;
     
     if (bookingsContainer) {
         let bookingsKeys = Object.keys(bookingsMap);
@@ -12991,8 +13400,8 @@ function refreshOrders() {
                 let listHtml = grp.orders.map((ord, idx) => `
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px;">
                         <div>
-                            <span style="font-weight:bold; color:var(--text-main);">${idx+1}. ${esc(ord.customerName)}</span>
-                            <div style="color:var(--text-muted); font-size:11px;">${esc(ord.phone)} - ${ord.amount} ₪</div>
+                            <span style="font-weight:bold; color:var(--text-main);">${idx+1}. <span dir="ltr">${esc(ord.phone||'—')}</span></span>
+                            <div style="color:var(--text-muted); font-size:11px;">${ord.amount} ₪</div>
                         </div>
                     </div>
                 `).join('');
