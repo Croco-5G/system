@@ -310,6 +310,35 @@
         .badge-info { background: rgba(59, 130, 246, 0.15); color: var(--info); }
         .badge-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
         .badge-warning { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+        /* --- فلترة نشاط الطلبات (قائمة منسدلة — حركة واحدة) --- */
+        .logs-search-row { display:flex; gap:10px; align-items:stretch; flex-wrap:wrap; }
+        .oa-filter-wrap { position:relative; }
+        .oa-filter-btn { height:100%; min-height:44px; display:inline-flex; align-items:center; gap:8px; padding:0 16px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-input); color:var(--text-main); font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; transition:.15s; max-width:280px; }
+        .oa-filter-btn span { overflow:hidden; text-overflow:ellipsis; }
+        .oa-filter-btn:hover { border-color:var(--primary); }
+        .oa-filter-btn.on { background:var(--primary); border-color:var(--primary); color:#fff; }
+        .oa-filter-menu { display:none; position:absolute; top:calc(100% + 6px); right:0; z-index:50; width:290px; max-height:380px; overflow-y:auto; background:var(--bg-card); border:1px solid var(--border-color); border-radius:12px; box-shadow:0 12px 30px rgba(0,0,0,.25); padding:6px; }
+        .oa-filter-menu.open { display:block; }
+        .oa-fm-item { display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; color:var(--text-main); }
+        .oa-fm-item:hover { background:var(--bg-input); }
+        .oa-fm-item.sel { background:rgba(99,102,241,0.14); color:var(--primary); font-weight:800; }
+        .oa-fm-item .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin:0 3px; }
+        .oa-fm-check { margin-right:auto; font-size:12px; }
+        .oa-fm-sep { height:1px; background:var(--border-color); margin:4px 2px; }
+        .oa-sum { display:flex; flex-wrap:wrap; gap:4px 8px; margin-top:6px; font-size:11.5px; color:var(--text-muted); font-weight:600; }
+        .oa-sum b { color:var(--border-color); font-weight:400; }
+        .oa-sum i { font-size:10px; opacity:.8; }
+        .oa-who-name { font-weight:800; color:var(--success); font-size:13px; }
+        .oa-who-id { color:var(--primary); font-size:11px; direction:ltr; text-align:right; word-break:break-all; }
+        .oa-who-sub { color:var(--text-muted); font-size:11px; margin-top:2px; word-break:break-all; }
+        .logs-load-status { width:100%; text-align:center; font-size:12px; color:var(--text-muted); margin-top:8px; font-weight:600; }
+        #logsPagination { flex-wrap:wrap; }
+        .ord-date { font-size:12px; color:var(--text-muted); white-space:nowrap; direction:ltr; font-weight:700; }
+        .ord-who { font-size:11px; color:var(--success); font-weight:800; margin-top:3px; direction:rtl; }
+        .ord-wa { color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:8px; transition:.15s; }
+        .ord-wa i { color:#25D366; font-size:15px; }
+        .ord-wa:hover { background:rgba(37,211,102,0.12); color:#25D366; }
+        .ord-new-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--danger); margin-left:6px; vertical-align:middle; }
         /* شارة بأيقونة فقط — هالة دائرية مضغوطة */
         .badge-icon { padding: 0; width: 22px; height: 22px; gap: 0; justify-content: center; font-size: 11px; vertical-align: middle; }
         /* اشتراك ملغي في السجل المالي */
@@ -2047,7 +2076,7 @@ window.hideSystemLoadingScreen=function(){
         <button onclick="showPage('discounts', this)" id="btnDiscounts"><i class="fas fa-ticket-alt"></i> الخصومات <span id="discountBadge" style="background:var(--accent); color:white; padding:2px 6px; border-radius:10px; font-size:10px; display:none; margin-right:4px;"></span></button>
         <button onclick="showPage('pledges', this)" id="btnPledges"><i class="fas fa-handshake"></i> مرهونات</button>
         <button onclick="showPage('vip', this)" id="btnVip"><i class="fas fa-star"></i> العملاء المميزين</button>
-        <button onclick="showPage('churned', this)" id="btnChurned"><i class="fas fa-user-clock"></i> عملاء منقطعون</button>
+        <button onclick="showPage('churned', this)" id="btnChurned"><i class="fas fa-user-clock"></i> عملاء منقطعون <span id="churnedBadge" class="notif-badge" style="background:var(--danger); color:white; padding:2px 6px; border-radius:10px; font-size:10px; display:none; margin-right:4px; font-weight:800;"></span></button>
         <button onclick="showPage('history', this)" id="btnHistory"><i class="fas fa-history"></i> السجل المالي</button>
         <button onclick="showPage('analytics', this)" id="btnAnalytics"><i class="fas fa-chart-pie"></i> الإحصائيات</button>
         <button onclick="showPage('investment', this)" id="btnInvestment"><i class="fas fa-money-bill-wave"></i> سحب الأموال</button>
@@ -2268,17 +2297,23 @@ window.hideSystemLoadingScreen=function(){
             <button class="tab-btn" onclick="switchLogsTab('general', this)">حركات عامة</button>
             <button class="tab-btn" onclick="switchLogsTab('orderActivity', this)">نشاط الطلبات</button>
         </div>
-        
+
         <div class="input-group" style="margin-bottom:20px;">
-            <div style="position:relative;">
-                <input id="logsSearch" onkeyup="currentPage.logs=1; refreshLogs()" placeholder="بحث في السجل..." style="padding-right: 40px;">
-                <i class="fas fa-search" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
+            <div class="logs-search-row">
+                <div id="oaFilterWrap" class="oa-filter-wrap" style="display:none">
+                    <button type="button" id="oaFilterBtn" class="oa-filter-btn" onclick="_oaFilterToggleMenu(event)"><i class="fas fa-filter"></i> <span id="oaFilterLabel">كل الحركات</span> <i class="fas fa-chevron-down" style="font-size:10px;opacity:.7"></i></button>
+                    <div id="oaFilterMenu" class="oa-filter-menu"></div>
+                </div>
+                <div style="position:relative; flex:1; min-width:200px;">
+                    <input id="logsSearch" oninput="_logsSearchChanged()" placeholder="بحث: اسم العميل، الـ ID، الرقم، الحركة، الخدمة..." style="padding-right: 40px;">
+                    <i class="fas fa-search" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
+                </div>
             </div>
         </div>
 
         <div class="table-container">
             <table>
-                <thead><tr><th style="width:180px">التاريخ</th><th style="width:150px">المستخدم</th><th>الحدث</th><th>تفاصيل</th><th>حذف</th></tr></thead>
+                <thead id="logsThead"><tr><th style="width:180px">التاريخ</th><th style="width:150px">المستخدم</th><th>الحدث</th><th>تفاصيل</th><th>حذف</th></tr></thead>
                 <tbody id="logsTableBody"></tbody>
             </table>
         </div>
@@ -2362,7 +2397,7 @@ window.hideSystemLoadingScreen=function(){
         </div>
         <div class="input-group" style="margin-bottom:20px;">
             <div style="position:relative;">
-                <input id="ordersSearch" onkeyup="refreshOrders()" placeholder="بحث بالرقم أو كود الخدمة أو اسم الخدمة..." style="padding-right:40px;">
+                <input id="ordersSearch" onkeyup="refreshOrders()" placeholder="بحث بالرقم، كود الخدمة، اسم الخدمة، اسم العميل أو الـ ID..." style="padding-right:40px;">
                 <i class="fas fa-search" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); color:var(--text-muted);"></i>
             </div>
         </div>
@@ -2370,6 +2405,7 @@ window.hideSystemLoadingScreen=function(){
             <table>
                 <thead><tr>
                     <th>رقم الواتساب</th>
+                    <th>تاريخ الطلب</th>
                     <th>كود الخدمة</th>
                     <th>السعر</th>
                     <th>تأكيد</th>
@@ -4758,6 +4794,8 @@ function initFirebase() {
     ARRAY_KEYS.forEach(key => {
         _collectionsLoaded[key] = false;
         lastServerState[key]    = [];
+        // سجل النشاط لا يُحمَّل كاملاً عند فتح الموقع — يُحمَّل صفحة بصفحة عند فتح "سجل النشاط" (انظر _alogFeed)
+        if (key === 'activityLog') { _collectionsLoaded[key] = true; return; }
 
         fbDocRef.collection(key).onSnapshot(
             { includeMetadataChanges: true },
@@ -5773,32 +5811,32 @@ function updateSyncStatus(msg, type="loading") {
 
 function logAction(actionDescription, type='general', details=null) {
     if(!currentUser) return Promise.resolve();
-    let logs = safeJSON(store.activityLog, []);
-
-    // سقف منفصل لكل نوع: مالية 200، خطرة 150، عامة 150
-    const LIMITS = { financial: 200, danger: 150, general: 150 };
-    logs.unshift({
+    const entry = {
         id:      genId(),
         _ts:     Date.now(),
         user:    currentUser.username,
         action:  actionDescription,
         time:    new Date().toLocaleString("ar-EG"),
         logType: type,
-        details: details 
-    });
-    // احتفظ بأحدث N من كل نوع ثم ادمجها
-    const financial = logs.filter(l => getLogType(l) === 'financial').slice(0, LIMITS.financial);
-    const danger    = logs.filter(l => getLogType(l) === 'danger').slice(0, LIMITS.danger);
-    const general   = logs.filter(l => getLogType(l) === 'general').slice(0, LIMITS.general);
-    logs = [...financial, ...danger, ...general].sort((a,b) => (b._ts||0) - (a._ts||0));
-
-    store.activityLog = JSON.stringify(logs);
-    const savePromise = fbSave("activityLog", logs);
-    if(document.getElementById("logs").classList.contains("hidden") === false) {
-        currentPage.logs = 1;
-        refreshLogs();
+        details: details
+    };
+    // الوضع التجريبي: السجل محلي
+    if (_alogUseDemo()) {
+        let logs = safeJSON(store.activityLog, []);
+        logs.unshift(entry);
+        if (logs.length > 1000) logs = logs.slice(0, 1000);
+        store.activityLog = JSON.stringify(logs);
+        const p = fbSave("activityLog", logs);
+        if(document.getElementById("logs").classList.contains("hidden") === false) refreshLogs();
+        return p || Promise.resolve();
     }
-    return savePromise || Promise.resolve();
+    // كتابة مباشرة لوثيقة مستقلة — بدون أي سقف أو حذف للسجلات القديمة
+    let clean;
+    try { clean = JSON.parse(JSON.stringify(entry)); } catch(e) { clean = { ...entry, details: null }; }
+    const savePromise = fbDocRef.collection("activityLog").doc(entry.id).set(clean)
+        .catch(e => console.error("logAction save error:", e));
+    if (_alogFeed.started) { _alogFeed.items.set(entry.id, { _docId: entry.id, ...clean }); _alogFeed.touch(); }
+    return savePromise;
 }
 function hideSystemLoading() {
     window.hideSystemLoadingScreen();
@@ -5964,6 +6002,11 @@ function updateStorageUI() {
             }
         }
     });
+
+    // سجل النشاط: يُحسب ما تم تحميله منه فقط (لا يُحمَّل كاملاً)
+    try {
+        if (!_alogUseDemo()) _alogFeed.list().forEach(item => { arrayBytes += new Blob([JSON.stringify(item)]).size + FIRESTORE_DOC_OVERHEAD; });
+    } catch(e) {}
 
     // ③ بيانات موقع الطلبات — orders + orderActivity + services
     let orderBytes = 0;
@@ -6211,10 +6254,12 @@ async function attemptLogin() {
 let _churnedLiveInterval = null;
 function startChurnedLiveCheck() {
     if (_churnedLiveInterval) clearInterval(_churnedLiveInterval);
+    let _churnTick = 0;
     _churnedLiveInterval = setInterval(() => {
         if (!currentUser) { clearInterval(_churnedLiveInterval); return; }
         let churnedPage = document.getElementById('churned');
         if (churnedPage && !churnedPage.classList.contains('hidden')) refreshChurned();
+        else if ((++_churnTick % 6) === 0) updateChurnedBadge(); // تحديث رقم الشارة كل 30 ثانية
     }, 5000);
 }
 
@@ -7060,248 +7105,6 @@ function changePage(key, dir, func) {
     func();
 }
 
-function switchLogsTab(tab, btn) {
-    currentLogsTab = tab;
-    document.querySelectorAll('#logs .tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentPage.logs = 1;
-    refreshLogs();
-}
-
-function getLogType(log) {
-    if(log.logType) return log.logType;
-    // توافق مع السجلات القديمة
-    return log.details != null ? 'financial' : 'general';
-}
-
-function refreshLogs() {
-    let search = (document.getElementById("logsSearch")?.value||"").toLowerCase();
-    const tbody = document.getElementById("logsTableBody");
-    let role = currentUser ? currentUser.role : 'viewer';
-
-    if (currentLogsTab === 'orderActivity') {
-        // طبّق فلتر "وقت في الصفحة" للعرض فقط (بدون أي حذف من Firebase)
-        let displayCache = _filterTimeOnPageForDisplay(orderActivityCache);
-        let filtered = displayCache.filter(a => !search ||
-            (a.ip||'').includes(search)||(a.browser||'').toLowerCase().includes(search)||
-            (a.country||'').toLowerCase().includes(search)||(a.eventType||'').toLowerCase().includes(search)||
-            (a.city||'').toLowerCase().includes(search)||(a.device||'').toLowerCase().includes(search)
-        );
-        renderPagination(filtered.length, 'logs', refreshLogs, 'logsPagination');
-        const typeLabel = { page_visit:'دخول على الموقع', service_selected:'اختيار خدمة', category_selected:'اختيار قسم', order_submitted:'إرسال طلب', text_copied:'نسخ نص', whatsapp_clicked:'ضغط واتساب', scrolled_to_bottom:'تمرر للأسفل', time_on_page:'وقت في الصفحة', started_typing_name:'بدأ يكتب اسم', started_typing_phone:'بدأ يكتب رقم', incognito_detected:'وضع خفي', blocked_by_cooldown:'محاولة تجاوز عداد', failed_validation:'فشل التحقق', search_used:'استخدم البحث', phone_pasted:'لصق الرقم', services_loaded:'تم تحميل الخدمات' };
-        const typeBadge = { page_visit:'badge-primary', service_selected:'badge-warning', order_submitted:'badge-success', blocked_by_cooldown:'badge-danger', failed_validation:'badge-danger', incognito_detected:'badge-danger', text_copied:'badge-info', whatsapp_clicked:'badge-success', time_on_page:'badge-primary', scrolled_to_bottom:'badge-info', started_typing_name:'badge-primary', started_typing_phone:'badge-primary' };
-        const paginated = filtered.slice((currentPage.logs - 1) * ITEMS_PER_PAGE, currentPage.logs * ITEMS_PER_PAGE);
-        let rows = "";
-        paginated.forEach(a => {
-            let lbl = typeLabel[a.eventType]||a.eventType||'—';
-            let bdg = typeBadge[a.eventType]||'badge-primary';
-            let detBtn = role==='admin' ? `<button class="btn btn-primary" style="padding:5px 10px;font-size:12px" onclick='showOrderActivityDetails(${JSON.stringify(a)})'><i class="fas fa-eye"></i></button>` : '-';
-            let delOaBtn = role==='admin' ? `<button class="btn btn-danger" style="padding:5px 10px;font-size:12px" onclick="deleteOrderActivity('${a._docId}')"><i class="fas fa-trash"></i></button>` : '-';
-            const _st = a.serverTime?.seconds ? new Date(a.serverTime.seconds*1000).toLocaleString('ar-EG') : (a.timeLocal||a.timestamp||'—');
-            rows += `<tr><td style="direction:ltr;text-align:right;font-size:12px;">${_st}</td><td style="font-size:12px;">${esc(a.device||'—')} / ${esc(a.browser||'—')} / ${esc(a.country||'—')} ${a.visitorId ? '<br><span style="color:var(--primary);font-size:11px;"><i class="fas fa-fingerprint"></i> '+esc(a.visitorId)+'</span>' : ''}</td><td><span class="badge ${bdg}" style="font-size:11px;">${lbl}</span></td><td>${detBtn}</td><td>${delOaBtn}</td></tr>`;
-        });
-        tbody.innerHTML = rows || `<tr><td colspan='4' style='text-align:center;padding:20px;color:var(--text-muted)'>لا يوجد نشاط بعد</td></tr>`;
-        return;
-    }
-
-    let logs = safeJSON(store.activityLog, []);
-    // المشاهدون: لا يرون زر التفاصيل نهائياً
-    // الموظف: يرى التفاصيل في المالية فقط
-    // الأدمن: يرى التفاصيل في كل التبويبات
-    let canSeeDetails = (role === 'admin') || (role === 'employee' && currentLogsTab === 'financial');
-
-    let tabFiltered = logs.filter(log => getLogType(log) === currentLogsTab);
-
-    let filtered = tabFiltered.filter(log => {
-        return !search || log.user.toLowerCase().includes(search) || log.action.toLowerCase().includes(search);
-    });
-
-    renderPagination(filtered.length, 'logs', refreshLogs, 'logsPagination');
-    let paginated = filtered.slice((currentPage.logs - 1) * ITEMS_PER_PAGE, currentPage.logs * ITEMS_PER_PAGE);
-
-    let rows = "";
-    paginated.forEach((log) => {
-        let detailsBtn = "";
-        if(log.details && canSeeDetails) {
-            detailsBtn = `<button class="btn btn-primary" style="padding:5px 10px; font-size:12px" onclick='showModalDetails(${JSON.stringify(log.details)})'><i class="fas fa-eye"></i></button>`;
-        } else {
-            detailsBtn = `<span style="color:var(--text-muted); font-size:12px;">-</span>`;
-        }
-        let delBtn = role==='admin' ? `<button class="btn btn-danger" style="padding:5px 10px;font-size:12px" onclick="deleteLogEntry('${log._ts || log.time}', '${currentLogsTab}')"><i class="fas fa-trash"></i></button>` : '-';
-        rows += `<tr><td style="direction:ltr; text-align:right">${log.time}</td><td><b>${esc(log.user)}</b></td><td>${esc(log.action)}</td><td>${detailsBtn}</td><td>${delBtn}</td></tr>`;
-    });
-    tbody.innerHTML = rows || `<tr><td colspan='4' style='text-align:center; padding:20px; color:var(--text-muted)'>لا توجد بيانات</td></tr>`;
-}
-async function deleteOrderActivity(docId) {
-    if (!docId) return notify("لا يوجد معرّف للسجل", "error");
-    let ok = await showConfirm("حذف سجل", "هل أنت متأكد من حذف هذا السجل نهائياً؟", "حذف", "إلغاء", '<i class="fas fa-trash-alt"></i>');
-    if (!ok) return;
-    try {
-        await dbOrder.collection("orderActivity").doc(docId).delete();
-        orderActivityCache = orderActivityCache.filter(a => a._docId !== docId);
-        refreshLogs();
-        notify("تم حذف السجل");
-    } catch(e) { notify("خطأ: " + e.message, "error"); }
-}
-async function deleteLogEntry(ts, tab) {
-    let ok = await showConfirm("حذف سجل", "هل أنت متأكد من حذف هذا السجل نهائياً؟", "حذف", "إلغاء", '<i class="fas fa-trash-alt"></i>');
-    if (!ok) return;
-    let logs = safeJSON(store.activityLog, []);
-    logs = logs.filter(l => String(l._ts || l.time) !== String(ts));
-    store.activityLog = JSON.stringify(logs);
-    fbSave("activityLog", logs);
-    refreshLogs();
-    notify("تم حذف السجل");
-}
-function toggleLogDetails(uid) {
-    let row = document.getElementById(uid);
-    let icon = document.getElementById('icon_' + uid);
-    if(!row) return;
-    let isHidden = row.style.display === 'none';
-    row.style.display = isHidden ? 'table-row' : 'none';
-    if(icon) icon.className = isHidden ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
-}
-
-
-
-function showOrderActivityDetails(a) {
-    const body = document.getElementById("modalBody");
-    body.innerHTML = "";
-
-    const section = (icon, title, entries) => {
-        let rows = entries.filter(([k]) => a[k] !== undefined && a[k] !== null && String(a[k]) !== '')
-            .map(([k, label]) => {
-                let val = typeof a[k] === 'object' ? JSON.stringify(a[k]) : String(a[k]||'—');
-                return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);gap:10px;font-size:13px;">
-                    <span style="color:var(--text-muted);flex-shrink:0;">${label}</span>
-                    <span style="font-weight:600;text-align:left;direction:ltr;word-break:break-all;">${esc(val)}</span>
-                </div>`;
-            }).join('');
-        if (!rows) return '';
-        return `<div style="display:flex;justify-content:center;align-items:center;gap:6px;font-weight:800;color:var(--primary);font-size:13px;margin:14px 0 6px;">
-                    <i class="fas fa-${icon}"></i><span>${title}</span>
-                </div>${rows}
-                <div style="border-top:1px dashed var(--border-color);margin:12px 0;"></div>`;
-    };
-    a._secondsAr = a.seconds ? Math.round(a.seconds / 60) + ' دقيقة' : undefined;
-    const _tLabels = { page_visit:'دخول على الموقع', service_selected:'اختيار خدمة', order_submitted:'إرسال طلب', text_copied:'نسخ نص', whatsapp_clicked:'ضغط واتساب', scrolled_to_bottom:'تمرر للأسفل', time_on_page:'وقت في الصفحة', started_typing_name:'بدأ يكتب اسم', started_typing_phone:'بدأ يكتب رقم', incognito_detected:'وضع خفي', blocked_by_cooldown:'محاولة تجاوز عداد', failed_validation:'فشل التحقق', search_used:'استخدم البحث', phone_pasted:'لصق الرقم', services_loaded:'تم تحميل الخدمات' };
-    a._eventTypeAr = _tLabels[a.eventType] || a.eventType || '—';
-    body.innerHTML += section('bell', 'معلومات الحدث', [
-        ['_eventTypeAr',    'نوع الحدث'],
-        ['timeLocal',       'التوقيت المحلي'],
-        ['timestamp',       'التوقيت (UTC)'],
-        ['referrer',        'مصدر الزيارة'],
-        ['url',             'الرابط'],
-        ['selectedService', 'الخدمة المختارة'],
-        ['categoryName',    'القسم المختار'],
-        ['typedName',       'الاسم المكتوب'],
-        ['typedPhone',      'الرقم المكتوب'],
-        ['serviceName',     'اسم الخدمة'],
-        ['serviceCode',     'كود الخدمة'],
-        ['amount',          'المبلغ'],
-        ['reason',          'سبب الفشل'],
-        ['copiedText',      'النص المنسوخ'],
-        ['_secondsAr',      'الوقت (دقيقة)'],
-        ['clickCount',      'عدد النقرات'],
-    ]);
-    body.innerHTML += section('mobile-alt', 'الجهاز والنظام', [
-        ['device',         'نوع الجهاز'],
-        ['os',             'نظام التشغيل'],
-        ['platform',       'المنصة'],
-        ['browser',        'المتصفح'],
-        ['browserVersion', 'إصدار المتصفح'],
-        ['screen',         'دقة الشاشة'],
-        ['deviceModel',       'موديل الجهاز'],
-        ['memory',            'الذاكرة RAM'],
-        ['cpuCores',          'عدد النوى'],
-        ['battery',           'البطارية'],
-        ['visitorId',         'معرّف الجهاز'],
-        ['deviceFingerprint', 'بصمة الجهاز (Canvas)'],
-        ['webglFingerprint',  'بصمة الجهاز (WebGL)'],
-    ]);
-    body.innerHTML += section('globe', 'الشبكة والموقع', [
-        ['ip',      'عنوان IP'],
-        ['webrtcIPs', 'IP الحقيقي (WebRTC)'],
-        ['isp',     'مزود الإنترنت'],
-        ['connectionType', 'نوع الاتصال'],
-        ['country', 'الدولة'],
-        ['region',  'المنطقة'],
-        ['city',    'المدينة'],
-        ['network', 'بيانات الشبكة'],
-        ['vpnDetection',      'كشف VPN'],
-    ]);
-    body.innerHTML += section('language', 'اللغة والتوقيت', [
-        ['language',       'اللغة الرئيسية'],
-        ['timezone',       'المنطقة الزمنية'],
-    ]);
-    body.innerHTML += section('sliders-h', 'إعدادات المتصفح', [
-        ['cookiesEnabled', 'الكوكيز مفعّلة'],
-        ['doNotTrack',     'عدم التتبع'],
-        ['userAgent',      'User Agent'],
-        ['incognito',         'وضع التصفح الخفي'],
-        ['botDetection',      'كشف Bot'],
-    ]);
-
-    document.getElementById("detailsModal").classList.remove("hidden");
-}
-
-async function clearLogs() {
-    if(currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
-
-    if (currentLogsTab === 'orderActivity') {
-        let res = await showConfirm("مسح نشاط الطلبات", "اختر نوع المسح:", "مسح الكل", "إلغاء", '<i class="fas fa-trash-alt"></i>', "مسح آخر 50 سجل");
-        if (!res) return;
-        try {
-            if (res === 'third') {
-                // مسح آخر 50 (الأقدم في الكاش — مرتبة desc)
-                let toDelete = orderActivityCache.slice(-50);
-                let batch = dbOrder.batch();
-                toDelete.forEach(a => { if(a._docId) batch.delete(dbOrder.collection("orderActivity").doc(a._docId)); });
-                await batch.commit();
-                orderActivityCache = orderActivityCache.slice(0, orderActivityCache.length - 50);
-            } else {
-                // مسح الكل دفعة دفعة
-                let snap = await dbOrder.collection("orderActivity").limit(500).get();
-                while (!snap.empty) {
-                    let batch = dbOrder.batch();
-                    snap.docs.forEach(d => batch.delete(d.ref));
-                    await batch.commit();
-                    snap = await dbOrder.collection("orderActivity").limit(500).get();
-                }
-                orderActivityCache = [];
-            }
-            refreshLogs();
-            notify("تم المسح بنجاح");
-        } catch(e) { notify("خطأ: " + e.message, "error"); }
-        return;
-    }
-    
-    const tabNames = { financial: "الحركات المالية", danger: "الحركات الخطرة", general: "الحركات العامة" };
-    let tabName = tabNames[currentLogsTab] || "السجلات";
-    let res = await showConfirm(`مسح ${tabName}`, `سيتم حذف سجلات ${tabName} نهائياً.`, "مسح الكل", "إلغاء", '<i class="fas fa-trash-alt"></i>', "مسح أقدم صفحة");
-    if(!res) return;
-    
-    let allLogs = safeJSON(store.activityLog, []);
-    let targetLogs = allLogs.filter(log => getLogType(log) === currentLogsTab);
-    
-    let logsToSave = [];
-    if(res === 'third') {
-        let itemsToRemove = targetLogs.slice(-ITEMS_PER_PAGE);
-        logsToSave = allLogs.filter(l => !itemsToRemove.includes(l));
-    } else {
-        logsToSave = allLogs.filter(log => getLogType(log) !== currentLogsTab);
-    }
-    
-    store.activityLog = JSON.stringify(logsToSave); fbSave("activityLog", logsToSave);
-    
-    logAction(`قام الأدمن بمسح ${res === 'third' ? 'أقدم 50 سجل من' : 'كافة'} ${tabName}`, 'danger');
-    
-    currentPage.logs = 1;
-    refreshLogs();
-    
-    notify("تم المسح بنجاح");
-}
-
 function addNewUser() {
     const u = document.getElementById("newUserName").value.trim(), p = document.getElementById("newUserPass").value.trim(), r = document.getElementById("newUserRole").value;
     if(!u || !p) return notify("يرجى ملء البيانات", "error");
@@ -7385,7 +7188,7 @@ function showPage(id, btn){
     if(id === 'security') renderUsersTable();
     if(id === 'logs') refreshLogs();
     if(id === 'stock') refreshStock();
-    if(id === 'orders') refreshOrders();
+    if(id === 'orders') { refreshOrders(); markOrdersSeen(); }
     if(id === 'customerChat') { if(!ccaCanUse()) return notify("ليس لديك صلاحية", "error"); ccaOnOpen(); }
     if(id === 'modify') { refreshTodoList(); updateStorageUI(); loadProfitSettings(); }
     if(id === 'services_mgmt') { renderServicesMain(); renderCategoriesGrid(); }
@@ -8737,6 +8540,7 @@ function refreshAll(){
         };
     processVipDowngrades();
     updateDiscountBadge();
+    try { updateChurnedBadge(); } catch(e) {}
     
     // تحديث badge التنبيهات دائماً بغض النظر عن الصفحة المرئية
     let days3 = _getExpiryAlertMs(), nowMs2 = now.getTime();
@@ -9023,11 +8827,21 @@ async function dismissChurnRow(id, customerName, serviceName) {
     refreshChurned();
 }
 
+function updateChurnedBadge(list) {
+    let b = document.getElementById("churnedBadge");
+    if (!b) return;
+    let n = 0;
+    try { n = (list || computeChurnCustomers()).length; } catch(e) { return; }
+    b.textContent = n > 99 ? '99+' : n;
+    b.style.display = n > 0 ? "inline-flex" : "none";
+}
+
 function refreshChurned() {
     let body = document.getElementById("churnedBody");
     if (!body) return;
 
     let allCustomers = computeChurnCustomers();
+    updateChurnedBadge(allCustomers);
     let fullCount = allCustomers.filter(r => r.type === 'full').length;
     let partialCount = allCustomers.filter(r => r.type === 'partial').length;
 
@@ -10696,6 +10510,14 @@ async function exportData(){
     ["wallets","invest","settings","services","vipCustomers","employeeBonus","adminNotifications","churnedDismissed",
      "users","purchases","generalNotes","todoList","activityLog","stock","discounts","budgetHistory","pledges"
     ].forEach(k => { if(store[k]) exportObj[k] = store[k]; });
+    // سجل النشاط لم يعد محمّلاً بالكامل في الذاكرة — نجلبه كاملاً من Firebase وقت التصدير فقط
+    if(!isDemoMode && fbDocRef) {
+        try {
+            const logSnap = await fbDocRef.collection('activityLog').get();
+            const allLogs = logSnap.docs.map(d => d.data()).sort((a,b) => (b._ts||0) - (a._ts||0));
+            exportObj.activityLog = JSON.stringify(allLogs);
+        } catch(e) { console.warn('activityLog export skipped:', e); }
+    }
     // تصدير الدردشة من Firestore
     if(!isDemoMode && fbDocRef) {
         try {
@@ -12610,51 +12432,863 @@ async function sellStock(id) {
 let adminServicesCache = []; // cache من db.collection("services")
 let _editBranches = []; // فروع الخدمة في وضع التعديل
 let _editServicePriceOnRequest = false;
-let orderActivityCache = [];
-let _actUnsubscribe = null;
+let orderActivityCache = [];   // ما تم تحميله فعلياً من نشاط الطلبات (للعرض وتقدير المساحة فقط)
 
 /* ═══════════════════════════════════════════════════════════════
    تصفية "وقت في الصفحة" للعرض فقط — لا تمس Firebase أبداً.
-   السبب: أي حذف داخل onSnapshot يُطلق snapshot جديداً → حلقة لا نهائية.
    المنطق: list مرتّبة desc → أول time_on_page لكل جهاز في كل سلسلة
            متتالية هو الأحدث → نبقّيه ونتجاهل ما بعده في نفس السلسلة.
    ═══════════════════════════════════════════════════════════════ */
 function _filterTimeOnPageForDisplay(list) {
     let result = [];
-    let activeStreak = {}; // visitorId → true إذا مررنا بـ time_on_page بدون كسر
+    let activeStreak = {};
     for (let item of list) {
         let vid = item.visitorId || item.deviceId || null;
         if (item.eventType === 'time_on_page' && vid) {
-            if (activeStreak[vid]) continue; // زيادة في نفس السلسلة → تجاهل للعرض
+            if (activeStreak[vid]) continue;
             activeStreak[vid] = true;
         } else {
-            if (vid) activeStreak[vid] = false; // حدث آخر كسر السلسلة
+            if (vid) activeStreak[vid] = false;
         }
         result.push(item);
     }
     return result;
 }
 
-let _actRefreshTimer = null;
-function _initOrderActivityListener() {
-    if (_actUnsubscribe || !dbOrder) return;
-    const applySnap = snap => {
-        orderActivityCache = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
-        orderActivityCache.sort((a,b) => (b.timestamp||'').localeCompare(a.timestamp||''));
-        // debounce الرسم: لا نُحدِّث الواجهة إلا بعد هدوء الـ snapshots بـ 800ms
-        clearTimeout(_actRefreshTimer);
-        _actRefreshTimer = setTimeout(() => {
-            if (currentLogsTab === 'orderActivity' && !document.getElementById("logs").classList.contains("hidden")) {
-                refreshLogs();
-            }
-        }, 800);
+/* ═══════════════════════════════════════════════════════════════
+   Feed مُقسّم لصفحات — تحميل عند الطلب + ريل تايم لأحدث نافذة
+   - أحدث LIVE سجل: مستمع مباشر (ريل تايم)
+   - الأقدم: يُجلب من Firebase فقط عند فتح الصفحة التالية (startAfter)
+   - كل ما يُحمَّل يبقى في الرام حتى إعادة تحميل الصفحة (رفرش)
+   - لا شيء يُحذف تلقائياً — الحذف فقط بطلب صريح من الأدمن
+   ═══════════════════════════════════════════════════════════════ */
+function _mkFeed(o) {
+    const F = { name: o.name, items: new Map(), oldest: null, exhausted: false, loading: false,
+                unsub: null, started: false, ready: false, error: false, _sorted: null, _waiters: [] };
+    // >0 إذا a أحدث من b (نفس ترتيب Firestore: الحقل desc ثم معرّف الوثيقة desc)
+    const cmpDocs = (a, b) => {
+        let va = o.field(a.data()), vb = o.field(b.data());
+        if (va !== vb) return va > vb ? 1 : -1;
+        return a.id === b.id ? 0 : (a.id > b.id ? 1 : -1);
     };
-    _actUnsubscribe = dbOrder.collection("orderActivity")
-        .orderBy("timestamp", "desc").limit(2000)
-        .onSnapshot(applySnap, () => {
-            dbOrder.collection("orderActivity").limit(2000).onSnapshot(applySnap, ()=>{});
+    const consider = d => { if (!F.oldest || cmpDocs(d, F.oldest) < 0) F.oldest = d; };
+    const markReady = () => { if (F.ready) return; F.ready = true; F._waiters.splice(0).forEach(r => r()); };
+
+    F.list = () => {
+        if (!F._sorted) F._sorted = [...F.items.values()].sort(o.sort);
+        return F._sorted;
+    };
+    F.touch = () => { F._sorted = null; try { o.onUpdate && o.onUpdate(F); } catch (e) { console.error(e); } };
+    F.start = () => {
+        if (F.started) return;
+        const q = o.query();
+        if (!q) return;
+        F.started = true;
+        F.unsub = q.limit(o.live).onSnapshot(snap => {
+            const docs = snap.docs, full = docs.length >= o.live, bottom = docs[docs.length - 1];
+            snap.docChanges().forEach(ch => {
+                const d = ch.doc;
+                if (ch.type === 'removed') {
+                    // خروج وثيقة من نافذة الـ limit لا يعني حذفها — نحذفها من الرام فقط إذا كانت داخل النافذة فعلاً
+                    if (!full || !bottom || cmpDocs(d, bottom) > 0) F.items.delete(d.id);
+                    return;
+                }
+                F.items.set(d.id, { _docId: d.id, ...d.data() });
+                consider(d);
+            });
+            if (!F.ready && !full) F.exhausted = true;   // كل السجلات أقل من نافذة واحدة
+            markReady();
+            F.touch();
+        }, err => {
+            console.error(o.name + ' feed error:', err);
+            F.error = true; markReady(); F.touch();
         });
+    };
+    F.waitReady = () => F.ready ? Promise.resolve() : new Promise(r => F._waiters.push(r));
+    F.loadMore = async (n) => {
+        if (F.exhausted || F.loading) return 0;
+        await F.waitReady();
+        if (F.exhausted) return 0;
+        if (!F.oldest) { F.exhausted = true; return 0; }
+        F.loading = true;
+        try {
+            const snap = await o.query().startAfter(F.oldest).limit(n).get();
+            snap.docs.forEach(d => { F.items.set(d.id, { _docId: d.id, ...d.data() }); consider(d); });
+            if (snap.size < n) F.exhausted = true;
+            F._sorted = null;
+            return snap.size;
+        } finally { F.loading = false; }
+    };
+    F.remove = (id) => { if (F.items.delete(id)) F.touch(); };
+    F.reset = () => {
+        if (F.unsub) { try { F.unsub(); } catch (e) {} }
+        F.unsub = null; F.items.clear(); F.oldest = null; F.exhausted = false; F.loading = false;
+        F.started = false; F.ready = false; F.error = false; F._sorted = null;
+        F._waiters.splice(0).forEach(r => r());
+    };
+    return F;
 }
+
+const _oaFeed = _mkFeed({
+    name: 'orderActivity', live: 50,
+    query: () => dbOrder ? dbOrder.collection("orderActivity").orderBy("timestamp", "desc") : null,
+    field: d => d.timestamp || '',
+    sort: (a, b) => {
+        let ta = a.timestamp || '', tb = b.timestamp || '';
+        if (ta !== tb) return tb > ta ? 1 : -1;
+        return (b._docId || '') > (a._docId || '') ? 1 : -1;
+    },
+    onUpdate: () => _logsFeedUpdated('oa')
+});
+const _alogFeed = _mkFeed({
+    name: 'activityLog', live: 50,
+    query: () => fbDocRef ? fbDocRef.collection("activityLog").orderBy("_ts", "desc") : null,
+    field: d => d._ts || 0,
+    sort: (a, b) => ((b._ts || 0) - (a._ts || 0)) || ((b._docId || b.id || '') > (a._docId || a.id || '') ? 1 : -1),
+    onUpdate: () => _logsFeedUpdated('alog')
+});
+// في الوضع التجريبي السجل محلي بالكامل
+const _alogDemoFeed = {
+    ready: true, exhausted: true, loading: false, started: true, error: false,
+    items: { get size() { return safeJSON(store.activityLog, []).length; } },
+    list: () => safeJSON(store.activityLog, []).slice().sort((a, b) => (b._ts || 0) - (a._ts || 0)),
+    start() {}, loadMore: async () => 0, remove() {}, reset() {}, touch() {}
+};
+function _alogUseDemo() { return isDemoMode || !fbDocRef; }
+
+// يُستدعى عند تسجيل الدخول — التحميل أصبح كسولاً (عند فتح سجل النشاط فقط)
+function _initOrderActivityListener() { /* lazy: see _logsFeedFor */ }
+
+let _logsRefreshT = null;
+function _logsFeedUpdated(which) {
+    if (which === 'oa') orderActivityCache = _oaFeed.list();
+    clearTimeout(_logsRefreshT);
+    _logsRefreshT = setTimeout(() => {
+        let page = document.getElementById("logs");
+        if (!page || page.classList.contains("hidden")) return;
+        if ((currentLogsTab === 'orderActivity') === (which === 'oa')) refreshLogs();
+    }, which === 'oa' ? 400 : 150);
+}
+function _logsFeedFor(tab) {
+    if (tab === 'orderActivity') { _oaFeed.start(); return _oaFeed; }
+    if (_alogUseDemo()) return _alogDemoFeed;
+    _alogFeed.start(); return _alogFeed;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   أسماء الأجهزة (من قائمة العملاء في دردشة العملاء)
+   ═══════════════════════════════════════════════════════════════ */
+const _VNAMES = new Map();
+let _vnSig = '', _vnUnsub = null;
+function _rebuildVisitorNames(list) {
+    _VNAMES.clear();
+    (list || []).forEach(c => { let id = c.id || c.visitorId; if (id && c.name) _VNAMES.set(String(id), String(c.name)); });
+    let sig = [..._VNAMES.entries()].map(e => e.join('=')).sort().join('|');
+    if (sig === _vnSig) return;
+    _vnSig = sig;
+    let lp = document.getElementById("logs");
+    if (lp && !lp.classList.contains("hidden") && currentLogsTab === 'orderActivity') refreshLogs();
+    let op = document.getElementById("orders");
+    if (op && !op.classList.contains("hidden")) refreshOrders();
+}
+function visitorName(id) { return id ? (_VNAMES.get(String(id)) || '') : ''; }
+function _ensureVisitorNames() {
+    if (!dbOrder || _vnUnsub || (typeof CCA !== 'undefined' && CCA.unsubList)) return;
+    _vnUnsub = dbOrder.collection('customerChats').onSnapshot(
+        snap => _rebuildVisitorNames(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+        () => {}
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ترجمة أحداث موقع الطلبات — مرتّبة من الأهم للأقل أهمية
+   tier: 1 = مهم جداً (أحمر/أخضر) … 4 = عام
+   ═══════════════════════════════════════════════════════════════ */
+const OA_EVENTS = [
+    // [المفتاح, الاسم العربي, لون الشارة, أيقونة, المستوى]  — مرتّبة من الأهم للأقل أهمية
+    ['order_submitted',       'إرسال طلب',                          'badge-success', 'paper-plane',          1],
+    ['order_save_failed',     'فشل حفظ الطلب',                      'badge-danger',  'database',             1],
+    ['failed_no_prefix',      'فشل: لم يختر مقدمة الرقم',            'badge-danger',  'times-circle',         1],
+    ['failed_validation',     'فشل: الرقم غير صالح',                 'badge-danger',  'exclamation-triangle', 1],
+    ['blocked_by_cooldown',   'محاولة طلب أثناء عداد الانتظار',       'badge-danger',  'hourglass-half',       1],
+    ['whatsapp_opened',       'فتح واتساب لإرسال الطلب',             'badge-success', 'share-square',         1],
+    ['phone_accepted',        'تم قبول الرقم',                       'badge-success', 'check-circle',         2],
+    ['order_confirm_clicked', 'ضغط زر إتمام الطلب',                  'badge-warning', 'hand-pointer',         2],
+    ['phone_needs_prefix',    'رقم بدون مقدمة — طُلب اختيار المقدمة', 'badge-warning', 'question-circle',      2],
+    ['prefix_selected',       'اختيار مقدمة الرقم',                   'badge-warning', 'list-ol',              2],
+    ['phone_typed',           'إدخال الرقم',                         'badge-warning', 'phone',                2],
+    ['phone_pasted',          'لصق الرقم',                           'badge-warning', 'paste',                2],
+    ['started_typing_phone',  'بدأ بكتابة الرقم',                     'badge-warning', 'keyboard',             2],
+    ['phone_modal_opened',    'فتح نافذة رقم الواتساب',               'badge-warning', 'mobile-alt',           2],
+    ['phone_modal_closed',    'أغلق نافذة الرقم بدون إتمام',          'badge-danger',  'door-closed',          2],
+    ['package_selected',      'اختيار باقة',                          'badge-warning', 'layer-group',          2],
+    ['service_selected',      'اختيار خدمة',                          'badge-warning', 'tag',                  2],
+    ['incognito_detected',    'تصفّح خفي',                            'badge-danger',  'user-secret',          2],
+    ['chat_reply',            'رسالة من العميل بالدردشة',             'badge-success', 'comment',              2],
+    ['whatsapp_clicked',      'ضغط زر تواصل واتساب',                  'badge-success', 'comment-dots',         2],
+    ['chat_opened',           'فتح نافذة الدردشة',                    'badge-info',    'comments',             3],
+    ['chat_message_seen',     'العميل شاهد رسالة',                    'badge-info',    'eye',                  3],
+    ['category_selected',     'اختيار قسم',                           'badge-info',    'folder-open',          3],
+    ['search_used',           'بحث عن خدمة',                          'badge-info',    'search',               3],
+    ['started_search',        'بدأ البحث',                            'badge-info',    'search-plus',          3],
+    ['started_typing_name',   'بدأ بكتابة الاسم',                     'badge-info',    'keyboard',             3],
+    ['text_copied',           'نسخ نص',                               'badge-info',    'copy',                 3],
+    ['scrolled_to_bottom',    'التمرير لأسفل الصفحة',                 'badge-info',    'arrow-down',           4],
+    ['page_visit',            'دخول على الموقع',                      'badge-info',    'door-open',            4],
+    ['services_loaded',       'تحميل الخدمات',                        'badge-info',    'sync-alt',             4],
+    ['time_on_page',          'وقت في الصفحة',                        'badge-info',    'clock',                4],
+];
+const OA_EVENT_MAP = {};
+OA_EVENTS.forEach((e, i) => OA_EVENT_MAP[e[0]] = { label: e[1], badge: e[2], icon: e[3], tier: e[4], rank: i });
+
+// قاموس كلمات لترجمة أي حدث/حقل جديد غير معروف تلقائياً (حتى لا يظهر إنجليزي أبداً)
+const _TOKEN_AR = {
+    order:'طلب', orders:'الطلبات', submitted:'إرسال', submit:'إرسال', sent:'إرسال', send:'إرسال',
+    failed:'فشل', fail:'فشل', failure:'فشل', error:'خطأ', success:'نجاح', validation:'التحقق', invalid:'غير صالح',
+    page:'الصفحة', visit:'زيارة', view:'عرض', viewed:'عرض', service:'خدمة', services:'الخدمات',
+    selected:'اختيار', select:'اختيار', chosen:'اختيار', category:'قسم', branch:'باقة', package:'باقة', plan:'باقة',
+    text:'نص', copied:'نسخ', copy:'نسخ', whatsapp:'واتساب', clicked:'ضغط', click:'ضغط', tap:'ضغط', tapped:'ضغط',
+    scrolled:'تمرير', scroll:'تمرير', bottom:'لأسفل', top:'لأعلى', time:'وقت', on:'في', in:'في', at:'عند',
+    typing:'كتابة', typed:'مكتوب', started:'بدأ', start:'بداية', name:'الاسم', phone:'الرقم', number:'رقم',
+    incognito:'تصفح خفي', detected:'كشف', detect:'كشف', blocked:'منع', block:'منع', by:'بسبب', cooldown:'عداد الانتظار',
+    search:'بحث', used:'استخدام', query:'عبارة', pasted:'لصق', paste:'لصق', loaded:'تحميل', load:'تحميل',
+    prefix:'مقدمة', entered:'إدخال', enter:'إدخال', input:'إدخال', opened:'فتح', open:'فتح', closed:'إغلاق', close:'إغلاق',
+    form:'نموذج', modal:'نافذة', popup:'نافذة', chat:'الدردشة', message:'رسالة', coupon:'كود خصم', discount:'خصم',
+    applied:'تطبيق', apply:'تطبيق', completed:'إتمام', complete:'إتمام', confirm:'تأكيد', confirmed:'تأكيد',
+    cancelled:'إلغاء', canceled:'إلغاء', cancel:'إلغاء', button:'زر', btn:'زر', link:'رابط', cart:'السلة',
+    added:'إضافة', add:'إضافة', removed:'حذف', remove:'حذف', deleted:'حذف', booking:'حجز', missing:'مفقود',
+    empty:'فارغ', no:'بدون', not:'لم', changed:'تغيير', change:'تغيير', cleared:'مسح', clear:'مسح',
+    returned:'عودة', return:'عودة', left:'مغادرة', leave:'مغادرة', hidden:'إخفاء', visible:'ظهور', focus:'تركيز',
+    blur:'خروج', step:'خطوة', attempt:'محاولة', retry:'إعادة محاولة', share:'مشاركة', shared:'مشاركة',
+    user:'المستخدم', visitor:'الزائر', device:'الجهاز', id:'المعرّف', count:'عدد', total:'الإجمالي', amount:'المبلغ',
+    price:'السعر', code:'الكود', reason:'السبب', status:'الحالة', type:'النوع', value:'القيمة', full:'كامل',
+    country:'الدولة', city:'المدينة', model:'موديل', version:'إصدار', screen:'الشاشة', language:'اللغة',
+    first:'أول', last:'آخر', new:'جديد', old:'قديم', selected_:'المختار', duration:'المدة', seconds:'ثواني',
+    minutes:'دقائق', clicks:'نقرات', to:'إلى', with:'مع', vpn:'VPN', bot:'روبوت', ip:'IP', url:'الرابط', referrer:'المصدر'
+};
+const _PAST_VERBS = new Set(['submitted','sent','failed','selected','chosen','copied','clicked','tapped','scrolled','typed',
+    'started','detected','blocked','used','pasted','loaded','entered','opened','closed','applied','completed','confirmed',
+    'cancelled','canceled','added','removed','deleted','changed','cleared','returned','left','viewed','shared']);
+function _autoTranslateKey(key, strict) {
+    if (!key) return '';
+    let tokens = String(key).replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase().split(/[_\-\s.]+/).filter(Boolean);
+    if (!tokens.length) return '';
+    if (tokens.length > 1 && _PAST_VERBS.has(tokens[tokens.length - 1])) {
+        // chat_message_sent → إرسال رسالة الدردشة  (الفعل أولاً ثم المضاف والمضاف إليه بالترتيب العربي)
+        let verb = tokens.pop();
+        tokens = [verb, ...tokens.reverse()];
+    } else if (tokens.length === 2 && !_PAST_VERBS.has(tokens[0])) {
+        tokens.reverse(); // deviceModel → موديل الجهاز
+    }
+    if (!tokens.every(t => _TOKEN_AR[t])) return strict ? '' : String(key);
+    return tokens.map(t => _TOKEN_AR[t]).join(' ');
+}
+function oaEventLabel(t) { return (OA_EVENT_MAP[t] && OA_EVENT_MAP[t].label) || _autoTranslateKey(t, true) || (t ? 'حركة غير مصنّفة' : 'حدث غير معروف'); }
+function oaEventMeta(t) { return OA_EVENT_MAP[t] || { label: oaEventLabel(t), badge: 'badge-info', icon: 'circle', tier: 3, rank: 999 }; }
+
+// أسباب الفشل الشائعة
+const OA_REASON_AR = {
+    no_prefix:'لم يتم اختيار مقدمة الرقم', missing_prefix:'لم يتم اختيار مقدمة الرقم', prefix_missing:'لم يتم اختيار مقدمة الرقم',
+    prefix_not_selected:'لم يتم اختيار مقدمة الرقم', invalid_prefix:'مقدمة الرقم غير صالحة',
+    empty_phone:'لم يتم إدخال رقم', missing_phone:'لم يتم إدخال رقم', no_phone:'لم يتم إدخال رقم', phone_empty:'لم يتم إدخال رقم',
+    invalid_phone:'الرقم غير صالح', phone_invalid:'الرقم غير صالح', short_phone:'الرقم قصير', phone_too_short:'الرقم قصير',
+    phone_too_long:'الرقم طويل', no_service:'لم يتم اختيار خدمة', missing_service:'لم يتم اختيار خدمة',
+    no_branch:'لم يتم اختيار باقة', missing_branch:'لم يتم اختيار باقة', empty_name:'لم يتم إدخال الاسم',
+    missing_name:'لم يتم إدخال الاسم', invalid_name:'الاسم غير صالح', cooldown:'عداد الانتظار ما زال فعّالاً',
+    cooldown_active:'عداد الانتظار ما زال فعّالاً', network_error:'خطأ في الاتصال بالإنترنت', firebase_error:'خطأ في قاعدة البيانات',
+    permission_denied:'رفض الصلاحية من السيرفر', booking_full:'الحجز ممتلئ', booking_closed:'الحجز مغلق',
+    service_unavailable:'الخدمة غير متاحة', captcha_failed:'فشل التحقق من أنك لست روبوت', unknown:'غير معروف',
+    invalid_chars:'الرقم فيه أحرف أو رموز', plus_position:'علامة + بمكان غلط', unsupported_prefix:'مقدمة غير مدعومة',
+    zero_before_prefix:'صفر قبل المقدمة', not_mobile:'مش رقم جوال (أرضي)', bad_format:'صيغة الرقم غلط',
+    missing_rest:'الرقم ناقص بعد المقدمة', wrong_length:'عدد أرقام غلط', local_cooldown:'العداد لسا شغّال (على جهازه)',
+    server_cooldown:'العداد لسا شغّال (تحقق السيرفر)', firebase_check:'العداد لسا شغّال (تحقق السيرفر)', db_error:'خطأ بقاعدة البيانات'
+};
+const OA_VALUE_AR = {
+    'Mobile':'جوال', 'mobile':'جوال', 'Desktop':'كمبيوتر', 'desktop':'كمبيوتر', 'Tablet':'تابلت', 'tablet':'تابلت',
+    'Windows':'ويندوز', 'Mac OS':'ماك', 'macOS':'ماك', 'iOS':'آيفون/آيباد', 'Android':'أندرويد', 'Linux':'لينكس',
+    'Unknown':'غير معروف', 'unknown':'غير معروف', 'true':'نعم', 'false':'لا', 'yes':'نعم', 'no':'لا',
+    'Palestine':'فلسطين', 'Palestinian Territory':'فلسطين', 'Palestinian Territories':'فلسطين', 'Israel':'إسرائيل',
+    'Jordan':'الأردن', 'Egypt':'مصر', 'Saudi Arabia':'السعودية', 'United Arab Emirates':'الإمارات', 'Qatar':'قطر',
+    'Kuwait':'الكويت', 'Iraq':'العراق', 'Lebanon':'لبنان', 'Syria':'سوريا', 'Turkey':'تركيا', 'Türkiye':'تركيا',
+    'Germany':'ألمانيا', 'United States':'أمريكا', 'United Kingdom':'بريطانيا', 'France':'فرنسا', 'Netherlands':'هولندا',
+    'wifi':'واي فاي', 'cellular':'بيانات جوال', '4g':'4G', '3g':'3G', 'ethernet':'سلكي',
+    'direct':'مباشر', 'Direct':'مباشر'
+};
+function _oaReason(r) {
+    if (r === undefined || r === null || r === '') return '';
+    let s = String(r);
+    return OA_REASON_AR[s] || OA_REASON_AR[s.toLowerCase()] || OA_VALUE_AR[s] || (/^[a-z0-9_]+$/i.test(s) && s.includes('_') ? (_autoTranslateKey(s, true) || s) : s);
+}
+function _oaValue(k, v) {
+    if (v === undefined || v === null) return '';
+    if (typeof v === 'boolean') return v ? 'نعم' : 'لا';
+    if (k === 'reason') return _oaReason(v);
+    if (k === 'eventType') return oaEventLabel(v);
+    if (k === 'previousStep') return (v === 'none' || !v) ? 'لا يوجد — أول خطوة بالجلسة' : oaEventLabel(v);
+    if (k === 'reasonCode') return _oaReason(v);
+    if (typeof v === 'object') {
+        if (v && typeof v.seconds === 'number') return _fmtDateTime(v.seconds * 1000);
+        try { return Object.entries(v).map(([kk, vv]) => `${_oaKeyLabel(kk)}: ${_oaValue(kk, vv)}`).join('، '); }
+        catch (e) { return JSON.stringify(v); }
+    }
+    let s = String(v);
+    return OA_VALUE_AR[s] || s;
+}
+const OA_KEY_AR = {
+    eventType:'نوع الحدث', timeLocal:'التوقيت المحلي', timestamp:'التوقيت (UTC)', referrer:'مصدر الزيارة', url:'الرابط',
+    selectedService:'الخدمة المختارة', categoryName:'القسم المختار', typedName:'الاسم المكتوب', typedPhone:'الرقم المكتوب',
+    phone:'الرقم', fullPhone:'الرقم كاملاً', enteredPhone:'الرقم المُدخل', prefix:'مقدمة الرقم', selectedPrefix:'مقدمة الرقم',
+    phoneLength:'طول الرقم', serviceName:'اسم الخدمة', serviceCode:'كود الخدمة', branchName:'الباقة', selectedBranch:'الباقة المختارة',
+    branchCode:'كود الباقة', amount:'المبلغ', price:'السعر', reason:'سبب الفشل', error:'الخطأ', copiedText:'النص المنسوخ',
+    seconds:'المدة', clickCount:'عدد النقرات', query:'عبارة البحث', searchQuery:'عبارة البحث', searchTerm:'عبارة البحث',
+    resultsCount:'عدد النتائج', orderId:'رقم الطلب', step:'الخطوة', previousStep:'الخطوة السابقة', attempt:'رقم المحاولة',
+    remainingSeconds:'الوقت المتبقي (ثانية)', couponCode:'كود الخصم', customerName:'اسم العميل', name:'الاسم',
+    device:'نوع الجهاز', os:'نظام التشغيل', platform:'المنصة', browser:'المتصفح', browserVersion:'إصدار المتصفح',
+    screen:'دقة الشاشة', deviceModel:'موديل الجهاز', memory:'الذاكرة RAM', cpuCores:'عدد النوى', battery:'البطارية',
+    visitorId:'معرّف الجهاز', deviceId:'معرّف الجهاز', deviceFingerprint:'بصمة الجهاز (Canvas)', webglFingerprint:'بصمة الجهاز (WebGL)',
+    ip:'عنوان IP', webrtcIPs:'IP الحقيقي (WebRTC)', isp:'مزود الإنترنت', connectionType:'نوع الاتصال', country:'الدولة',
+    region:'المنطقة', city:'المدينة', network:'بيانات الشبكة', vpnDetection:'كشف VPN', language:'اللغة الرئيسية',
+    languages:'اللغات', timezone:'المنطقة الزمنية', cookiesEnabled:'الكوكيز مفعّلة', doNotTrack:'عدم التتبع',
+    userAgent:'معرّف المتصفح (User Agent)', incognito:'وضع التصفح الخفي', botDetection:'كشف الروبوت', serverTime:'توقيت السيرفر',
+    sessionId:'معرّف الجلسة', stepNo:'رقم الخطوة بالجلسة', previousStep:'الخطوة السابقة', reasonCode:'نوع الخطأ',
+    finalPhone:'الرقم المعتمد', chatText:'نص الرسالة', servicesCount:'عدد الخدمات', categoriesCount:'عدد الأقسام',
+    fp:'بصمة الجهاز', savedPhoneUsed:'الرقم معبّأ تلقائياً من طلب سابق', prefixSource:'مصدر المقدمة', pageUrl:'رابط الصفحة', path:'المسار', title:'العنوان', touch:'شاشة لمس', viewport:'حجم العرض'
+};
+function _oaKeyLabel(k) { return OA_KEY_AR[k] || LOG_KEY_AR[k] || _autoTranslateKey(k); }
+
+function _fmtDateTime(ms) {
+    if (!ms || isNaN(ms)) return '';
+    let d = new Date(ms);
+    let h = d.getHours(), ap = h >= 12 ? 'م' : 'ص', h12 = h % 12 || 12;
+    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} — ${String(h12).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} ${ap}`;
+}
+function _oaTimeMs(a) {
+    if (a.serverTime && a.serverTime.seconds) return a.serverTime.seconds * 1000;
+    let t = Date.parse(a.timestamp || '');
+    return isNaN(t) ? 0 : t;
+}
+function _fmtDuration(sec) {
+    sec = Math.round(Number(sec) || 0);
+    if (sec < 60) return `${sec} ثانية`;
+    let m = Math.floor(sec / 60), s = sec % 60;
+    if (m < 60) return s ? `${m} دقيقة و ${s} ثانية` : `${m} دقيقة`;
+    let h = Math.floor(m / 60); m = m % 60;
+    return `${h} ساعة${m ? ' و ' + m + ' دقيقة' : ''}`;
+}
+function _oaPhone(a) { return a.finalPhone || a.fullPhone || a.phone || a.enteredPhone || a.typedPhone || ''; }
+
+// سطر ملخّص يظهر تحت اسم الحدث مباشرة (الرقم، الخدمة، السبب...)
+function _oaSummary(a) {
+    let p = [];
+    let ph = _oaPhone(a);
+    if (ph) p.push(`<span><i class="fas fa-phone"></i> <span dir="ltr">${esc(String(ph))}</span></span>`);
+    let pre = a.prefix || a.selectedPrefix;
+    if (pre && (!ph || String(ph)[0] !== '+')) p.push(`<span><i class="fas fa-globe"></i> المقدمة: <span dir="ltr">${esc(String(pre))}</span></span>`);
+    let svc = a.serviceName || a.selectedService;
+    let br = a.branchName || a.selectedBranch;
+    if (svc) p.push(`<span><i class="fas fa-tag"></i> ${esc(String(svc))}${br && br !== svc ? ' — ' + esc(String(br)) : ''}</span>`);
+    else if (br) p.push(`<span><i class="fas fa-layer-group"></i> ${esc(String(br))}</span>`);
+    if (a.categoryName && !svc) p.push(`<span><i class="fas fa-folder"></i> ${esc(String(a.categoryName))}</span>`);
+    if (a.amount !== undefined && a.amount !== null && a.amount !== '') p.push(`<span>${esc(String(a.amount))}₪</span>`);
+    if (a.reason) p.push(`<span style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> ${esc(_oaReason(a.reason))}</span>`);
+    if (a.eventType === 'time_on_page' && a.seconds) p.push(`<span><i class="fas fa-clock"></i> ${_fmtDuration(a.seconds)}</span>`);
+    let q = a.query || a.searchQuery || a.searchTerm;
+    if (q) p.push(`<span><i class="fas fa-search"></i> ${esc(String(q))}</span>`);
+    if (a.copiedText) { let t = String(a.copiedText); p.push(`<span><i class="fas fa-copy"></i> ${esc(t.length > 40 ? t.slice(0, 40) + '…' : t)}</span>`); }
+    if (a.typedName && !ph) p.push(`<span><i class="fas fa-user"></i> ${esc(String(a.typedName))}</span>`);
+    if (a.remainingSeconds) p.push(`<span>متبقي ${_fmtDuration(a.remainingSeconds)}</span>`);
+    if (a.chatText) { let t = String(a.chatText); p.push(`<span><i class="fas fa-comment"></i> ${esc(t.length > 50 ? t.slice(0, 50) + '…' : t)}</span>`); }
+    if (a.previousStep && a.previousStep !== 'none') p.push(`<span style="opacity:.75"><i class="fas fa-reply"></i> بعد: ${esc(oaEventLabel(a.previousStep))}</span>`);
+    return p.length ? `<div class="oa-sum">${p.join('<b>•</b>')}</div>` : '';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   بحث عربي ذكي (يتجاهل الهمزات والتاء المربوطة والأرقام الهندية)
+   ═══════════════════════════════════════════════════════════════ */
+function _normQ(s) {
+    return String(s || '').toLowerCase()
+        .replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660))
+        .replace(/[\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) - 0x06F0))
+        .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[\u064B-\u0652\u0640]/g, '');
+}
+const _oaHayCache = new WeakMap();
+function _oaHaystack(a) {
+    let base = _oaHayCache.get(a);
+    if (base === undefined) {
+        let parts = [a.visitorId, a.deviceId, a.eventType, oaEventLabel(a.eventType), a.ip, a.browser, a.country,
+            _oaValue('country', a.country), a.city, a.device, _oaValue('device', a.device), a.os, _oaPhone(a), a.prefix, a.selectedPrefix,
+            a.serviceName, a.selectedService, a.branchName, a.selectedBranch, a.serviceCode, a.categoryName, a.typedName,
+            a.reason, _oaReason(a.reason), a.query, a.searchQuery, a.searchTerm, a.copiedText, a.isp, a.timeLocal,
+            _fmtDateTime(_oaTimeMs(a)), a.finalPhone, a.chatText, a.reasonCode, _oaReason(a.reasonCode),
+            a.previousStep ? oaEventLabel(a.previousStep) : '', a.sessionId];
+        base = _normQ(parts.filter(x => x !== undefined && x !== null && x !== '').join(' '));
+        _oaHayCache.set(a, base);
+    }
+    return base + ' ' + _normQ(visitorName(a.visitorId || a.deviceId));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   أنواع الحركات الداخلية — ترتيب الأهمية للفلتر
+   ═══════════════════════════════════════════════════════════════ */
+const ALOG_TYPE_PRIORITY = [
+    'failed_login','toggle_ban','delete_user','password_change','user_edit','add_user','import_backup','reset_all_vip',
+    'delete_all_pledges','reset_budget','delete_wallet','delete_history','withdraw','transfer','manual','set_wallet','manual_invest',
+    'purchase','undo','cancel_history','reactivate_history','edit_history','manual_sell','stock_add','delete_order','order_delivery',
+    'booking_confirm','booking_delivery','return_sold_stock','delete_sold_stock','disable_sold_stock','reactivate_sold_stock',
+    'remove_buyer','remove_buyer_sold','transfer_buyer','adjust_profiles','delete_expired_stock','manual_coupon','delete_coupon',
+    'invalid_discount','add_pledge','delete_pledge','adjust_emp_bonus','exchange_rate','create_wallet','rename_wallet',
+    'add_vip','delete_vip','new_customer','add_service','edit_service','whatsapp','send_notification','delete_notification',
+    'export_backup','csv_export'
+];
+function _alogTypeOf(log) { return (log.details && log.details.type) ? String(log.details.type) : '__none'; }
+function _alogTypeLabel(t) { return t === '__none' ? 'بدون تصنيف' : (LOG_TYPE_AR[t] || _autoTranslateKey(t, true) || 'عملية أخرى'); }
+function _alogTypeRank(t) {
+    if (t === '__none') return 99999;
+    if (t === 'login' || t === 'auto_login' || t === 'logout') return 90000 + ['login','auto_login','logout'].indexOf(t);
+    let i = ALOG_TYPE_PRIORITY.indexOf(t);
+    if (i !== -1) return i;
+    let j = Object.keys(LOG_TYPE_AR).indexOf(t);
+    return j !== -1 ? 1000 + j : 50000;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   الفلترة والعرض
+   ═══════════════════════════════════════════════════════════════ */
+let _oaFilterSel = '';   // فلتر نشاط الطلبات: حركة واحدة فقط ('' = الكل)
+let _logsFilling = false, _logsFillCapped = false, _logsSearchTimer = null;
+
+function _logsSearchVal() { return _normQ((document.getElementById("logsSearch")?.value || '').trim()); }
+function _logsSearchChanged() {
+    clearTimeout(_logsSearchTimer);
+    _logsSearchTimer = setTimeout(() => { currentPage.logs = 1; _logsFillCapped = false; refreshLogs(); }, 280);
+}
+function _logsFilteredList(tab, search, feed) {
+    if (tab === 'orderActivity') {
+        let list = _filterTimeOnPageForDisplay(feed.list());
+        if (_oaFilterSel) list = list.filter(a => (a.eventType || '__none') === _oaFilterSel);
+        if (search) list = list.filter(a => _oaHaystack(a).includes(search));
+        return list;
+    }
+    let list = feed.list().filter(l => getLogType(l) === tab);
+    if (search) list = list.filter(l => _normQ(`${l.user || ''} ${l.action || ''} ${_alogTypeLabel(_alogTypeOf(l))} ${l.time || ''}`).includes(search));
+    return list;
+}
+const _OA_TIER_COLOR = { 1: 'var(--danger)', 2: 'var(--accent)', 3: 'var(--info)', 4: 'var(--text-muted)' };
+function _oaFilterKeys() {
+    let keys = OA_EVENTS.map(e => e[0]);
+    let present = new Set(_oaFeed.list().map(a => a.eventType).filter(Boolean));
+    [...present].filter(k => !OA_EVENT_MAP[k]).sort().forEach(k => keys.push(k));
+    if (_oaFilterSel && !keys.includes(_oaFilterSel)) keys.push(_oaFilterSel);
+    return keys;
+}
+function _oaFilterLabel(k) {
+    let l = oaEventLabel(k);
+    if (!OA_EVENT_MAP[k] && !_autoTranslateKey(k, true)) l += ' · ' + k;
+    return l;
+}
+function _renderOaFilter(tab) {
+    let wrap = document.getElementById("oaFilterWrap"); if (!wrap) return;
+    wrap.style.display = tab === 'orderActivity' ? '' : 'none';
+    if (tab !== 'orderActivity') { _oaFilterClose(); return; }
+    let btn = document.getElementById("oaFilterBtn"), lbl = document.getElementById("oaFilterLabel");
+    if (lbl) lbl.textContent = _oaFilterSel ? _oaFilterLabel(_oaFilterSel) : 'كل الحركات';
+    if (btn) btn.classList.toggle('on', !!_oaFilterSel);
+    let menu = document.getElementById("oaFilterMenu");
+    if (menu && menu.classList.contains('open')) _oaFilterRenderMenu();
+}
+function _oaFilterRenderMenu() {
+    let menu = document.getElementById("oaFilterMenu"); if (!menu) return;
+    let html = `<div class="oa-fm-item${!_oaFilterSel ? ' sel' : ''}" data-k="" onclick="_oaFilterPick(this.dataset.k)"><i class="fas fa-layer-group" style="width:14px;color:var(--primary)"></i><span>كل الحركات</span>${!_oaFilterSel ? '<i class="fas fa-check oa-fm-check"></i>' : ''}</div><div class="oa-fm-sep"></div>`;
+    _oaFilterKeys().forEach(k => {
+        let m = oaEventMeta(k), sel = k === _oaFilterSel;
+        html += `<div class="oa-fm-item${sel ? ' sel' : ''}" data-k="${esc(String(k))}" onclick="_oaFilterPick(this.dataset.k)"><span class="dot" style="background:${_OA_TIER_COLOR[m.tier] || _OA_TIER_COLOR[3]}"></span><span>${esc(_oaFilterLabel(k))}</span>${sel ? '<i class="fas fa-check oa-fm-check"></i>' : ''}</div>`;
+    });
+    menu.innerHTML = html;
+}
+function _oaFilterToggleMenu(e) {
+    if (e) e.stopPropagation();
+    let menu = document.getElementById("oaFilterMenu"); if (!menu) return;
+    if (menu.classList.contains('open')) return _oaFilterClose();
+    _oaFilterRenderMenu();
+    menu.classList.add('open');
+}
+function _oaFilterClose() { let m = document.getElementById("oaFilterMenu"); if (m) m.classList.remove('open'); }
+function _oaFilterPick(k) {
+    _oaFilterSel = k || '';
+    _oaFilterClose();
+    currentPage.logs = 1; _logsFillCapped = false;
+    refreshLogs();
+}
+document.addEventListener('click', e => { if (!e.target.closest || !e.target.closest('#oaFilterWrap')) _oaFilterClose(); });
+function _setLogsHeader(tab) {
+    let th = document.getElementById("logsThead"); if (!th) return;
+    let want = tab === 'orderActivity' ? 'oa' : 'in';
+    if (th.dataset.mode === want) return;
+    th.dataset.mode = want;
+    th.innerHTML = tab === 'orderActivity'
+        ? `<tr><th style="width:170px">التاريخ</th><th style="width:210px">العميل / الجهاز</th><th>الحدث</th><th>تفاصيل</th><th>حذف</th></tr>`
+        : `<tr><th style="width:180px">التاريخ</th><th style="width:150px">المستخدم</th><th>الحدث</th><th>تفاصيل</th><th>حذف</th></tr>`;
+}
+
+async function _logsFill(feed) {
+    if (_logsFilling) return;
+    _logsFilling = true;
+    try {
+        let rounds = 0;
+        while (!feed.exhausted) {
+            let tab = currentLogsTab;
+            if (_logsFeedFor(tab) !== feed) break;
+            let search = _logsSearchVal();
+            let have = _logsFilteredList(tab, search, feed).length;
+            if (currentPage.logs * ITEMS_PER_PAGE <= have) break;
+            if (rounds >= 12) { _logsFillCapped = true; break; }
+            let filtering = !!search || (tab === 'orderActivity' && !!_oaFilterSel);
+            await feed.loadMore(filtering ? 200 : ITEMS_PER_PAGE);
+            rounds++;
+        }
+    } catch (e) {
+        console.error('logs load more:', e);
+        _logsFillCapped = true;
+        notify("تعذّر تحميل السجلات الأقدم: " + (e.message || e), "error");
+    } finally {
+        _logsFilling = false;
+        refreshLogs();
+    }
+}
+function logsChangePage(dir) {
+    currentPage.logs = Math.max(1, (currentPage.logs || 1) + dir);
+    _logsFillCapped = false;
+    refreshLogs();
+    let c = document.querySelector('#logs .table-container'); if (c) c.scrollTop = 0;
+}
+function logsLoadMoreManual() { _logsFillCapped = false; refreshLogs(); }
+
+function _renderLogsPagination(total, feed) {
+    let el = document.getElementById("logsPagination"); if (!el) return;
+    let per = ITEMS_PER_PAGE, p = currentPage.logs;
+    let pages = Math.max(1, Math.ceil(total / per));
+    let more = !feed.exhausted;
+    let prevDis = p <= 1, nextDis = p >= pages && !more;
+    let loaded = feed.items.size;
+    let status;
+    if (_logsFilling) status = `<i class="fas fa-circle-notch fa-spin"></i> جاري التحميل من السيرفر...`;
+    else if (feed.error) status = `<span style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> تعذّر الاتصال بالسجل</span>`;
+    else if (more) status = `<i class="fas fa-cloud"></i> تم تحميل ${loaded} سجل — الأقدم يُحمَّل عند فتح الصفحة التالية` +
+        (_logsFillCapped ? ` <button class="page-btn" style="margin-right:6px" onclick="logsLoadMoreManual()"><i class="fas fa-cloud-download-alt"></i> متابعة البحث في الأقدم</button>` : '');
+    else status = `<i class="fas fa-check-circle" style="color:var(--success)"></i> تم تحميل كل السجلات (${loaded})`;
+    el.innerHTML = `
+        <button class="page-btn ${prevDis ? 'disabled' : ''}" ${prevDis ? 'disabled' : ''} onclick="logsChangePage(-1)">السابق</button>
+        <div class="page-info">صفحة ${p} من ${pages}${more ? '+' : ''}</div>
+        <button class="page-btn ${nextDis ? 'disabled' : ''}" ${nextDis ? 'disabled' : ''} onclick="logsChangePage(1)">التالي</button>
+        <div class="logs-load-status">${status}</div>`;
+}
+
+function switchLogsTab(tab, btn) {
+    currentLogsTab = tab;
+    document.querySelectorAll('#logs .tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    currentPage.logs = 1; _logsFillCapped = false;
+    refreshLogs();
+}
+
+function getLogType(log) {
+    if (log.logType) return log.logType;
+    return log.details != null ? 'financial' : 'general';
+}
+
+function refreshLogs() {
+    const tbody = document.getElementById("logsTableBody");
+    if (!tbody) return;
+    let tab = currentLogsTab;
+    let role = currentUser ? currentUser.role : 'viewer';
+    let search = _logsSearchVal();
+    let feed = _logsFeedFor(tab);
+    if (tab === 'orderActivity') _ensureVisitorNames();
+
+    _setLogsHeader(tab);
+    _renderOaFilter(tab);
+
+    if (!feed.ready) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)"><i class="fas fa-circle-notch fa-spin"></i> جاري تحميل أحدث السجلات...</td></tr>`;
+        _renderLogsPagination(0, feed);
+        return;
+    }
+
+    let filtered = _logsFilteredList(tab, search, feed);
+    let per = ITEMS_PER_PAGE;
+    let need = currentPage.logs * per > filtered.length && !feed.exhausted && !feed.error;
+    if (need && !_logsFillCapped) setTimeout(() => _logsFill(feed), 0);
+    let loadedPages = Math.max(1, Math.ceil(filtered.length / per));
+    if (currentPage.logs > loadedPages && !(need && !_logsFillCapped)) currentPage.logs = loadedPages;
+    let paginated = filtered.slice((currentPage.logs - 1) * per, currentPage.logs * per);
+    let loadingRow = (need && !_logsFillCapped)
+        ? `<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text-muted)"><i class="fas fa-circle-notch fa-spin"></i> جاري جلب السجلات من السيرفر...</td></tr>` : '';
+
+    let rows = "";
+    if (tab === 'orderActivity') {
+        paginated.forEach(a => {
+            let m = oaEventMeta(a.eventType);
+            let vid = a.visitorId || a.deviceId || '';
+            let vname = visitorName(vid);
+            let ms = _oaTimeMs(a);
+            let when = ms ? _fmtDateTime(ms) : esc(a.timeLocal || a.timestamp || '—');
+            let who = '';
+            if (vname) who += `<div class="oa-who-name" title="${esc(vid)}"><i class="fas fa-user-tag"></i> ${esc(vname)}</div>`;
+            else if (vid) who += `<div class="oa-who-id"><i class="fas fa-fingerprint"></i> ${esc(vid)}</div>`;
+            if (vname && vid) who += `<div class="oa-who-sub" dir="ltr">${esc(vid)}</div>`;
+            who += `<div class="oa-who-sub">${esc(_oaValue('device', a.device) || '—')} / ${esc(a.browser || '—')} / ${esc(_oaValue('country', a.country) || '—')}</div>`;
+            let detBtn = role === 'admin' ? `<button class="btn btn-primary" style="padding:5px 10px;font-size:12px" onclick="showOrderActivityDetailsById('${esc(a._docId)}')"><i class="fas fa-eye"></i></button>` : '-';
+            let delBtn = role === 'admin' ? `<button class="btn btn-danger" style="padding:5px 10px;font-size:12px" onclick="deleteOrderActivity('${esc(a._docId)}')"><i class="fas fa-trash"></i></button>` : '-';
+            rows += `<tr><td style="direction:ltr;text-align:right;font-size:12px;white-space:nowrap">${when}</td><td style="font-size:12px;">${who}</td><td><span class="badge ${m.badge}" style="font-size:11px;"><i class="fas fa-${m.icon}"></i> ${esc(oaEventLabel(a.eventType))}</span></td><td>${detBtn}</td><td>${delBtn}</td></tr>`;
+        });
+        tbody.innerHTML = (rows + loadingRow) || `<tr><td colspan='5' style='text-align:center;padding:20px;color:var(--text-muted)'>${search || _oaFilterSel ? 'لا توجد نتائج مطابقة' : 'لا يوجد نشاط بعد'}</td></tr>`;
+    } else {
+        let canSeeDetails = (role === 'admin') || (role === 'employee' && tab === 'financial');
+        paginated.forEach(log => {
+            let detailsBtn = (log.details && canSeeDetails)
+                ? `<button class="btn btn-primary" style="padding:5px 10px; font-size:12px" onclick="showLogDetailsById('${esc(log.id || log._docId)}')"><i class="fas fa-eye"></i></button>`
+                : `<span style="color:var(--text-muted); font-size:12px;">-</span>`;
+            let delBtn = role === 'admin' ? `<button class="btn btn-danger" style="padding:5px 10px;font-size:12px" onclick="deleteLogEntry('${esc(log.id || log._docId || '')}')"><i class="fas fa-trash"></i></button>` : '-';
+            rows += `<tr><td style="direction:ltr; text-align:right">${esc(log.time || '')}</td><td><b>${esc(log.user || '')}</b></td><td>${esc(log.action || '')}</td><td>${detailsBtn}</td><td>${delBtn}</td></tr>`;
+        });
+        tbody.innerHTML = (rows + loadingRow) || `<tr><td colspan='5' style='text-align:center; padding:20px; color:var(--text-muted)'>${search ? 'لا توجد نتائج مطابقة' : 'لا توجد بيانات'}</td></tr>`;
+    }
+    _renderLogsPagination(filtered.length, feed);
+}
+
+function showLogDetailsById(id) {
+    let feed = _logsFeedFor(currentLogsTab === 'orderActivity' ? 'financial' : currentLogsTab);
+    let log = feed.list().find(l => (l.id || l._docId) === id);
+    if (log && log.details) showModalDetails(log.details);
+}
+
+async function deleteOrderActivity(docId) {
+    if (!docId) return notify("لا يوجد معرّف للسجل", "error");
+    let ok = await showConfirm("حذف سجل", "هل أنت متأكد من حذف هذا السجل نهائياً؟", "حذف", "إلغاء", '<i class="fas fa-trash-alt"></i>');
+    if (!ok) return;
+    try {
+        await dbOrder.collection("orderActivity").doc(docId).delete();
+        _oaFeed.remove(docId);
+        orderActivityCache = _oaFeed.list();
+        refreshLogs();
+        notify("تم حذف السجل");
+    } catch (e) { notify("خطأ: " + e.message, "error"); }
+}
+async function deleteLogEntry(id) {
+    if (!id) return notify("لا يوجد معرّف للسجل", "error");
+    let ok = await showConfirm("حذف سجل", "هل أنت متأكد من حذف هذا السجل نهائياً؟", "حذف", "إلغاء", '<i class="fas fa-trash-alt"></i>');
+    if (!ok) return;
+    if (_alogUseDemo()) {
+        let logs = safeJSON(store.activityLog, []).filter(l => l.id !== id);
+        store.activityLog = JSON.stringify(logs);
+        fbSave("activityLog", logs);
+    } else {
+        try { await fbDocRef.collection("activityLog").doc(id).delete(); _alogFeed.remove(id); }
+        catch (e) { return notify("خطأ: " + e.message, "error"); }
+    }
+    refreshLogs();
+    notify("تم حذف السجل");
+}
+function toggleLogDetails(uid) {
+    let row = document.getElementById(uid);
+    let icon = document.getElementById('icon_' + uid);
+    if (!row) return;
+    let isHidden = row.style.display === 'none';
+    row.style.display = isHidden ? 'table-row' : 'none';
+    if (icon) icon.className = isHidden ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+}
+
+function showOrderActivityDetailsById(docId) {
+    let a = _oaFeed.items.get(docId);
+    if (a) showOrderActivityDetails(a);
+}
+function showOrderActivityDetails(src) {
+    const a = { ...src };
+    const body = document.getElementById("modalBody");
+    body.innerHTML = "";
+    const used = new Set(['_docId', 'serverTime', '_secondsAr', '_eventTypeAr', '_eventCodeAr', '_visitorNameAr', '_whenAr']);
+    const rowHtml = (label, val, ltr) => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);gap:10px;font-size:13px;">
+                    <span style="color:var(--text-muted);flex-shrink:0;">${esc(label)}</span>
+                    <span style="font-weight:600;text-align:left;${ltr ? 'direction:ltr;' : ''}word-break:break-all;">${esc(val)}</span>
+                </div>`;
+    const section = (icon, title, entries) => {
+        let rows = entries.map(([k, label]) => {
+            used.add(k);
+            if (a[k] === undefined || a[k] === null || String(a[k]) === '') return '';
+            let raw = a[k];
+            let val = (k.startsWith('_')) ? String(raw) : _oaValue(k, raw);
+            let ltr = !/[\u0600-\u06FF]/.test(val);
+            return rowHtml(label, val, ltr);
+        }).join('');
+        if (!rows) return '';
+        return `<div style="display:flex;justify-content:center;align-items:center;gap:6px;font-weight:800;color:var(--primary);font-size:13px;margin:14px 0 6px;">
+                    <i class="fas fa-${icon}"></i><span>${title}</span>
+                </div>${rows}
+                <div style="border-top:1px dashed var(--border-color);margin:12px 0;"></div>`;
+    };
+    a._secondsAr = a.seconds ? _fmtDuration(a.seconds) : undefined;
+    a._eventTypeAr = oaEventLabel(a.eventType);
+    a._eventCodeAr = (a.eventType && !OA_EVENT_MAP[a.eventType]) ? a.eventType : undefined;
+    a._visitorNameAr = visitorName(a.visitorId || a.deviceId) || undefined;
+    a._whenAr = _oaTimeMs(a) ? _fmtDateTime(_oaTimeMs(a)) : undefined;
+    used.add('seconds'); used.add('eventType');
+
+    body.innerHTML += section('bell', 'معلومات الحدث', [
+        ['_eventTypeAr', 'نوع الحدث'], ['_eventCodeAr', 'الرمز التقني للحدث'], ['_visitorNameAr', 'اسم العميل (من قائمة العملاء)'],
+        ['_whenAr', 'التاريخ والوقت'], ['previousStep', 'الخطوة السابقة'], ['stepNo', 'رقم الخطوة بالجلسة'], ['step', 'الخطوة'], ['attempt', 'رقم المحاولة'],
+    ]);
+    body.innerHTML += section('receipt', 'بيانات الطلب', [
+        ['reason', 'سبب الفشل'], ['reasonCode', 'نوع الخطأ'], ['error', 'الخطأ'], ['remainingSeconds', 'الوقت المتبقي على العداد (ثانية)'],
+        ['finalPhone', 'الرقم المعتمد'], ['fullPhone', 'الرقم كاملاً'], ['phone', 'الرقم'], ['enteredPhone', 'الرقم المُدخل'], ['typedPhone', 'الرقم المكتوب'],
+        ['prefix', 'مقدمة الرقم'], ['selectedPrefix', 'مقدمة الرقم'], ['prefixSource', 'مصدر المقدمة'], ['savedPhoneUsed', 'الرقم معبّأ تلقائياً من طلب سابق'],
+        ['typedName', 'الاسم المكتوب'], ['customerName', 'اسم العميل'],
+        ['selectedService', 'الخدمة المختارة'], ['serviceName', 'اسم الخدمة'], ['serviceCode', 'كود الخدمة'],
+        ['branchName', 'الباقة'], ['selectedBranch', 'الباقة المختارة'], ['branchCode', 'كود الباقة'], ['categoryName', 'القسم المختار'],
+        ['amount', 'المبلغ'], ['price', 'السعر'], ['orderId', 'رقم الطلب'], ['couponCode', 'كود الخصم'],
+    ]);
+    body.innerHTML += section('info-circle', 'تفاصيل أخرى', [
+        ['chatText', 'نص الرسالة'], ['query', 'عبارة البحث'], ['searchQuery', 'عبارة البحث'], ['searchTerm', 'عبارة البحث'],
+        ['resultsCount', 'عدد النتائج'], ['servicesCount', 'عدد الخدمات'], ['categoriesCount', 'عدد الأقسام'], ['copiedText', 'النص المنسوخ'],
+        ['_secondsAr', 'المدة في الصفحة'], ['clickCount', 'عدد النقرات'], ['referrer', 'مصدر الزيارة'], ['url', 'الرابط'],
+        ['timeLocal', 'التوقيت المحلي'], ['timestamp', 'التوقيت (UTC)'],
+    ]);
+    body.innerHTML += section('mobile-alt', 'الجهاز والنظام', [
+        ['device', 'نوع الجهاز'], ['os', 'نظام التشغيل'], ['platform', 'المنصة'], ['browser', 'المتصفح'], ['browserVersion', 'إصدار المتصفح'],
+        ['screen', 'دقة الشاشة'], ['deviceModel', 'موديل الجهاز'], ['memory', 'الذاكرة RAM'], ['cpuCores', 'عدد النوى'], ['battery', 'البطارية'],
+        ['visitorId', 'معرّف الجهاز'], ['deviceId', 'معرّف الجهاز'], ['deviceFingerprint', 'بصمة الجهاز (Canvas)'], ['webglFingerprint', 'بصمة الجهاز (WebGL)'], ['fp', 'بصمة الجهاز'], ['sessionId', 'معرّف الجلسة'],
+    ]);
+    body.innerHTML += section('globe', 'الشبكة والموقع', [
+        ['ip', 'عنوان IP'], ['webrtcIPs', 'IP الحقيقي (WebRTC)'], ['isp', 'مزود الإنترنت'], ['connectionType', 'نوع الاتصال'],
+        ['country', 'الدولة'], ['region', 'المنطقة'], ['city', 'المدينة'], ['network', 'بيانات الشبكة'], ['vpnDetection', 'كشف VPN'],
+    ]);
+    body.innerHTML += section('language', 'اللغة والتوقيت', [
+        ['language', 'اللغة الرئيسية'], ['languages', 'اللغات'], ['timezone', 'المنطقة الزمنية'],
+    ]);
+    body.innerHTML += section('sliders-h', 'إعدادات المتصفح', [
+        ['cookiesEnabled', 'الكوكيز مفعّلة'], ['doNotTrack', 'عدم التتبع'], ['userAgent', 'معرّف المتصفح (User Agent)'],
+        ['incognito', 'وضع التصفح الخفي'], ['botDetection', 'كشف الروبوت'],
+    ]);
+    // أي حقل جديد يرسله موقع الطلبات يظهر هنا تلقائياً ومترجماً
+    let extra = Object.keys(a).filter(k => !used.has(k) && !k.startsWith('_')).sort();
+    if (extra.length) body.innerHTML += section('plus-circle', 'تفاصيل إضافية', extra.map(k => [k, _oaKeyLabel(k)]));
+
+    let vid = a.visitorId || a.deviceId;
+    if (vid && currentUser && currentUser.role === 'admin') {
+        body.innerHTML += `<button class="btn btn-primary" style="width:100%;margin-top:6px" data-v="${esc(String(vid))}" onclick="_logsFilterByVisitor(this.dataset.v)"><i class="fas fa-filter"></i> عرض كل حركات هذا الجهاز</button>`;
+    }
+    document.getElementById("detailsModal").classList.remove("hidden");
+}
+
+function _logsFilterByVisitor(vid) {
+    document.getElementById("detailsModal").classList.add("hidden");
+    let inp = document.getElementById("logsSearch");
+    if (inp) inp.value = vid;
+    currentPage.logs = 1; _logsFillCapped = false;
+    refreshLogs();
+}
+
+// مسح كل وثائق مجموعة تطابق شرطاً (على دفعات، بدون تحميل الكل مرة وحدة)
+async function _scanDeleteCollection(collRef, dbRef, match) {
+    let last = null, deleted = 0;
+    while (true) {
+        let q = collRef.limit(400);
+        if (last) q = q.startAfter(last);
+        let snap = await q.get();
+        if (snap.empty) break;
+        last = snap.docs[snap.docs.length - 1];
+        let del = snap.docs.filter(d => match(d.data()));
+        if (del.length) {
+            let b = dbRef.batch();
+            del.forEach(d => b.delete(d.ref));
+            await b.commit();
+            deleted += del.length;
+        }
+        if (snap.size < 400) break;
+    }
+    return deleted;
+}
+
+async function clearLogs() {
+    if (currentUser.role !== 'admin') return notify("للأدمن فقط", "error");
+
+    if (currentLogsTab === 'orderActivity') {
+        let res = await showConfirm("مسح نشاط الطلبات", "اختر نوع المسح:", "مسح الكل", "إلغاء", '<i class="fas fa-trash-alt"></i>', "مسح أقدم 50 سجل");
+        if (!res) return;
+        try {
+            if (res === 'third') {
+                let snap = await dbOrder.collection("orderActivity").orderBy("timestamp", "asc").limit(50).get();
+                if (!snap.empty) {
+                    let batch = dbOrder.batch();
+                    snap.docs.forEach(d => batch.delete(d.ref));
+                    await batch.commit();
+                    snap.docs.forEach(d => _oaFeed.items.delete(d.id));
+                    _oaFeed._sorted = null;
+                }
+            } else {
+                let snap = await dbOrder.collection("orderActivity").limit(500).get();
+                while (!snap.empty) {
+                    let batch = dbOrder.batch();
+                    snap.docs.forEach(d => batch.delete(d.ref));
+                    await batch.commit();
+                    snap = await dbOrder.collection("orderActivity").limit(500).get();
+                }
+                _oaFeed.reset();
+            }
+            orderActivityCache = _oaFeed.list();
+            currentPage.logs = 1;
+            refreshLogs();
+            notify("تم المسح بنجاح");
+        } catch (e) { notify("خطأ: " + e.message, "error"); }
+        return;
+    }
+
+    const tabNames = { financial: "الحركات المالية", danger: "الحركات الخطرة", general: "الحركات العامة" };
+    let tab = currentLogsTab;
+    let tabName = tabNames[tab] || "السجلات";
+    let res = await showConfirm(`مسح ${tabName}`, `سيتم حذف سجلات ${tabName} نهائياً.`, "مسح الكل", "إلغاء", '<i class="fas fa-trash-alt"></i>', "مسح أقدم صفحة");
+    if (!res) return;
+
+    if (_alogUseDemo()) {
+        let allLogs = safeJSON(store.activityLog, []);
+        let targetLogs = allLogs.filter(log => getLogType(log) === tab).sort((a, b) => (b._ts || 0) - (a._ts || 0));
+        let logsToSave;
+        if (res === 'third') { let rm = new Set(targetLogs.slice(-ITEMS_PER_PAGE).map(l => l.id)); logsToSave = allLogs.filter(l => !rm.has(l.id)); }
+        else logsToSave = allLogs.filter(log => getLogType(log) !== tab);
+        store.activityLog = JSON.stringify(logsToSave); fbSave("activityLog", logsToSave);
+    } else {
+        notify("جاري المسح...", "info");
+        try {
+            let coll = fbDocRef.collection("activityLog");
+            if (res === 'third') {
+                // أقدم 50 سجل من هذا التبويب
+                let found = [], last = null;
+                while (found.length < ITEMS_PER_PAGE) {
+                    let q = coll.orderBy("_ts", "asc").limit(300);
+                    if (last) q = q.startAfter(last);
+                    let snap = await q.get();
+                    if (snap.empty) break;
+                    last = snap.docs[snap.docs.length - 1];
+                    snap.docs.forEach(d => { if (found.length < ITEMS_PER_PAGE && getLogType(d.data()) === tab) found.push(d); });
+                    if (snap.size < 300) break;
+                }
+                for (let i = 0; i < found.length; i += 400) {
+                    let b = db.batch();
+                    found.slice(i, i + 400).forEach(d => b.delete(d.ref));
+                    await b.commit();
+                }
+            } else {
+                await _scanDeleteCollection(coll, db, d => getLogType(d) === tab);
+            }
+            _alogFeed.reset();
+        } catch (e) { return notify("خطأ أثناء المسح: " + e.message, "error"); }
+    }
+
+    logAction(`قام الأدمن بمسح ${res === 'third' ? 'أقدم 50 سجل من' : 'كافة'} ${tabName}`, 'danger');
+    currentPage.logs = 1;
+    refreshLogs();
+    notify("تم المسح بنجاح");
+}
+
 let ordersCache = [];        // cache من db.collection("orders")
 let _svcUnsubscribe = null;
 let _ordUnsubscribe = null;
@@ -12691,12 +13325,50 @@ function _initOrdersListener() {
     });
 }
 
+/* ─── الطلبات غير المشاهدة ───
+   الشارة تعرض عدد الطلبات الجديدة التي لم تُفتح صفحة الطلبات بعد وصولها فقط.
+   بمجرد فتح صفحة الطلبات تُعتبر كل الطلبات الحالية "مُشاهدة" ويختفي الرقم. */
+function _ordSeenKey() { return 'ordersSeen_' + ((currentUser && currentUser.username) || '_'); }
+function _ordSeenGet() {
+    try { let v = localStorage.getItem(_ordSeenKey()); return v === null ? null : new Set(JSON.parse(v)); }
+    catch (e) { return null; }
+}
+function _ordSeenSave(set) { try { localStorage.setItem(_ordSeenKey(), JSON.stringify([...set])); } catch (e) {} }
+function _ordersPageVisible() {
+    let el = document.getElementById("orders");
+    return !!(el && !el.classList.contains("hidden") && document.visibilityState === 'visible');
+}
+function markOrdersSeen() {
+    _ordSeenSave(new Set(ordersCache.map(o => o._docId)));
+    updateOrdersBadge();
+}
+function _orderIsUnseen(o) { let seen = _ordSeenGet(); return !!(seen && !seen.has(o._docId)); }
 function updateOrdersBadge() {
     let badge = document.getElementById("ordersBadge");
     if (!badge) return;
-    let c = ordersCache.length;
-    badge.textContent = c;
+    let seen = _ordSeenGet();
+    if (seen === null || _ordersPageVisible()) {
+        // أول مرة على هذا الجهاز، أو الصفحة مفتوحة الآن = كل الطلبات الحالية مُشاهدة
+        seen = new Set(ordersCache.map(o => o._docId));
+        _ordSeenSave(seen);
+    }
+    let c = ordersCache.filter(o => !seen.has(o._docId)).length;
+    badge.textContent = c > 99 ? '99+' : c;
     badge.style.display = c > 0 ? "inline" : "none";
+}
+document.addEventListener('visibilitychange', () => { if (_ordersPageVisible() && ordersCache.length) markOrdersSeen(); });
+
+// تاريخ إضافة الطلب (يدعم Timestamp و seconds و نص ISO و رقم ms)
+function _orderTimeMs(o) {
+    let cands = [o.timestamp, o.createdAt, o.created, o.date, o.time];
+    for (let t of cands) {
+        if (!t) continue;
+        if (typeof t.toMillis === 'function') return t.toMillis();
+        if (typeof t === 'object' && typeof t.seconds === 'number') return t.seconds * 1000;
+        if (typeof t === 'number') return t < 1e12 ? t * 1000 : t;
+        if (typeof t === 'string') { let ms = Date.parse(t); if (!isNaN(ms)) return ms; }
+    }
+    return 0;
 }
 
 // ─── render services in settings ─────────────────────────────
@@ -13181,6 +13853,7 @@ function ccaInit() {
         });
         if (play) ccaSound();
         CCA.firstSnap = false;
+        try { _rebuildVisitorNames(CCA.chats); } catch(e) {}
         ccaUpdateBadge();
         if (ccaIsOpen()) { ccaRenderList(); ccaRenderHeader(); }
     }, err => console.error('customerChats listener:', err));
@@ -13397,6 +14070,20 @@ async function confirmOrder(docId) {
     } catch(e) { console.error(e); notify('تعذّر تأكيد الطلب', 'error'); }
 }
 
+// رقم الواتساب ← رابط يفتح الدردشة مع العميل مباشرة
+function _waDigits(phone) {
+    let d = String(phone || '').replace(/[\u0660-\u0669]/g, c => String(c.charCodeAt(0) - 0x0660)).replace(/\D/g, '');
+    if (d.startsWith('00')) d = d.slice(2);
+    else if (d.startsWith('0')) d = '970' + d.slice(1);   // رقم محلي قديم بدون مقدمة
+    return d;
+}
+function _waPhoneLink(phone) {
+    if (!phone) return '—';
+    let d = _waDigits(phone);
+    if (d.length < 8) return esc(String(phone));
+    return `<a class="ord-wa" href="https://wa.me/${d}" target="_blank" rel="noopener" title="فتح الدردشة على واتساب" onclick="event.stopPropagation()"><i class="fab fa-whatsapp"></i> ${esc(String(phone))}</a>`;
+}
+
 function refreshOrders() {
     let rawSearch = (document.getElementById("ordersSearch")?.value||"").trim();
     let search = rawSearch.toLowerCase();
@@ -13406,9 +14093,13 @@ function refreshOrders() {
     if (!tbody) return;
     
     let isAdmin = currentUser && currentUser.role === 'admin';
+    _ensureVisitorNames();
+    let _seenSet = _ordSeenGet();
     let filtered = ordersCache.filter(o => {
         if (!search) return true;
-        return (o.customerName||'').toLowerCase().includes(search) || (o.phone||'').toLowerCase().includes(search) || (searchNorm && (o.phone||'').replace(/\D/g,'').includes(searchNorm)) || (o.serviceCode||'').includes(search) || (o.serviceName||'').toLowerCase().includes(search);
+        let _vid = o.visitorId || o.deviceId || '';
+        return (o.customerName||'').toLowerCase().includes(search) || (o.phone||'').toLowerCase().includes(search) || (searchNorm && (o.phone||'').replace(/\D/g,'').includes(searchNorm)) || (o.serviceCode||'').includes(search) || (o.serviceName||'').toLowerCase().includes(search)
+            || (_vid && String(_vid).toLowerCase().includes(search)) || (_vid && _normQ(visitorName(_vid)).includes(_normQ(search))) || _fmtDateTime(_orderTimeMs(o)).includes(search);
     });
     
     renderPagination(filtered.length, 'orders', refreshOrders, 'ordersPagination');
@@ -13460,8 +14151,13 @@ function refreshOrders() {
         let isEmployee = currentUser && currentUser.role === 'employee';
         let delBtn = isAdmin ? `<button class="btn btn-danger" style="padding:5px 10px; font-size:12px;" onclick="deleteOrder('${o._docId}')"><i class="fas fa-trash"></i></button>` : '—';
         
+        let _oMs = _orderTimeMs(o);
+        let _oVid = o.visitorId || o.deviceId || '';
+        let _oName = visitorName(_oVid);
+        let _isNew = _seenSet && !_seenSet.has(o._docId);
         rows += `<tr class="${o.confirmed ? 'ord-confirmed' : ''}">
-            <td dir="ltr" style="font-weight:bold;">${esc(o.phone||'—')}</td>
+            <td style="font-weight:bold;"><span dir="ltr">${_isNew ? '<span class="ord-new-dot" title="طلب جديد"></span>' : ''}${_waPhoneLink(o.phone)}</span>${_oName ? `<div class="ord-who" title="${esc(_oVid)}"><i class="fas fa-user-tag"></i> ${esc(_oName)}</div>` : ''}</td>
+            <td><span class="ord-date">${_oMs ? _fmtDateTime(_oMs) : '—'}</span></td>
             <td>${codeCell}</td>
             <td style="color:var(--accent); font-weight:800;">${price}</td>
             <td>${confirmBtn}</td>
@@ -13469,7 +14165,7 @@ function refreshOrders() {
         </tr>`;
     });
     
-    tbody.innerHTML = rows || `<tr><td colspan='5' style='text-align:center; padding:20px; color:var(--text-muted);'>لا توجد طلبات حالياً</td></tr>`;
+    tbody.innerHTML = rows || `<tr><td colspan='6' style='text-align:center; padding:20px; color:var(--text-muted);'>لا توجد طلبات حالياً</td></tr>`;
     
     if (bookingsContainer) {
         let bookingsKeys = Object.keys(bookingsMap);
@@ -13482,7 +14178,7 @@ function refreshOrders() {
                 let listHtml = grp.orders.map((ord, idx) => `
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px;">
                         <div>
-                            <span style="font-weight:bold; color:var(--text-main);">${idx+1}. <span dir="ltr">${esc(ord.phone||'—')}</span></span>
+                            <span style="font-weight:bold; color:var(--text-main);">${idx+1}. <span dir="ltr">${_waPhoneLink(ord.phone)}</span></span>
                             <div style="color:var(--text-muted); font-size:11px;">${ord.amount} ₪</div>
                         </div>
                     </div>
