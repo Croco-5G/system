@@ -329,8 +329,12 @@
         .oa-sum b { color:var(--border-color); font-weight:400; }
         .oa-sum i { font-size:10px; opacity:.8; }
         .oa-who-name { font-weight:800; color:var(--success); font-size:13px; }
-        .oa-who-id { color:var(--primary); font-size:11px; direction:ltr; text-align:right; word-break:break-all; }
-        .oa-who-sub { color:var(--text-muted); font-size:11px; margin-top:2px; word-break:break-all; }
+        .oa-who-id { color:var(--primary); font-size:12px; font-weight:700; }
+        .oa-who-sub { color:var(--text-muted); font-size:11px; margin-top:3px; }
+        .oa-who-name, .oa-who-id, .oa-who-sub { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+        table.oa-fixed { table-layout:fixed; width:100%; min-width:640px; }
+        table.oa-fixed td { overflow:hidden; }
+        #logsTableBody.logs-dim { opacity:.45; pointer-events:none; transition:opacity .15s; }
         .logs-load-status { width:100%; text-align:center; font-size:12px; color:var(--text-muted); margin-top:8px; font-weight:600; }
         #logsPagination { flex-wrap:wrap; }
         .ord-date { font-size:12px; color:var(--text-muted); white-space:nowrap; direction:ltr; font-weight:700; }
@@ -12726,6 +12730,7 @@ function _oaValue(k, v) {
     if (k === 'eventType') return oaEventLabel(v);
     if (k === 'previousStep') return (v === 'none' || !v) ? 'لا يوجد — أول خطوة بالجلسة' : oaEventLabel(v);
     if (k === 'reasonCode') return _oaReason(v);
+    if (k === 'device' || k === 'country') return String(v);   // تُعرض كما هي بدون ترجمة
     if (typeof v === 'object') {
         if (v && typeof v.seconds === 'number') return _fmtDateTime(v.seconds * 1000);
         try { return Object.entries(v).map(([kk, vv]) => `${_oaKeyLabel(kk)}: ${_oaValue(kk, vv)}`).join('، '); }
@@ -12923,10 +12928,12 @@ document.addEventListener('click', e => { if (!e.target.closest || !e.target.clo
 function _setLogsHeader(tab) {
     let th = document.getElementById("logsThead"); if (!th) return;
     let want = tab === 'orderActivity' ? 'oa' : 'in';
+    let tbl = th.closest ? th.closest('table') : null;
+    if (tbl) tbl.classList.toggle('oa-fixed', want === 'oa');
     if (th.dataset.mode === want) return;
     th.dataset.mode = want;
     th.innerHTML = tab === 'orderActivity'
-        ? `<tr><th style="width:170px">التاريخ</th><th style="width:210px">العميل / الجهاز</th><th>الحدث</th><th>تفاصيل</th><th>حذف</th></tr>`
+        ? `<tr><th style="width:175px">التاريخ</th><th style="width:220px">العميل / الجهاز</th><th>الحدث</th><th style="width:80px">تفاصيل</th><th style="width:80px">حذف</th></tr>`
         : `<tr><th style="width:180px">التاريخ</th><th style="width:150px">المستخدم</th><th>الحدث</th><th>تفاصيل</th><th>حذف</th></tr>`;
 }
 
@@ -12940,11 +12947,15 @@ async function _logsFill(feed) {
             if (_logsFeedFor(tab) !== feed) break;
             let search = _logsSearchVal();
             let have = _logsFilteredList(tab, search, feed).length;
-            if (currentPage.logs * ITEMS_PER_PAGE <= have) break;
-            if (rounds >= 12) { _logsFillCapped = true; break; }
+            // الصفحة المطلوبة تُقرأ في كل دورة — لو المستخدم تقدّم لصفحة أبعد أثناء التحميل نكمل لها مباشرة
+            let missing = currentPage.logs * ITEMS_PER_PAGE - have;
+            if (missing <= 0) break;
             let filtering = !!search || (tab === 'orderActivity' && !!_oaFilterSel);
-            await feed.loadMore(filtering ? 200 : ITEMS_PER_PAGE);
+            if (filtering && rounds >= 12) { _logsFillCapped = true; break; }   // البحث/الفلتر فقط: حد أعلى حتى لا يحمّل كل السيرفر
+            let n = filtering ? 200 : Math.min(500, Math.max(ITEMS_PER_PAGE, missing + 10));
+            let got = await feed.loadMore(n);
             rounds++;
+            if (!got && !feed.exhausted) break;
         }
     } catch (e) {
         console.error('logs load more:', e);
@@ -12978,7 +12989,7 @@ function _renderLogsPagination(total, feed) {
     else status = `<i class="fas fa-check-circle" style="color:var(--success)"></i> تم تحميل كل السجلات (${loaded})`;
     el.innerHTML = `
         <button class="page-btn ${prevDis ? 'disabled' : ''}" ${prevDis ? 'disabled' : ''} onclick="logsChangePage(-1)">السابق</button>
-        <div class="page-info">صفحة ${p} من ${pages}${more ? '+' : ''}</div>
+        <div class="page-info">صفحة ${p} من ${Math.max(pages, p)}${more ? '+' : ''}</div>
         <button class="page-btn ${nextDis ? 'disabled' : ''}" ${nextDis ? 'disabled' : ''} onclick="logsChangePage(1)">التالي</button>
         <div class="logs-load-status">${status}</div>`;
 }
@@ -13021,7 +13032,16 @@ function refreshLogs() {
     let loadedPages = Math.max(1, Math.ceil(filtered.length / per));
     if (currentPage.logs > loadedPages && !(need && !_logsFillCapped)) currentPage.logs = loadedPages;
     let paginated = filtered.slice((currentPage.logs - 1) * per, currentPage.logs * per);
-    let loadingRow = (need && !_logsFillCapped)
+    let loadingNow = need && !_logsFillCapped;
+    if (loadingNow && paginated.length < per && tbody.dataset.tab === tab && tbody.children.length > 1) {
+        // الصفحة لسا عم تتحمّل: نخلي الجدول الحالي ظاهر (باهت) بنفس الحجم بدل ما ينكمش وتتحرك الأزرار
+        tbody.classList.add('logs-dim');
+        _renderLogsPagination(filtered.length, feed);
+        return;
+    }
+    tbody.classList.toggle('logs-dim', false);
+    tbody.dataset.tab = tab;
+    let loadingRow = loadingNow
         ? `<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text-muted)"><i class="fas fa-circle-notch fa-spin"></i> جاري جلب السجلات من السيرفر...</td></tr>` : '';
 
     let rows = "";
@@ -13033,9 +13053,8 @@ function refreshLogs() {
             let ms = _oaTimeMs(a);
             let when = ms ? _fmtDateTime(ms) : esc(a.timeLocal || a.timestamp || '—');
             let who = '';
-            if (vname) who += `<div class="oa-who-name" title="${esc(vid)}"><i class="fas fa-user-tag"></i> ${esc(vname)}</div>`;
-            else if (vid) who += `<div class="oa-who-id"><i class="fas fa-fingerprint"></i> ${esc(vid)}</div>`;
-            if (vname && vid) who += `<div class="oa-who-sub" dir="ltr">${esc(vid)}</div>`;
+            if (vname) who += `<div class="oa-who-name" title="${esc(vname)} — ID: ${esc(vid)}"><i class="fas fa-user-tag"></i> ${esc(vname)}</div>`;
+            else who += `<div class="oa-who-id" title="${esc(vid)}"><i class="fas fa-fingerprint"></i> ${esc(vid || '—')}</div>`;
             who += `<div class="oa-who-sub">${esc(_oaValue('device', a.device) || '—')} / ${esc(a.browser || '—')} / ${esc(_oaValue('country', a.country) || '—')}</div>`;
             let detBtn = role === 'admin' ? `<button class="btn btn-primary" style="padding:5px 10px;font-size:12px" onclick="showOrderActivityDetailsById('${esc(a._docId)}')"><i class="fas fa-eye"></i></button>` : '-';
             let delBtn = role === 'admin' ? `<button class="btn btn-danger" style="padding:5px 10px;font-size:12px" onclick="deleteOrderActivity('${esc(a._docId)}')"><i class="fas fa-trash"></i></button>` : '-';
